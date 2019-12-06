@@ -5,7 +5,6 @@ fn solve(codes: Vec<i32>, input: i32) -> i32 {
     let mut v = codes;
     let mut i = 0;
     loop {
-        println!("[{}] {}", i, v[i]);
         let get_param = |pos: usize| -> i32 {
             return if (v[i] / 10i32.pow(pos as u32 + 1)) % 10 == 0 {
                 v[v[i + pos] as usize]
@@ -15,12 +14,12 @@ fn solve(codes: Vec<i32>, input: i32) -> i32 {
         };
         match v[i] % 100 {
             1 => {
-                let pos = get_param(3) as usize;
+                let pos = v[i + 3] as usize;
                 v[pos] = get_param(1) + get_param(2);
                 i += 4;
             }
             2 => {
-                let pos = get_param(3) as usize;
+                let pos = v[i + 3] as usize;
                 v[pos] = get_param(1) * get_param(2);
                 i += 4;
             }
@@ -48,12 +47,12 @@ fn solve(codes: Vec<i32>, input: i32) -> i32 {
                 }
             }
             7 => {
-                let pos = get_param(3) as usize;
+                let pos = v[i + 3] as usize;
                 v[pos] = if get_param(1) < get_param(2) { 1 } else { 0 };
                 i += 4;
             }
             8 => {
-                let pos = get_param(3) as usize;
+                let pos = v[i + 3] as usize;
                 v[pos] = if get_param(1) == get_param(2) { 1 } else { 0 };
                 i += 4;
             }
@@ -73,7 +72,7 @@ fn main() {
     let answer = if args.len() < 2 || &args[1] != "2" {
         solve(v, 1)
     } else {
-        solve(v, 8)
+        solve(v, 5)
     };
     println!("{}", answer);
 }
