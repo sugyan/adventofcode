@@ -148,16 +148,12 @@ impl IntCode {
     }
 }
 
-fn main() {
-    let mut buf = String::new();
-    stdin().read_line(&mut buf).ok();
-    let codes: Vec<i64> = buf.split(",").map(|s| s.trim().parse().unwrap()).collect();
-
+fn solve(codes: Vec<i64>, input: i64) -> HashMap<[i32; 2], bool> {
     let mut panels: HashMap<[i32; 2], bool> = HashMap::new();
     let mut pos: [i32; 2] = [0, 0];
     let mut dir: [i32; 2] = [0, 1];
     let mut computer = IntCode::new(codes);
-    computer.inputs.push(0);
+    computer.inputs.push(input);
     while computer.codes[&computer.i] != 99 {
         computer.run();
         let out = computer.outputs.clone();
@@ -183,5 +179,42 @@ fn main() {
         };
         computer.inputs.push(color);
     }
+    return panels;
+}
+
+fn main() {
+    let mut buf = String::new();
+    stdin().read_line(&mut buf).ok();
+    let codes: Vec<i64> = buf.split(",").map(|s| s.trim().parse().unwrap()).collect();
+
+    let panels = solve(codes.clone(), 0);
     println!("{}", panels.len());
+    let panels = solve(codes.clone(), 1);
+    let (mut xmin, mut ymin) = (std::i32::MAX, std::i32::MAX);
+    let (mut xmax, mut ymax) = (std::i32::MIN, std::i32::MIN);
+    for (pos, white) in panels.iter() {
+        if *white {
+            xmin = std::cmp::min(xmin, pos[0]);
+            ymin = std::cmp::min(ymin, pos[1]);
+            xmax = std::cmp::max(xmax, pos[0]);
+            ymax = std::cmp::max(ymax, pos[1]);
+        }
+    }
+    let mut hull: Vec<Vec<bool>> =
+        vec![vec![false; (xmax - xmin + 1) as usize]; (ymax - ymin + 1) as usize];
+    for (pos, white) in panels.iter() {
+        if *white {
+            let x = (pos[0] - xmin) as usize;
+            let y = (ymax - ymin) as usize - (pos[1] - ymin) as usize;
+            hull[y][x] = true;
+        }
+    }
+    for row in hull {
+        println!(
+            "{}",
+            row.iter()
+                .map(|b| if *b { '*' } else { ' ' })
+                .collect::<String>()
+        );
+    }
 }
