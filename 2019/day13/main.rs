@@ -1,5 +1,8 @@
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::io::stdin;
+// use std::thread::sleep;
+// use std::time::Duration;
 
 struct IntCode {
     i: usize,
@@ -66,7 +69,7 @@ impl IntCode {
     fn op5(&mut self) {
         let pos1 = self.get_pos(1);
         let pos2 = self.get_pos(2);
-        self.i = if self.get_val(pos1) == 1 {
+        self.i = if self.get_val(pos1) != 0 {
             self.get_val(pos2) as usize
         } else {
             self.i + 3
@@ -148,10 +151,73 @@ impl IntCode {
     }
 }
 
+struct Game {
+    score: i64,
+    screen: Vec<Vec<u8>>,
+    paddle: usize,
+    ball: usize,
+}
+
+impl Game {
+    fn new(out: &Vec<i64>) -> Self {
+        let mut xsize = 0;
+        let mut ysize = 0;
+        for i in 0..out.len() / 3 {
+            if out[i * 3] >= 0 && out[i * 3 + 1] >= 0 {
+                xsize = std::cmp::max(xsize, out[i * 3 + 0] as usize + 1);
+                ysize = std::cmp::max(ysize, out[i * 3 + 1] as usize + 1);
+            }
+        }
+        let mut game = Game {
+            score: 0,
+            screen: vec![vec![0; xsize]; ysize],
+            paddle: 0,
+            ball: 0,
+        };
+        game.update(out);
+        return game;
+    }
+    fn update(&mut self, out: &Vec<i64>) {
+        // println!("{:?}", out);
+        for i in 0..out.len() / 3 {
+            if out[i * 3] == -1 && out[i * 3 + 1] == 0 {
+                self.score = out[i * 3 + 2];
+                continue;
+            }
+            let x = out[i * 3 + 0] as usize;
+            let y = out[i * 3 + 1] as usize;
+            self.screen[y][x] = out[i * 3 + 2] as u8;
+            match out[i * 3 + 2] {
+                3 => self.paddle = x,
+                4 => self.ball = x,
+                _ => {}
+            }
+        }
+    }
+    // fn render(&self) {
+    //     print!("\x1bc");
+    //     println!("Score: {}", self.score);
+    //     // frame += 1;
+    //     for row in self.screen.iter() {
+    //         let mut s = String::new();
+    //         for v in row.iter() {
+    //             s.push_str(match *v {
+    //                 0 => "  ",
+    //                 1 => "XX",
+    //                 2 => "[]",
+    //                 3 => "--",
+    //                 4 => "()",
+    //                 _ => "  ",
+    //             });
+    //         }
+    //         println!("{}", s);
+    //     }
+    // }
+}
+
 fn solve1(codes: Vec<i64>) -> i32 {
     let mut computer = IntCode::new(codes);
     computer.run();
-
     let mut answer = 0;
     for i in 0..computer.outputs.len() / 3 {
         if computer.outputs[i * 3 + 2] == 2 {
@@ -161,11 +227,36 @@ fn solve1(codes: Vec<i64>) -> i32 {
     return answer;
 }
 
+fn solve2(codes: Vec<i64>) -> i64 {
+    let mut codes = codes;
+    codes[0] = 2;
+    let mut computer = IntCode::new(codes);
+    computer.run();
+    let mut game = Game::new(&computer.outputs);
+    computer.outputs.clear();
+    // game.render();
+    while computer.codes[&computer.i] != 99 {
+        // sleep(Duration::from_millis(60));
+        // game.render();
+        computer.inputs.push(match game.paddle.cmp(&game.ball) {
+            Ordering::Equal => 0,
+            Ordering::Less => 1,
+            Ordering::Greater => -1,
+        });
+        computer.run();
+        game.update(&computer.outputs);
+        computer.outputs.clear();
+    }
+    return game.score;
+}
+
 fn main() {
     let mut buf = String::new();
     stdin().read_line(&mut buf).ok();
     let codes: Vec<i64> = buf.split(",").map(|s| s.trim().parse().unwrap()).collect();
 
-    let answer = solve1(codes.clone());
-    println!("{}", answer);
+    let answer1 = solve1(codes.clone());
+    println!("{}", answer1);
+    let answer2 = solve2(codes.clone());
+    println!("{}", answer2);
 }
