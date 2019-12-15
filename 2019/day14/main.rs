@@ -1,11 +1,74 @@
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::io::stdin;
 
-struct Solution {}
+struct Solution {
+    hs: HashMap<String, (u64, Vec<(u64, String)>)>,
+}
 
 impl Solution {
-    fn solve1(inputs: Vec<String>) -> i32 {
-        let mut hs: HashMap<&str, (usize, Vec<(usize, &str)>)> = HashMap::new();
+    fn solve1(&self) -> u64 {
+        return self.need_for(1);
+    }
+    fn solve2(&self) -> u64 {
+        let trillion = 1_000_000_000_000_u64;
+        let (mut l, mut r) = (0, trillion);
+        while r - l > 1 {
+            let m = (l + r) / 2;
+            match self.need_for(m).cmp(&trillion) {
+                Ordering::Less => l = m,
+                Ordering::Greater => r = m,
+                Ordering::Equal => break,
+            };
+        }
+        return l;
+    }
+    fn need_for(&self, target_amount: u64) -> u64 {
+        let mut need: HashMap<String, u64> = HashMap::new();
+        let mut surplus: HashMap<String, u64> = HashMap::new();
+        need.insert("FUEL".to_string(), target_amount);
+        loop {
+            let target = if let Some(key) = need.keys().find(|p| self.hs[*p].1[0].1 != "ORE") {
+                key.to_string()
+            } else {
+                break;
+            };
+            let mut amount = need[&target];
+            if let Some(e) = surplus.get_mut(&target) {
+                let d = std::cmp::min(amount, *e);
+                amount -= d;
+                *e -= d;
+            }
+            need.remove(&target);
+            if amount > 0 {
+                if let Some(reaction) = self.hs.get(&target) {
+                    let n = (amount - 1) / reaction.0 + 1;
+                    if reaction.0 * n > amount {
+                        if let Some(e) = surplus.get_mut(&target) {
+                            *e += reaction.0 * n - amount;
+                        } else {
+                            surplus.insert(target, reaction.0 * n - amount);
+                        }
+                    }
+                    for material in reaction.1.iter() {
+                        if let Some(amount) = need.get_mut(&material.1) {
+                            *amount += material.0 * n;
+                        } else {
+                            need.insert(material.1.to_string(), material.0 * n);
+                        }
+                    }
+                }
+            }
+        }
+        let mut ret = 0;
+        for (chemical, amount) in need {
+            let n = (amount as u64 - 1) / self.hs[&chemical].0 + 1;
+            ret += self.hs[&chemical].1[0].0 * n;
+        }
+        return ret;
+    }
+    fn new(inputs: Vec<String>) -> Self {
+        let mut hs: HashMap<String, (u64, Vec<(u64, String)>)> = HashMap::new();
         for input in inputs.iter() {
             let parsed: Vec<Vec<Vec<&str>>> = input
                 .trim()
@@ -17,56 +80,15 @@ impl Solution {
                         .collect::<Vec<Vec<&str>>>()
                 })
                 .collect();
-            let amount = parsed[1][0][0].parse::<usize>().ok().unwrap();
+            let amount = parsed[1][0][0].parse::<u64>().ok().unwrap();
             let target = parsed[1][0][1];
             let materials = parsed[0]
                 .iter()
-                .map(|e| (e[0].parse::<usize>().ok().unwrap(), e[1]))
+                .map(|e| (e[0].parse::<u64>().ok().unwrap(), e[1].to_string()))
                 .collect();
-            hs.insert(target, (amount, materials));
+            hs.insert(target.to_string(), (amount, materials));
         }
-        let mut need: HashMap<&str, usize> = HashMap::new();
-        let mut surplus: HashMap<&str, usize> = HashMap::new();
-        need.insert("FUEL", 1);
-        loop {
-            let target = if let Some(key) = need.keys().find(|p| hs[*p].1[0].1 != "ORE") {
-                key.clone()
-            } else {
-                break;
-            };
-            let mut amount = need[target];
-            if let Some(e) = surplus.get_mut(target) {
-                let d = std::cmp::min(amount, *e);
-                amount -= d;
-                *e -= d;
-            }
-            need.remove(target);
-            if amount > 0 {
-                if let Some(reaction) = hs.get(target) {
-                    let n = (amount - 1) / reaction.0 + 1;
-                    if reaction.0 * n > amount {
-                        if let Some(e) = surplus.get_mut(target) {
-                            *e += reaction.0 * n - amount;
-                        } else {
-                            surplus.insert(target, reaction.0 * n - amount);
-                        }
-                    }
-                    for material in reaction.1.iter() {
-                        if let Some(amount) = need.get_mut(material.1) {
-                            *amount += material.0 * n;
-                        } else {
-                            need.insert(material.1, material.0 * n);
-                        }
-                    }
-                }
-            }
-        }
-        let mut answer = 0;
-        for (chemical, amount) in need {
-            let n = (amount - 1) / hs[chemical].0 + 1;
-            answer += hs[chemical].1[0].0 * n;
-        }
-        return answer as i32;
+        return Solution { hs };
     }
 }
 
@@ -81,8 +103,9 @@ fn main() {
         }
         inputs.push(buf.trim().to_string());
     }
-    let answer1 = Solution::solve1(inputs.clone());
-    println!("{}", answer1);
+    let solution = Solution::new(inputs);
+    println!("{}", solution.solve1());
+    println!("{}", solution.solve2());
 }
 
 #[cfg(test)]
@@ -99,12 +122,14 @@ mod tests {
 7 A, 1 D => 1 E
 7 A, 1 E => 1 FUEL
 ";
-        let inputs: Vec<String> = input
-            .split('\n')
-            .filter(|s| s.len() > 0)
-            .map(|s| s.to_string())
-            .collect();
-        assert_eq!(31, Solution::solve1(inputs));
+        let solution = Solution::new(
+            input
+                .split('\n')
+                .filter(|s| s.len() > 0)
+                .map(|s| s.to_string())
+                .collect(),
+        );
+        assert_eq!(31, solution.solve1());
     }
 
     #[test]
@@ -118,12 +143,14 @@ mod tests {
 4 C, 1 A => 1 CA
 2 AB, 3 BC, 4 CA => 1 FUEL
 ";
-        let inputs: Vec<String> = input
-            .split('\n')
-            .filter(|s| s.len() > 0)
-            .map(|s| s.to_string())
-            .collect();
-        assert_eq!(165, Solution::solve1(inputs));
+        let solution = Solution::new(
+            input
+                .split('\n')
+                .filter(|s| s.len() > 0)
+                .map(|s| s.to_string())
+                .collect(),
+        );
+        assert_eq!(165, solution.solve1());
     }
 
     #[test]
@@ -139,12 +166,15 @@ mod tests {
 165 ORE => 2 GPVTF
 3 DCFZ, 7 NZVS, 5 HKGWZ, 10 PSHF => 8 KHKGT
 ";
-        let inputs: Vec<String> = input
-            .split('\n')
-            .filter(|s| s.len() > 0)
-            .map(|s| s.to_string())
-            .collect();
-        assert_eq!(13312, Solution::solve1(inputs));
+        let solution = Solution::new(
+            input
+                .split('\n')
+                .filter(|s| s.len() > 0)
+                .map(|s| s.to_string())
+                .collect(),
+        );
+        assert_eq!(13312, solution.solve1());
+        assert_eq!(82892753, solution.solve2());
     }
 
     #[test]
@@ -163,12 +193,15 @@ mod tests {
 1 VJHF, 6 MNCFX => 4 RFSQX
 176 ORE => 6 VJHF
 ";
-        let inputs: Vec<String> = input
-            .split('\n')
-            .filter(|s| s.len() > 0)
-            .map(|s| s.to_string())
-            .collect();
-        assert_eq!(180697, Solution::solve1(inputs));
+        let solution = Solution::new(
+            input
+                .split('\n')
+                .filter(|s| s.len() > 0)
+                .map(|s| s.to_string())
+                .collect(),
+        );
+        assert_eq!(180697, solution.solve1());
+        assert_eq!(5586022, solution.solve2());
     }
 
     #[test]
@@ -192,11 +225,14 @@ mod tests {
 7 XCVML => 6 RJRHP
 5 BHXH, 4 VRPVC => 5 LTCX
 ";
-        let inputs: Vec<String> = input
-            .split('\n')
-            .filter(|s| s.len() > 0)
-            .map(|s| s.to_string())
-            .collect();
-        assert_eq!(2210736, Solution::solve1(inputs));
+        let solution = Solution::new(
+            input
+                .split('\n')
+                .filter(|s| s.len() > 0)
+                .map(|s| s.to_string())
+                .collect(),
+        );
+        assert_eq!(2210736, solution.solve1());
+        assert_eq!(460664, solution.solve2());
     }
 }
