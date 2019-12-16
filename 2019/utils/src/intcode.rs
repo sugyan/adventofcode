@@ -9,6 +9,13 @@ pub struct IntCode {
 }
 
 impl IntCode {
+    pub fn from(input: String) -> Self {
+        let codes: Vec<i64> = input
+            .split(",")
+            .map(|s| s.trim().parse().unwrap())
+            .collect();
+        return IntCode::new(codes);
+    }
     pub fn new(v: Vec<i64>) -> IntCode {
         let mut codes: HashMap<usize, i64> = HashMap::new();
         for (i, code) in (0..).zip(v) {
