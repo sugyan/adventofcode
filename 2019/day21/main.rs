@@ -16,7 +16,6 @@ impl Solution {
     }
     pub fn solve1(&self) -> i32 {
         let mut computer = IntCode::new(self.codes.clone());
-
         let script = "
 NOT A T
 OR T J
@@ -41,6 +40,38 @@ AND T J
         let outputs = computer.run(inputs);
         return *outputs.last().unwrap() as i32;
     }
+    pub fn solve2(&self) -> i32 {
+        let mut computer = IntCode::new(self.codes.clone());
+        let script = "
+NOT E T
+NOT T J
+AND I J
+OR H J
+NOT F T
+NOT T T
+AND E T
+OR T J
+AND D J
+NOT A T
+NOT T T
+AND B T
+AND C T
+NOT T T
+AND T J
+        ";
+        let mut lines: Vec<String> = script
+            .split('\n')
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect();
+        lines.push("RUN".to_string());
+        let inputs: Vec<i64> = (lines.join("\n") + "\n")
+            .chars()
+            .map(|c| c as i64)
+            .collect();
+        let outputs = computer.run(inputs);
+        return *outputs.last().unwrap() as i32;
+    }
 }
 
 fn main() {
@@ -49,4 +80,5 @@ fn main() {
 
     let solution = Solution::new(buf);
     println!("{}", solution.solve1());
+    println!("{}", solution.solve2());
 }
