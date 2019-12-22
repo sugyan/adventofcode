@@ -1,48 +1,74 @@
 use std::io::stdin;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 enum Shuffle {
     DealIntoNewStack(),
-    CutCards(i32),
-    DealWithIncrement(i32),
+    CutCards(i64),
+    DealWithIncrement(i64),
 }
 
-fn apply(deck: &mut Vec<i32>, shuffles: Vec<Shuffle>) {
-    for shuffle in shuffles.iter() {
-        match shuffle {
-            Shuffle::DealIntoNewStack() => {
-                deck.reverse();
-            }
-            Shuffle::CutCards(n) => {
-                let v = deck.clone();
-                let n = ((v.len() as i32 + *n) as usize) % v.len();
-                unsafe {
-                    std::ptr::copy(v.as_ptr(), deck.as_mut_ptr().add(v.len() - n), n);
-                    std::ptr::copy(v.as_ptr().add(n), deck.as_mut_ptr(), v.len() - n);
-                }
-            }
-            Shuffle::DealWithIncrement(n) => {
-                let size = deck.len();
-                let v = deck.clone();
-                for (i, e) in (0..).zip(v) {
-                    deck[(i * *n as usize) % size] = e;
-                }
-            }
+fn apply(deck: &mut Vec<i64>, shuffles: Vec<Shuffle>) {
+    let (off, inc) = calc_matrix(shuffles, deck.len() as i64);
+    for i in 0..deck.len() {
+        let mut n = (off + inc * i as i64) % deck.len() as i64;
+        if n < 0 {
+            n += deck.len() as i64;
         }
+        deck[i] = n;
     }
 }
 
-struct Solution {}
+fn inv(n: i64, size: i64) -> i64 {
+    if size <= 10 {
+        for i in 1.. {
+            if (n * i) % size == 1 {
+                return i;
+            }
+        }
+    }
+    let mut n = n;
+    let mut m = size - 2;
+    let mut ret = 1;
+    while m > 0 {
+        if m & 1 == 1 {
+            ret = (ret * n) % size;
+        }
+        n = (n * n) % size;
+        m >>= 1;
+    }
+    return ret;
+}
+
+fn calc_matrix(shuffles: Vec<Shuffle>, size: i64) -> (i64, i64) {
+    let (mut off, mut inc) = (0, 1);
+    for shuffle in shuffles.iter() {
+        match shuffle {
+            Shuffle::DealIntoNewStack() => {
+                inc *= -1;
+                off += inc;
+            }
+            Shuffle::CutCards(n) => off += inc * n,
+            Shuffle::DealWithIncrement(n) => inc *= inv(*n, size),
+        }
+        off = off % size;
+        inc = inc % size;
+    }
+    return (off, inc);
+}
+
+struct Solution {
+    shuffles: Vec<Shuffle>,
+}
 
 impl Solution {
-    fn solve1(&self, inputs: Vec<String>) -> i32 {
+    fn new(inputs: Vec<String>) -> Solution {
         let shuffles: Vec<Shuffle> = inputs
             .iter()
             .map(|input| {
                 if input.as_str() == "deal into new stack" {
                     Shuffle::DealIntoNewStack()
                 } else {
-                    let n: i32 = input.split(' ').last().unwrap().parse().unwrap();
+                    let n: i64 = input.split(' ').last().unwrap().parse().unwrap();
                     if input.starts_with("deal with increment") {
                         Shuffle::DealWithIncrement(n)
                     } else {
@@ -51,8 +77,11 @@ impl Solution {
                 }
             })
             .collect();
-        let mut deck: Vec<i32> = (0..10007).collect();
-        apply(&mut deck, shuffles);
+        return Solution { shuffles };
+    }
+    fn solve1(&self) -> i32 {
+        let mut deck: Vec<i64> = (0..10007).collect();
+        apply(&mut deck, self.shuffles.clone());
         return deck.iter().position(|card| *card == 2019).unwrap() as i32;
     }
 }
@@ -67,8 +96,8 @@ fn main() {
         }
         inputs.push(buf.trim().to_string());
     }
-    let solution = Solution {};
-    println!("{}", solution.solve1(inputs));
+    let solution = Solution::new(inputs);
+    println!("{}", solution.solve1());
 }
 
 #[cfg(test)]
@@ -77,7 +106,7 @@ mod tests {
 
     #[test]
     fn example_1() {
-        let mut deck: Vec<i32> = (0..10).collect();
+        let mut deck: Vec<i64> = (0..10).collect();
         apply(
             &mut deck,
             vec![
@@ -91,7 +120,7 @@ mod tests {
 
     #[test]
     fn example_2() {
-        let mut deck: Vec<i32> = (0..10).collect();
+        let mut deck: Vec<i64> = (0..10).collect();
         apply(
             &mut deck,
             vec![
@@ -105,7 +134,7 @@ mod tests {
 
     #[test]
     fn example_3() {
-        let mut deck: Vec<i32> = (0..10).collect();
+        let mut deck: Vec<i64> = (0..10).collect();
         apply(
             &mut deck,
             vec![
@@ -119,7 +148,7 @@ mod tests {
 
     #[test]
     fn example_4() {
-        let mut deck: Vec<i32> = (0..10).collect();
+        let mut deck: Vec<i64> = (0..10).collect();
         apply(
             &mut deck,
             vec![
