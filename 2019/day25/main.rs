@@ -15,6 +15,11 @@ impl Solution {
         return Solution { codes };
     }
     fn solve1(&self) {
+        // MEMO:
+        // - space law space brochure
+        // - astrolabe
+        // - antenna
+        // - weather machine
         let mut droid = IntCode::new(self.codes.clone());
         let mut inputs: Vec<i64> = Vec::new();
         loop {
@@ -38,6 +43,6 @@ impl Solution {
 fn main() {
     if let Ok(s) = read_to_string("input.txt") {
         let solution = Solution::new(s);
-        println!("{}", solution.solve1());
+        solution.solve1();
     }
 }
