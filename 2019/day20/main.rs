@@ -11,23 +11,8 @@ impl Solution {
             inputs: input.iter().map(|s| s.chars().collect()).collect(),
         };
     }
-    fn solve1(&self) -> i32 {
+    fn solve1(&self) -> usize {
         let mut portals: HashMap<(usize, usize), String> = HashMap::new();
-        let h = self.inputs.len() - 4;
-        let w = self.inputs[0].len() - 4;
-        let mut field: Vec<Vec<char>> = self
-            .inputs
-            .iter()
-            .skip(2)
-            .take(h)
-            .map(|s| {
-                s.iter()
-                    .skip(2)
-                    .take(w)
-                    .map(|c| if c.is_alphabetic() { ' ' } else { *c })
-                    .collect()
-            })
-            .collect();
         for i in 0..self.inputs.len() {
             for j in 0..self.inputs[i].len() {
                 if self.inputs[i][j].is_alphabetic() {
@@ -36,9 +21,9 @@ impl Solution {
                             .iter()
                             .collect::<String>();
                         if i > 1 && self.inputs[i - 2][j] == '.' {
-                            portals.insert((i - 4, j - 2), portal);
+                            portals.insert((i - 2, j), portal);
                         } else {
-                            portals.insert((i - 1, j - 2), portal);
+                            portals.insert((i + 1, j), portal);
                         }
                     }
                     if j > 0 && self.inputs[i][j - 1].is_alphabetic() {
@@ -46,9 +31,9 @@ impl Solution {
                             .iter()
                             .collect::<String>();
                         if j > 1 && self.inputs[i][j - 2] == '.' {
-                            portals.insert((i - 2, j - 4), portal);
+                            portals.insert((i, j - 2), portal);
                         } else {
-                            portals.insert((i - 2, j - 1), portal);
+                            portals.insert((i, j + 1), portal);
                         }
                     };
                 }
@@ -73,16 +58,16 @@ impl Solution {
                             }
                         }
                     }
-                    if p.0 > 0 && field[p.0 - 1][p.1] == '.' {
+                    if p.0 > 0 && self.inputs[p.0 - 1][p.1] == '.' {
                         v.push((p.0 - 1, p.1));
                     }
-                    if p.1 > 0 && field[p.0][p.1 - 1] == '.' {
+                    if p.1 > 0 && self.inputs[p.0][p.1 - 1] == '.' {
                         v.push((p.0, p.1 - 1));
                     }
-                    if p.0 < h - 1 && field[p.0 + 1][p.1] == '.' {
+                    if p.0 < self.inputs.len() - 1 && self.inputs[p.0 + 1][p.1] == '.' {
                         v.push((p.0 + 1, p.1));
                     }
-                    if p.1 < w - 1 && field[p.0][p.1 + 1] == '.' {
+                    if p.1 < self.inputs[0].len() - 1 && self.inputs[p.0][p.1 + 1] == '.' {
                         v.push((p.0, p.1 + 1));
                     }
                     for pos in v {
@@ -95,8 +80,38 @@ impl Solution {
                 q.pop_front();
             }
         }
-        println!("{:?}", dmap);
-        return 42;
+        let mut hm: HashMap<String, usize> = HashMap::new();
+        hm.insert("AA".to_string(), 0);
+        loop {
+            let mut candidates: HashMap<String, usize> = HashMap::new();
+            for (k, d) in hm.iter() {
+                if let Some(v) = dmap.get(k) {
+                    for e in v {
+                        let d = d + e.1 + if *d == 0 { 0 } else { 1 };
+                        if hm.contains_key(&e.0) {
+                            continue;
+                        }
+                        if let Some(min) = candidates.get_mut(&e.0) {
+                            *min = std::cmp::min(*min, d);
+                        } else {
+                            candidates.insert(e.0.to_string(), d);
+                        }
+                    }
+                }
+            }
+            if candidates.is_empty() {
+                break;
+            }
+            let (mut minkey, mut minval) = (String::new(), std::usize::MAX);
+            for (k, v) in candidates.iter() {
+                if *v < minval {
+                    minkey = k.to_string();
+                    minval = *v;
+                }
+            }
+            hm.insert(minkey, minval);
+        }
+        return *hm.get("ZZ").unwrap();
     }
 }
 
@@ -110,9 +125,7 @@ fn main() {
         }
         lines.push(buf.trim_end_matches('\n').to_string());
     }
-    for line in lines.iter() {
-        println!("{}", line);
-    }
+    println!("{}", Solution::new(lines).solve1());
 }
 
 #[cfg(test)]
@@ -147,5 +160,53 @@ FG..#########.....#
         .map(|s| s.to_string())
         .collect();
         assert_eq!(23, Solution::new(input).solve1());
+    }
+
+    #[test]
+    fn example_2() {
+        let input: Vec<String> = "
+                   A               
+                   A               
+  #################.#############  
+  #.#...#...................#.#.#  
+  #.#.#.###.###.###.#########.#.#  
+  #.#.#.......#...#.....#.#.#...#  
+  #.#########.###.#####.#.#.###.#  
+  #.............#.#.....#.......#  
+  ###.###########.###.#####.#.#.#  
+  #.....#        A   C    #.#.#.#  
+  #######        S   P    #####.#  
+  #.#...#                 #......VT
+  #.#.#.#                 #.#####  
+  #...#.#               YN....#.#  
+  #.###.#                 #####.#  
+DI....#.#                 #.....#  
+  #####.#                 #.###.#  
+ZZ......#               QG....#..AS
+  ###.###                 #######  
+JO..#.#.#                 #.....#  
+  #.#.#.#                 ###.#.#  
+  #...#..DI             BU....#..LF
+  #####.#                 #.#####  
+YN......#               VT..#....QG
+  #.###.#                 #.###.#  
+  #.#...#                 #.....#  
+  ###.###    J L     J    #.#.###  
+  #.....#    O F     P    #.#...#  
+  #.###.#####.#.#####.#####.###.#  
+  #...#.#.#...#.....#.....#.#...#  
+  #.#####.###.###.#.#.#########.#  
+  #...#.#.....#...#.#.#.#.....#.#  
+  #.###.#####.###.###.#.#.#######  
+  #.#.........#...#.............#  
+  #########.###.###.#############  
+           B   J   C               
+           U   P   P               
+"
+        .split('\n')
+        .filter(|s| !s.trim().is_empty())
+        .map(|s| s.to_string())
+        .collect();
+        assert_eq!(58, Solution::new(input).solve1());
     }
 }
