@@ -1,91 +1,62 @@
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::io::stdin;
 
 struct Solution {
-    inputs: Vec<Vec<char>>,
+    inputs: RefCell<Vec<Vec<char>>>,
 }
 
 impl Solution {
     pub fn new(input: Vec<String>) -> Solution {
         return Solution {
-            inputs: input.iter().map(|s| s.chars().collect()).collect(),
+            inputs: RefCell::new(input.iter().map(|s| s.chars().collect()).collect()),
         };
     }
     fn solve1(&self) -> usize {
-        let dm: HashMap<char, Vec<(char, usize, u32)>> = self.calc_distances();
-        let mut keys: Vec<&char> = dm.keys().filter(|k| k.is_lowercase()).collect();
-        keys.sort();
-        let mut hm: HashMap<char, HashMap<u32, usize>> = HashMap::new();
-        let mut m: HashMap<u32, usize> = HashMap::new();
-        m.insert(0, 0);
-        hm.insert('@', m);
-        for i in 0.. {
-            let mut v: Vec<(char, u32, usize)> = Vec::new();
-            for (src, m) in hm.iter() {
-                for (ksrc, dist) in m.iter() {
-                    let (mut count, mut k) = (0, *ksrc);
-                    while k > 0 {
-                        if k & 1 != 0 {
-                            count += 1;
-                        }
-                        k >>= 1;
-                    }
-                    if count != i {
-                        continue;
-                    }
-                    for (dst, d, kdst) in dm.get(src).unwrap().iter() {
-                        if !dst.is_lowercase() {
+        let dm: HashMap<char, Vec<(char, usize, u32)>> = Solution::calc_map(&self.inputs.borrow());
+        let target: u32 = (1 << dm.keys().filter(|c| c.is_alphabetic()).count()) - 1;
+        let mut hm: HashMap<u32, HashMap<char, usize>> = HashMap::new();
+        let mut m: HashMap<char, usize> = HashMap::new();
+        m.insert('@', 0);
+        hm.insert(0, m);
+        loop {
+            let mut next: HashMap<u32, HashMap<char, usize>> = HashMap::new();
+            for (k, values) in hm.iter() {
+                for (src, min) in values.iter() {
+                    for (dst, d, keys) in dm.get(src).unwrap().iter() {
+                        if keys & k != *keys {
                             continue;
                         }
-                        if kdst & ksrc != *kdst {
+                        let key = k | (1 << (*dst as u8 - 'a' as u8) as usize);
+                        if key == *k {
                             continue;
                         }
-                        let mut key = *ksrc;
-                        let idx = keys.iter().position(|&k| *k == dst.to_ascii_lowercase());
-                        if let Some(idx) = idx {
-                            if ksrc & (1 << idx) != 0 {
-                                continue;
+                        if let Some(m) = next.get_mut(&key) {
+                            if let Some(e) = m.get_mut(dst) {
+                                *e = std::cmp::min(*e, min + d);
+                            } else {
+                                m.insert(*dst, min + d);
                             }
-                            key |= 1 << idx;
+                        } else {
+                            let mut m: HashMap<char, usize> = HashMap::new();
+                            m.insert(*dst, min + d);
+                            next.insert(key, m);
                         }
-                        v.push((*dst, key, dist + *d));
                     }
                 }
             }
-            for (dst, k, d) in v.iter() {
-                if let Some(m) = hm.get_mut(&dst) {
-                    if let Some(e) = m.get_mut(k) {
-                        *e = std::cmp::min(*e, *d);
-                    } else {
-                        m.insert(*k, *d);
-                    }
-                } else {
-                    let mut m: HashMap<u32, usize> = HashMap::new();
-                    m.insert(*k, *d);
-                    hm.insert(*dst, m);
-                }
-            }
-
-            let mut all: Vec<usize> = Vec::new();
-            for v in hm.values() {
-                for (key, val) in v.iter() {
-                    if key + 1 == 1 << keys.len() {
-                        all.push(*val);
-                    }
-                }
-            }
-            if let Some(answer) = all.iter().min() {
-                return *answer;
+            hm = next;
+            if let Some(v) = hm.get(&target) {
+                return *v.values().min().unwrap();
             }
         }
-        return 0;
     }
-    fn calc_distances(&self) -> HashMap<char, Vec<(char, usize, u32)>> {
+    fn calc_map(inputs: &Vec<Vec<char>>) -> HashMap<char, Vec<(char, usize, u32)>> {
         let mut points: HashMap<(usize, usize), char> = HashMap::new();
-        for i in 0..self.inputs.len() {
-            for j in 0..self.inputs[0].len() {
-                match self.inputs[i][j] {
-                    '#' | '.' => {}
+        for i in 0..inputs.len() {
+            for j in 0..inputs[0].len() {
+                match inputs[i][j] {
+                    '#' | '.' | 'A'..='Z' => {}
                     c => {
                         points.insert((i, j), c);
                     }
@@ -103,33 +74,31 @@ impl Solution {
             while let Some(front) = q.front() {
                 let (p, d, k) = *front;
                 let mut v: Vec<(usize, usize)> = Vec::new();
-                if self.inputs[p.0 - 1][p.1] != '#' {
+                if inputs[p.0 - 1][p.1] != '#' {
                     v.push((p.0 - 1, p.1));
                 }
-                if self.inputs[p.0][p.1 - 1] != '#' {
+                if inputs[p.0][p.1 - 1] != '#' {
                     v.push((p.0, p.1 - 1));
                 }
-                if self.inputs[p.0 + 1][p.1] != '#' {
+                if inputs[p.0 + 1][p.1] != '#' {
                     v.push((p.0 + 1, p.1));
                 }
-                if self.inputs[p.0][p.1 + 1] != '#' {
+                if inputs[p.0][p.1 + 1] != '#' {
                     v.push((p.0, p.1 + 1));
                 }
                 for p in v {
                     if !hs.contains(&p) {
                         let mut k = k;
-                        let c = self.inputs[p.0][p.1];
+                        let c = inputs[p.0][p.1];
                         if c.is_alphabetic() {
-                            if let Some(dst) = ret.get_mut(src) {
-                                dst.push((c, d + 1, k));
-                            } else {
-                                ret.insert(*src, vec![(c, d + 1, k)]);
-                            }
-                            if c.is_uppercase() {
-                                let idx = keys.iter().position(|&k| *k == c.to_ascii_lowercase());
-                                if let Some(idx) = idx {
-                                    k |= 1 << idx;
+                            if c.is_lowercase() {
+                                if let Some(dst) = ret.get_mut(src) {
+                                    dst.push((c, d + 1, k));
+                                } else {
+                                    ret.insert(*src, vec![(c, d + 1, k)]);
                                 }
+                            } else {
+                                k |= 1 << (c as u8 - 'A' as u8) as usize;
                             }
                         }
                         q.push_back((p, d + 1, k));
