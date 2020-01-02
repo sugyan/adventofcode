@@ -1,5 +1,5 @@
 [package]
-name = "day01-2"
+name = "day01"
 version = "0.1.0"
 authors = ["sugyan <sugi1982@gmail.com>"]
 edition = "2018"
@@ -9,5 +9,5 @@ edition = "2018"
 [dependencies]
 
 [[bin]]
-name = "day01-2"
+name = "day01"
 path = "main.rs"
