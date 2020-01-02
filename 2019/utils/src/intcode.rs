@@ -150,7 +150,7 @@ impl IntCode {
             }
         };
     }
-    fn get_val(&self, pos: usize) -> i64 {
+    pub fn get_val(&self, pos: usize) -> i64 {
         return match self.codes.get(&pos) {
             Some(v) => *v,
             None => 0,
