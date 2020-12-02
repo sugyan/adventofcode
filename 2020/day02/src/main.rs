@@ -11,16 +11,35 @@ impl Solution {
     }
     fn solve_1(&self) -> usize {
         let mut ret = 0;
-        if let Ok(re) = Regex::new(r"^(\d+)\-(\d+) (.): (.+)$") {
-            for input in self.inputs.iter() {
-                for cap in re.captures_iter(input) {
-                    let min = cap[1].parse::<usize>().unwrap();
-                    let max = cap[2].parse::<usize>().unwrap();
-                    let chr = cap[3].chars().next().unwrap();
-                    let appear = cap[4].chars().filter(|&c| c == chr).count();
-                    if min <= appear && appear <= max {
-                        ret += 1;
-                    }
+        let re = Regex::new(r"^(\d+)\-(\d+) (.): (.+)$").unwrap();
+        for input in self.inputs.iter() {
+            for cap in re.captures_iter(input) {
+                let min = cap[1].parse::<usize>().unwrap();
+                let max = cap[2].parse::<usize>().unwrap();
+                let chr = cap[3].chars().next().unwrap();
+                let appear = cap[4].chars().filter(|&c| c == chr).count();
+                if min <= appear && appear <= max {
+                    ret += 1;
+                }
+            }
+        }
+
+        ret
+    }
+    fn solve_2(&self) -> usize {
+        let mut ret = 0;
+        let re = Regex::new(r"^(\d+)\-(\d+) (.): (.+)$").unwrap();
+        for input in self.inputs.iter() {
+            for cap in re.captures_iter(input) {
+                let pos1 = cap[1].parse::<usize>().unwrap();
+                let pos2 = cap[2].parse::<usize>().unwrap();
+                let chr = cap[3].chars().next().unwrap();
+                match (
+                    cap[4].chars().nth(pos1 - 1) == Some(chr),
+                    cap[4].chars().nth(pos2 - 1) == Some(chr),
+                ) {
+                    (true, false) | (false, true) => ret += 1,
+                    (_, _) => {}
                 }
             }
         }
@@ -35,6 +54,7 @@ fn main() {
         .collect();
     let solution = Solution::new(inputs);
     println!("{}", solution.solve_1());
+    println!("{}", solution.solve_2());
 }
 
 #[cfg(test)]
@@ -51,6 +71,19 @@ mod tests {
                 String::from("2-9 c: ccccccccc")
             ])
             .solve_1()
+        )
+    }
+
+    #[test]
+    fn example_2() {
+        assert_eq!(
+            1,
+            Solution::new(vec![
+                String::from("1-3 a: abcde"),
+                String::from("1-3 b: cdefg"),
+                String::from("2-9 c: ccccccccc")
+            ])
+            .solve_2()
         )
     }
 }
