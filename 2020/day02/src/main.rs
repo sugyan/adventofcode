@@ -3,17 +3,20 @@ use std::io::{BufRead, BufReader};
 
 struct Solution {
     inputs: Vec<String>,
+    re: Regex,
 }
 
 impl Solution {
     fn new(inputs: Vec<String>) -> Self {
-        Self { inputs }
+        Self {
+            inputs,
+            re: Regex::new(r"^(\d+)\-(\d+) (.): (.+)$").unwrap(),
+        }
     }
     fn solve_1(&self) -> usize {
         let mut ret = 0;
-        let re = Regex::new(r"^(\d+)\-(\d+) (.): (.+)$").unwrap();
         for input in self.inputs.iter() {
-            for cap in re.captures_iter(input) {
+            for cap in self.re.captures_iter(input) {
                 let min = cap[1].parse::<usize>().unwrap();
                 let max = cap[2].parse::<usize>().unwrap();
                 let chr = cap[3].chars().next().unwrap();
@@ -28,9 +31,8 @@ impl Solution {
     }
     fn solve_2(&self) -> usize {
         let mut ret = 0;
-        let re = Regex::new(r"^(\d+)\-(\d+) (.): (.+)$").unwrap();
         for input in self.inputs.iter() {
-            for cap in re.captures_iter(input) {
+            for cap in self.re.captures_iter(input) {
                 let pos1 = cap[1].parse::<usize>().unwrap();
                 let pos2 = cap[2].parse::<usize>().unwrap();
                 let chr = cap[3].chars().next().unwrap();
