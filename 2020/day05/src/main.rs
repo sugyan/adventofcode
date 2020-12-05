@@ -1,25 +1,34 @@
 use std::io::{BufRead, BufReader};
 
 struct Solution {
-    inputs: Vec<String>,
+    seats: Vec<i32>,
 }
 
 impl Solution {
     fn new(inputs: Vec<String>) -> Self {
-        Self { inputs }
+        Self {
+            seats: inputs
+                .iter()
+                .map(|seat| {
+                    seat.chars()
+                        .rev()
+                        .enumerate()
+                        .map(|(i, c)| if matches!(c, 'B' | 'R') { 1 << i } else { 0 })
+                        .sum()
+                })
+                .collect(),
+        }
     }
     fn solve_1(&self) -> i32 {
-        self.inputs
-            .iter()
-            .map(|seat| {
-                seat.chars()
-                    .rev()
-                    .enumerate()
-                    .map(|(i, c)| if matches!(c, 'B' | 'R') { 1 << i } else { 0 })
-                    .sum()
-            })
-            .max()
-            .unwrap()
+        *self.seats.iter().max().unwrap()
+    }
+    fn solve_2(&self) -> i32 {
+        let offset = self.solve_1() as usize - self.seats.len();
+        let mut v = vec![false; self.seats.len() + 1];
+        for &seat in self.seats.iter() {
+            v[seat as usize - offset] = true;
+        }
+        (v.iter().position(|&b| !b).unwrap() + offset) as i32
     }
 }
 
@@ -31,6 +40,7 @@ fn main() {
             .collect(),
     );
     println!("{}", solution.solve_1());
+    println!("{}", solution.solve_2());
 }
 
 #[cfg(test)]
