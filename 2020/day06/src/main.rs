@@ -1,31 +1,43 @@
 use std::io::{BufRead, BufReader};
 
 struct Solution {
-    inputs: Vec<String>,
+    groups: Vec<Vec<u32>>,
 }
 
 impl Solution {
     fn new(inputs: Vec<String>) -> Self {
-        Self { inputs }
-    }
-    fn solve_1(&self) -> usize {
-        let mut ret = 0;
-        let mut d = [false; 26];
-        for line in self.inputs.iter().chain([String::new()].iter()) {
+        let mut groups: Vec<Vec<u32>> = Vec::new();
+        let mut v: Vec<u32> = Vec::new();
+        for line in inputs.iter().chain([String::new()].iter()) {
             if line.is_empty() {
-                for b in d.iter_mut() {
-                    if *b {
-                        ret += 1;
-                    }
-                    *b = false;
-                }
+                groups.push(v.clone());
+                v.clear();
             } else {
+                let mut n = 0;
                 for &b in line.as_bytes() {
-                    d[(b - b'a') as usize] = true;
+                    n |= 1 << (b - b'a') as usize;
                 }
+                v.push(n);
             }
         }
-        ret
+        Self { groups }
+    }
+    fn solve_1(&self) -> usize {
+        self.groups
+            .iter()
+            .map(|group| group.iter().fold(0, |acc, &x| acc | x).count_ones() as usize)
+            .sum()
+    }
+    fn solve_2(&self) -> usize {
+        self.groups
+            .iter()
+            .map(|group| {
+                group
+                    .iter()
+                    .fold((1 << 26) - 1, |acc, &x| acc & x)
+                    .count_ones() as usize
+            })
+            .sum()
     }
 }
 
@@ -37,6 +49,7 @@ fn main() {
             .collect(),
     );
     println!("{}", solution.solve_1());
+    println!("{}", solution.solve_2());
 }
 
 #[cfg(test)]
@@ -69,6 +82,35 @@ b"[1..]
                     .collect()
             )
             .solve_1()
+        );
+    }
+
+    #[test]
+    fn example_2() {
+        assert_eq!(
+            6,
+            Solution::new(
+                "
+abc
+
+a
+b
+c
+
+ab
+ac
+
+a
+a
+a
+a
+
+b"[1..]
+                    .split('\n')
+                    .map(|s| s.to_string())
+                    .collect()
+            )
+            .solve_2()
         );
     }
 }
