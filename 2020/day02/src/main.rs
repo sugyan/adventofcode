@@ -21,7 +21,7 @@ impl Solution {
                 let max = cap[2].parse::<usize>().unwrap();
                 let chr = cap[3].chars().next().unwrap();
                 let appear = cap[4].chars().filter(|&c| c == chr).count();
-                if min <= appear && appear <= max {
+                if (min..=max).contains(&appear) {
                     ret += 1;
                 }
             }
@@ -41,7 +41,7 @@ impl Solution {
                     cap[4].chars().nth(pos2 - 1) == Some(chr),
                 ) {
                     (true, false) | (false, true) => ret += 1,
-                    (_, _) => {}
+                    _ => {}
                 }
             }
         }
