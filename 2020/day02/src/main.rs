@@ -14,38 +14,41 @@ impl Solution {
         }
     }
     fn solve_1(&self) -> usize {
-        let mut ret = 0;
-        for input in self.inputs.iter() {
-            for cap in self.re.captures_iter(input) {
-                let min = cap[1].parse::<usize>().unwrap();
-                let max = cap[2].parse::<usize>().unwrap();
-                let chr = cap[3].chars().next().unwrap();
-                let appear = cap[4].chars().filter(|&c| c == chr).count();
-                if (min..=max).contains(&appear) {
-                    ret += 1;
+        self.inputs
+            .iter()
+            .filter(|&input| {
+                if let Some(cap) = self.re.captures(input) {
+                    let min = cap[1].parse::<usize>().unwrap();
+                    let max = cap[2].parse::<usize>().unwrap();
+                    let chr = cap[3].chars().next().unwrap();
+                    let appear = cap[4].chars().filter(|&c| c == chr).count();
+                    (min..=max).contains(&appear)
+                } else {
+                    false
                 }
-            }
-        }
-
-        ret
+            })
+            .count()
     }
     fn solve_2(&self) -> usize {
-        let mut ret = 0;
-        for input in self.inputs.iter() {
-            for cap in self.re.captures_iter(input) {
-                let pos1 = cap[1].parse::<usize>().unwrap();
-                let pos2 = cap[2].parse::<usize>().unwrap();
-                let chr = cap[3].chars().next().unwrap();
-                match (
-                    cap[4].chars().nth(pos1 - 1) == Some(chr),
-                    cap[4].chars().nth(pos2 - 1) == Some(chr),
-                ) {
-                    (true, false) | (false, true) => ret += 1,
-                    _ => {}
+        self.inputs
+            .iter()
+            .filter(|&input| {
+                if let Some(cap) = self.re.captures(input) {
+                    let pos1 = cap[1].parse::<usize>().unwrap();
+                    let pos2 = cap[2].parse::<usize>().unwrap();
+                    let chr = cap[3].chars().next().unwrap();
+                    matches!(
+                        (
+                            cap[4].chars().nth(pos1 - 1) == Some(chr),
+                            cap[4].chars().nth(pos2 - 1) == Some(chr),
+                        ),
+                        (true, false) | (false, true),
+                    )
+                } else {
+                    false
                 }
-            }
-        }
-        ret
+            })
+            .count()
     }
 }
 
