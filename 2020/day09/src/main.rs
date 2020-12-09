@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::io::{BufRead, BufReader};
 
 struct Solution {
@@ -10,15 +11,23 @@ impl Solution {
         Self { inputs, preamble }
     }
     fn solve_1(&self) -> u64 {
-        'numbers: for i in self.preamble..self.inputs.len() {
-            for j in i - self.preamble..i - 1 {
-                for k in j + 1..i {
-                    if self.inputs[j] + self.inputs[k] == self.inputs[i] {
-                        continue 'numbers;
+        let mut vd: VecDeque<&u64> = self.inputs.iter().take(self.preamble).collect();
+        let has_pair = |vd: &VecDeque<&u64>, target: u64| -> bool {
+            for &n1 in vd.iter() {
+                for &n2 in vd.iter() {
+                    if *n1 != *n2 && *n1 + *n2 == target {
+                        return true;
                     }
                 }
             }
-            return self.inputs[i];
+            false
+        };
+        for i in self.preamble..self.inputs.len() {
+            if !has_pair(&vd, self.inputs[i]) {
+                return self.inputs[i];
+            }
+            vd.pop_front();
+            vd.push_back(&self.inputs[i]);
         }
         0
     }
@@ -36,9 +45,9 @@ impl Solution {
             }
         }
         let (mut min, mut max) = (std::u64::MAX, std::u64::MIN);
-        for &n in self.inputs.iter().skip(l).take(r - l + 1) {
-            min = std::cmp::min(min, n);
-            max = std::cmp::max(max, n);
+        for i in l..=r {
+            min = std::cmp::min(min, self.inputs[i]);
+            max = std::cmp::max(max, self.inputs[i]);
         }
         min + max
     }
