@@ -20,9 +20,12 @@ impl Solution {
     }
     fn positions(&self, adjacent: bool) -> Vec<Vec<Vec<(usize, usize)>>> {
         let (r, c) = (self.layout.len(), self.layout[0].len());
-        let mut positions: Vec<Vec<Vec<(usize, usize)>>> = vec![vec![Vec::new(); c]; r];
+        let mut positions: Vec<Vec<Vec<(usize, usize)>>> = vec![vec![Vec::with_capacity(8); c]; r];
         for (i, row) in positions.iter_mut().enumerate() {
             for (j, col) in row.iter_mut().enumerate() {
+                if self.layout[i][j] == '.' {
+                    continue;
+                }
                 for &d in [
                     (-1, -1),
                     (-1, 0),
@@ -55,43 +58,54 @@ impl Solution {
         positions
     }
     fn simulate(&self, positions: &[Vec<Vec<(usize, usize)>>], threshold: usize) -> usize {
-        let (r, c) = (self.layout.len(), self.layout[0].len());
         let mut curr = self.layout.clone();
         loop {
-            let mut next = curr.clone();
-            for i in 0..r {
-                for j in 0..c {
-                    let occupied = positions[i][j]
-                        .iter()
-                        .filter(|&p| curr[p.0][p.1] == '#')
-                        .count();
-                    next[i][j] = match curr[i][j] {
-                        'L' => {
-                            if occupied == 0 {
-                                '#'
-                            } else {
-                                'L'
+            let mut changed = false;
+            let mut ret = 0;
+            curr = curr
+                .iter()
+                .enumerate()
+                .map(|(i, row)| {
+                    row.iter()
+                        .enumerate()
+                        .map(|(j, &col)| match col {
+                            'L' => {
+                                if positions[i][j]
+                                    .iter()
+                                    .filter(|&p| curr[p.0][p.1] == '#')
+                                    .count()
+                                    == 0
+                                {
+                                    changed = true;
+                                    ret += 1;
+                                    '#'
+                                } else {
+                                    'L'
+                                }
                             }
-                        }
-                        '#' => {
-                            if occupied >= threshold {
-                                'L'
-                            } else {
-                                '#'
+                            '#' => {
+                                if positions[i][j]
+                                    .iter()
+                                    .filter(|&p| curr[p.0][p.1] == '#')
+                                    .count()
+                                    >= threshold
+                                {
+                                    changed = true;
+                                    'L'
+                                } else {
+                                    ret += 1;
+                                    '#'
+                                }
                             }
-                        }
-                        c => c,
-                    }
-                }
+                            c => c,
+                        })
+                        .collect()
+                })
+                .collect();
+            if !changed {
+                return ret;
             }
-            if curr == next {
-                break;
-            }
-            curr = next;
         }
-        curr.iter()
-            .map(|v| v.iter().filter(|&c| *c == '#').count())
-            .sum()
     }
 }
 
