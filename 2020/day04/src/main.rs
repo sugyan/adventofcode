@@ -1,6 +1,4 @@
-#[macro_use]
-extern crate lazy_static;
-
+use lazy_static::lazy_static;
 use regex::Regex;
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
@@ -14,69 +12,18 @@ impl Solution {
         Self { inputs }
     }
     fn solve_1(&self) -> usize {
-        self.validate(false)
+        self.count_valid(false)
     }
     fn solve_2(&self) -> usize {
-        self.validate(true)
+        self.count_valid(true)
     }
-    fn validate(&self, validate_value: bool) -> usize {
+    fn count_valid(&self, validate_value: bool) -> usize {
         let mut ret = 0;
         let mut fields: HashMap<String, String> = HashMap::new();
         for line in self.inputs.iter().chain([String::new()].iter()) {
             if line.is_empty() {
                 if (fields.len() == 8 || (fields.len() == 7 && !fields.contains_key("cid")))
-                    && (!validate_value
-                        || fields.iter().all(|(key, value)| match key.as_str() {
-                            "byr" => {
-                                if let Ok(y) = value.parse::<i32>() {
-                                    1920 <= y && y <= 2002
-                                } else {
-                                    false
-                                }
-                            }
-                            "iyr" => {
-                                if let Ok(y) = value.parse::<i32>() {
-                                    2010 <= y && y <= 2020
-                                } else {
-                                    false
-                                }
-                            }
-                            "eyr" => {
-                                if let Ok(y) = value.parse::<i32>() {
-                                    2020 <= y && y <= 2030
-                                } else {
-                                    false
-                                }
-                            }
-                            "hgt" => {
-                                lazy_static! {
-                                    static ref RE: Regex = Regex::new(r"^(\d+)(cm|in)$").unwrap();
-                                }
-                                if let Some(cap) = RE.captures_iter(value).next() {
-                                    let n: i32 = cap[1].parse::<i32>().unwrap();
-                                    match &cap[2] {
-                                        "cm" => 150 <= n && n <= 193,
-                                        "in" => 59 <= n && n <= 76,
-                                        _ => false,
-                                    }
-                                } else {
-                                    false
-                                }
-                            }
-                            "hcl" => {
-                                lazy_static! {
-                                    static ref RE: Regex = Regex::new(r"^#[0-9a-f]{6}$").unwrap();
-                                }
-                                RE.is_match(value)
-                            }
-                            "ecl" => matches!(
-                                value.as_str(),
-                                "amb" | "blu" | "brn" | "gry" | "grn" | "hzl" | "oth"
-                            ),
-                            "pid" => value.len() == 9 && value.chars().all(|c| c.is_numeric()),
-                            "cid" => true,
-                            _ => false,
-                        }))
+                    && (!validate_value || self.validate_values(&fields))
                 {
                     ret += 1;
                 }
@@ -89,6 +36,59 @@ impl Solution {
             }
         }
         ret
+    }
+    fn validate_values(&self, fields: &HashMap<String, String>) -> bool {
+        fields.iter().all(|(key, value)| match key.as_str() {
+            "byr" => {
+                if let Ok(y) = value.parse::<i32>() {
+                    1920 <= y && y <= 2002
+                } else {
+                    false
+                }
+            }
+            "iyr" => {
+                if let Ok(y) = value.parse::<i32>() {
+                    2010 <= y && y <= 2020
+                } else {
+                    false
+                }
+            }
+            "eyr" => {
+                if let Ok(y) = value.parse::<i32>() {
+                    2020 <= y && y <= 2030
+                } else {
+                    false
+                }
+            }
+            "hgt" => {
+                lazy_static! {
+                    static ref RE: Regex = Regex::new(r"^(\d+)(cm|in)$").unwrap();
+                }
+                if let Some(cap) = RE.captures_iter(value).next() {
+                    let n: i32 = cap[1].parse::<i32>().unwrap();
+                    match &cap[2] {
+                        "cm" => 150 <= n && n <= 193,
+                        "in" => 59 <= n && n <= 76,
+                        _ => false,
+                    }
+                } else {
+                    false
+                }
+            }
+            "hcl" => {
+                lazy_static! {
+                    static ref RE: Regex = Regex::new(r"^#[0-9a-f]{6}$").unwrap();
+                }
+                RE.is_match(value)
+            }
+            "ecl" => matches!(
+                value.as_str(),
+                "amb" | "blu" | "brn" | "gry" | "grn" | "hzl" | "oth"
+            ),
+            "pid" => value.len() == 9 && value.chars().all(|c| c.is_numeric()),
+            "cid" => true,
+            _ => false,
+        })
     }
 }
 
