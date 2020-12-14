@@ -10,16 +10,14 @@ impl Solution {
         Self { inputs }
     }
     fn solve_1(&self) -> usize {
-        let mut hm: HashMap<&str, HashSet<&str>> = HashMap::new();
+        let mut hm: HashMap<&str, Vec<&str>> = HashMap::new();
         for line in self.inputs.iter() {
             let v: Vec<&str> = line.split(" bags contain ").collect();
             if v[1] != "no other bags." {
                 for s in v[1].split(", ") {
                     let l = s.find(' ').unwrap();
                     let r = s.rfind(' ').unwrap();
-                    hm.entry(&s[l + 1..r])
-                        .or_insert_with(HashSet::new)
-                        .insert(v[0]);
+                    hm.entry(&s[l + 1..r]).or_insert_with(Vec::new).push(v[0]);
                 }
             }
         }
