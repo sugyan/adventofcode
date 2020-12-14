@@ -13,11 +13,12 @@ impl Solution {
                 groups.push(v.clone());
                 v.clear();
             } else {
-                let mut n = 0;
-                for &b in line.as_bytes() {
-                    n |= 1 << (b - b'a') as usize;
-                }
-                v.push(n);
+                v.push(
+                    line.as_bytes()
+                        .iter()
+                        .map(|&b| 1 << (b - b'a') as usize)
+                        .fold(0, |acc, x| acc | x),
+                );
             }
         }
         Self { groups }
