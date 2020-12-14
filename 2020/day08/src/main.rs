@@ -1,19 +1,24 @@
 use std::io::{BufRead, BufReader};
 
 struct Solution {
-    inputs: Vec<String>,
+    instructions: Vec<(String, i32)>,
 }
 
 impl Solution {
     fn new(inputs: Vec<String>) -> Self {
-        Self { inputs }
+        Self {
+            instructions: inputs
+                .iter()
+                .map(|input| (input[..3].to_string(), input[4..].parse().unwrap()))
+                .collect(),
+        }
     }
     fn solve_1(&self) -> i32 {
         self.run(None).unwrap_err()
     }
     fn solve_2(&self) -> i32 {
-        for (i, input) in self.inputs.iter().enumerate() {
-            if !input.starts_with("acc") {
+        for (i, instruction) in self.instructions.iter().enumerate() {
+            if instruction.0 != "acc" {
                 if let Ok(n) = self.run(Some(i as i32)) {
                     return n;
                 }
@@ -22,30 +27,19 @@ impl Solution {
         0
     }
     fn run(&self, change: Option<i32>) -> Result<i32, i32> {
-        let mut visited: Vec<bool> = vec![false; self.inputs.len()];
+        let mut visited: Vec<bool> = vec![false; self.instructions.len()];
         let (mut i, mut acc) = (0, 0);
-        while i < self.inputs.len() as i32 {
+        while i < self.instructions.len() as i32 {
             if visited[i as usize] {
                 return Err(acc);
             }
             visited[i as usize] = true;
-            let changed = Some(i) == change;
-            let instruction = &self.inputs[i as usize];
-            if let Ok(arg) = instruction[4..].parse::<i32>() {
-                match &instruction[..3] {
-                    "acc" => acc += arg,
-                    "jmp" => {
-                        if !changed {
-                            i += arg - 1
-                        }
-                    }
-                    "nop" => {
-                        if changed {
-                            i += arg - 1
-                        }
-                    }
-                    _ => {}
-                }
+            let instruction = &self.instructions[i as usize];
+            match instruction.0.as_str() {
+                "acc" => acc += instruction.1,
+                "jmp" if change != Some(i) => i += instruction.1 - 1,
+                "nop" if change == Some(i) => i += instruction.1 - 1,
+                _ => {}
             }
             i += 1;
         }
