@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
 
 struct Solution {
@@ -16,27 +15,21 @@ impl Solution {
         self.play(30_000_000)
     }
     fn play(&self, target: usize) -> usize {
-        let mut numbers: Vec<usize> = Vec::with_capacity(target);
-        let mut memory: HashMap<usize, usize> = HashMap::new();
-        let mut prev = 0;
-        for (i, &input) in self.inputs.iter().enumerate() {
-            if i > 0 {
-                memory.insert(prev, i - 1);
-            }
-            numbers.push(input);
-            prev = input;
-        }
-        for i in numbers.len()..target {
-            let next = if let Some(&j) = memory.get(&prev) {
-                i - j - 1
-            } else {
-                0
+        let mut memory: Vec<usize> = vec![0; target];
+        self.inputs
+            .iter()
+            .enumerate()
+            .for_each(|(i, &input)| memory[input] = i + 1);
+        let mut prev = self.inputs[self.inputs.len() - 1];
+        for i in self.inputs.len()..target {
+            let val = match memory[prev] {
+                0 => 0,
+                j => i - j,
             };
-            memory.insert(prev, i - 1);
-            numbers.push(next);
-            prev = next;
+            memory[prev] = i;
+            prev = val;
         }
-        numbers[target - 1]
+        prev
     }
 }
 
@@ -72,14 +65,14 @@ mod tests {
         assert_eq!(1836, Solution::new(vec![3, 1, 2]).solve_1());
     }
 
-    // #[test]
-    // fn example_2() {
-    //     assert_eq!(175594, Solution::new(vec![0, 3, 6]).solve_2());
-    //     assert_eq!(2578, Solution::new(vec![1, 3, 2]).solve_2());
-    //     assert_eq!(3544142, Solution::new(vec![2, 1, 3]).solve_2());
-    //     assert_eq!(261214, Solution::new(vec![1, 2, 3]).solve_2());
-    //     assert_eq!(6895259, Solution::new(vec![2, 3, 1]).solve_2());
-    //     assert_eq!(18, Solution::new(vec![3, 2, 1]).solve_2());
-    //     assert_eq!(362, Solution::new(vec![3, 1, 2]).solve_2());
-    // }
+    #[test]
+    fn example_2() {
+        assert_eq!(175594, Solution::new(vec![0, 3, 6]).solve_2());
+        assert_eq!(2578, Solution::new(vec![1, 3, 2]).solve_2());
+        assert_eq!(3544142, Solution::new(vec![2, 1, 3]).solve_2());
+        assert_eq!(261214, Solution::new(vec![1, 2, 3]).solve_2());
+        assert_eq!(6895259, Solution::new(vec![2, 3, 1]).solve_2());
+        assert_eq!(18, Solution::new(vec![3, 2, 1]).solve_2());
+        assert_eq!(362, Solution::new(vec![3, 1, 2]).solve_2());
+    }
 }
