@@ -1,80 +1,70 @@
+use std::collections::HashSet;
 use std::io::{BufRead, BufReader};
 
 struct Solution {
-    grid: Vec<Vec<Vec<bool>>>,
+    grid: HashSet<(i32, i32, i32, i32)>,
 }
 
 impl Solution {
     fn new(inputs: Vec<String>) -> Self {
-        let (x, y) = (inputs[0].len(), inputs.len());
-        let mut grid = vec![vec![vec![false; x + 12]; y + 12]; 13];
+        let mut grid: HashSet<(i32, i32, i32, i32)> = HashSet::new();
         for (i, row) in inputs.iter().enumerate() {
-            for (j, c) in row.chars().enumerate() {
-                grid[6][i + 6][j + 6] = c == '#'
+            for (j, col) in row.chars().enumerate() {
+                if col == '#' {
+                    grid.insert((i as i32, j as i32, 0, 0));
+                }
             }
         }
         Self { grid }
     }
     fn solve_1(&self) -> usize {
-        let mut grid = self.grid.clone();
-        let mut d: Vec<(i32, i32, i32)> = Vec::with_capacity(26);
-        for i in -1..=1 {
-            for j in -1..=1 {
-                for k in -1..=1 {
-                    if i == 0 && j == 0 && k == 0 {
-                        continue;
+        let mut neighbors = Vec::new();
+        for x in -1..=1 {
+            for y in -1..=1 {
+                for z in -1..=1 {
+                    if !(x == 0 && y == 0 && z == 0) {
+                        neighbors.push((x, y, z, 0));
                     }
-                    d.push((i, j, k));
                 }
             }
         }
-        for _ in 0..6 {
-            grid = grid
-                .iter()
-                .enumerate()
-                .map(|(i, plane)| {
-                    plane
-                        .iter()
-                        .enumerate()
-                        .map(|(j, row)| {
-                            row.iter()
-                                .enumerate()
-                                .map(|(k, &b)| {
-                                    let neighbors = d
-                                        .iter()
-                                        .filter(|&d| {
-                                            let z = i as i32 + d.0;
-                                            let y = j as i32 + d.1;
-                                            let x = k as i32 + d.2;
-                                            z >= 0
-                                                && y >= 0
-                                                && x >= 0
-                                                && z < grid.len() as i32
-                                                && y < grid[0].len() as i32
-                                                && x < grid[0][0].len() as i32
-                                                && grid[z as usize][y as usize][x as usize]
-                                        })
-                                        .count();
-                                    match b {
-                                        true if neighbors != 2 && neighbors != 3 => false,
-                                        false if neighbors == 3 => true,
-                                        b => b,
-                                    }
-                                })
-                                .collect()
-                        })
-                        .collect()
-                })
-                .collect();
+        self.simulate(&neighbors)
+    }
+    fn solve_2(&self) -> usize {
+        let mut neighbors = Vec::new();
+        for x in -1..=1 {
+            for y in -1..=1 {
+                for z in -1..=1 {
+                    for w in -1..=1 {
+                        if !(x == 0 && y == 0 && z == 0 && w == 0) {
+                            neighbors.push((x, y, z, w));
+                        }
+                    }
+                }
+            }
         }
-        grid.iter()
-            .map(|plane| {
-                plane
+        self.simulate(&neighbors)
+    }
+    fn simulate(&self, neighbors: &[(i32, i32, i32, i32)]) -> usize {
+        let mut grid = self.grid.clone();
+        for _ in 0..6 {
+            let mut targets = HashSet::new();
+            grid.iter().for_each(|&p| {
+                targets.insert(p);
+                neighbors.iter().for_each(|&d| {
+                    targets.insert((p.0 + d.0, p.1 + d.1, p.2 + d.2, p.3 + d.3));
+                })
+            });
+            let next = targets.into_iter().filter(|&p| {
+                let count = neighbors
                     .iter()
-                    .map(|row| row.iter().filter(|&&b| b).count())
-                    .sum::<usize>()
-            })
-            .sum()
+                    .filter(|d| grid.contains(&(p.0 + d.0, p.1 + d.1, p.2 + d.2, p.3 + d.3)))
+                    .count();
+                count == 3 || (count == 2 && grid.contains(&p))
+            });
+            grid = next.collect();
+        }
+        grid.len()
     }
 }
 
@@ -86,6 +76,7 @@ fn main() {
             .collect(),
     );
     println!("{}", solution.solve_1());
+    println!("{}", solution.solve_2());
 }
 
 #[cfg(test)]
@@ -106,6 +97,23 @@ mod tests {
                     .collect()
             )
             .solve_1()
+        );
+    }
+
+    #[test]
+    fn example_2() {
+        assert_eq!(
+            848,
+            Solution::new(
+                "
+.#.
+..#
+###"[1..]
+                    .split('\n')
+                    .map(|s| s.to_string())
+                    .collect()
+            )
+            .solve_2()
         );
     }
 }
