@@ -23,16 +23,16 @@ impl Solution {
         diff1 * (diff3 + 1)
     }
     fn solve_2(&self) -> u64 {
-        let mut v: Vec<u64> = vec![0; self.inputs.len()];
-        v[self.inputs.len() - 1] = 1;
-        for i in (0..v.len()).rev().skip(1) {
+        let mut dp: Vec<u64> = vec![0; self.inputs.len()];
+        dp[0] = 1;
+        for i in 1..dp.len() {
             for j in 1..=3 {
-                if i + j < v.len() && self.inputs[i + j] - self.inputs[i] <= 3 {
-                    v[i] += v[i + j];
+                if i >= j && self.inputs[i] - self.inputs[i - j] <= 3 {
+                    dp[i] += dp[i - j];
                 }
             }
         }
-        v[0]
+        *dp.last().unwrap()
     }
 }
 
