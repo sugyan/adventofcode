@@ -88,8 +88,7 @@ impl Solution {
         while fields.iter().any(|s| s.is_empty()) {
             if let Some(i) = candidates.iter().position(|&c| c.count_ones() == 1) {
                 let n = candidates[i];
-                let idx = n.trailing_zeros() as usize;
-                fields[i] += self.rules[idx].0.as_str();
+                fields[i] += self.rules[n.trailing_zeros() as usize].0.as_str();
                 candidates.iter_mut().for_each(|c| *c &= !n);
             }
         }
