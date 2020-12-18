@@ -1,4 +1,5 @@
 use std::io::{BufRead, BufReader};
+use std::str::Chars;
 
 struct Solution {
     inputs: Vec<String>,
@@ -27,38 +28,28 @@ impl Solution {
             .sum()
     }
     fn evaluate(expression: &str, advanced: bool) -> u64 {
-        let v: &[u8] = expression.as_bytes();
-        let mut stack: Vec<(Op, u64)> = Vec::new();
+        let mut chars = expression.chars();
+        Solution::helper(&mut chars, advanced)
+    }
+    fn helper(chars: &mut Chars, advanced: bool) -> u64 {
+        let mut v: Vec<(Op, u64)> = Vec::new();
         let mut op = Op::Mul;
-        let mut i = 0;
-        while i < v.len() {
-            match v[i] {
-                b'0'..=b'9' => stack.push((op, (v[i] - b'0') as u64)),
-                b'+' => op = Op::Add,
-                b'*' => op = Op::Mul,
-                b'(' => {
-                    let (mut j, mut depth) = (i + 1, 1);
-                    while depth > 0 {
-                        depth += match v[j] {
-                            b'(' => 1,
-                            b')' => -1,
-                            _ => 0,
-                        };
-                        j += 1;
-                    }
-                    stack.push((op, Solution::evaluate(&expression[i + 1..j - 1], advanced)));
-                    i = j;
-                }
+        while let Some(c) = chars.next() {
+            match c {
+                '0'..='9' => v.push((op, (c as u8 - b'0') as u64)),
+                '+' => op = Op::Add,
+                '*' => op = Op::Mul,
+                '(' => v.push((op, Solution::helper(chars, advanced))),
+                ')' => break,
                 _ => {}
             }
-            i += 1;
         }
         if advanced {
             let mut ret = 1;
-            while let Some(last) = stack.pop() {
+            while let Some(last) = v.pop() {
                 match last.0 {
                     Op::Add => {
-                        if let Some(prev) = stack.last_mut() {
+                        if let Some(prev) = v.last_mut() {
                             prev.1 += last.1;
                         }
                     }
@@ -67,7 +58,7 @@ impl Solution {
             }
             ret
         } else {
-            stack.iter().fold(1, |acc, x| match x.0 {
+            v.iter().fold(1, |acc, x| match x.0 {
                 Op::Add => acc + x.1,
                 Op::Mul => acc * x.1,
             })
