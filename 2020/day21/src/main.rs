@@ -3,109 +3,97 @@ use std::collections::{HashMap, HashSet};
 use std::io::{BufRead, BufReader};
 
 struct Solution {
-    allergens: HashSet<String>,
-    data: HashMap<String, Vec<Vec<String>>>,
+    inputs: Vec<(Vec<String>, Vec<String>)>,
 }
 
 impl Solution {
     fn new(inputs: Vec<String>) -> Self {
         let re = Regex::new(r"^(.+?) \(contains (.*?)\)$").unwrap();
-        let mut data: HashMap<String, Vec<Vec<String>>> = HashMap::new();
-        let mut allergens: HashSet<String> = HashSet::new();
+        let mut data = Vec::new();
         for line in inputs.iter() {
             if let Some(cap) = re.captures(line) {
                 let ingredients: Vec<String> = cap[1].split(' ').map(|s| s.to_string()).collect();
-                data.entry(cap[2].to_string())
-                    .or_insert_with(Vec::new)
-                    .push(ingredients);
-                for allergen in cap[2].split(", ") {
-                    allergens.insert(allergen.to_string());
-                }
+                let allergens: Vec<String> = cap[2].split(", ").map(|s| s.to_string()).collect();
+                data.push((ingredients, allergens));
             }
         }
-        Self { allergens, data }
+        Self { inputs: data }
     }
     fn solve_1(&self) -> usize {
-        let mut hs: HashSet<String> = HashSet::new();
-        for allergen in self.allergens.iter() {
-            let mut threshold = 0;
-            let mut counts: HashMap<&str, usize> = HashMap::new();
-            for (k, v) in self.data.iter() {
-                if k.split(", ").any(|s| s == allergen) {
-                    for ingredients in v.iter() {
-                        threshold += 1;
-                        for ingredient in ingredients.iter() {
-                            *counts.entry(&ingredient).or_insert(0) += 1;
-                        }
-                    }
-                }
-            }
-            for (&s, &count) in counts.iter() {
-                if count == threshold {
-                    hs.insert(s.to_string());
-                }
+        let candidates = self.candidates();
+        let mut candidate_ingredients = HashSet::new();
+        for ingredients in candidates.values() {
+            for &ingredient in ingredients.iter() {
+                candidate_ingredients.insert(ingredient);
             }
         }
-        self.data
-            .values()
-            .map(|list| {
-                list.iter()
-                    .map(|ingredients| ingredients.iter().filter(|&s| !hs.contains(s)).count())
-                    .sum::<usize>()
+        self.inputs
+            .iter()
+            .map(|(ingredients, _)| {
+                ingredients
+                    .iter()
+                    .filter(|&ingredient| !candidate_ingredients.contains(ingredient.as_str()))
+                    .count()
             })
             .sum()
     }
     fn solve_2(&self) -> String {
-        let mut candidates: HashMap<&str, HashSet<&str>> = HashMap::new();
-        for allergen in self.allergens.iter() {
-            let mut threshold = 0;
-            let mut counts: HashMap<&str, usize> = HashMap::new();
-            for (k, v) in self.data.iter() {
-                if k.split(", ").any(|s| s == allergen) {
-                    for ingredients in v.iter() {
-                        threshold += 1;
-                        for ingredient in ingredients.iter() {
-                            *counts.entry(&ingredient).or_insert(0) += 1;
-                        }
-                    }
-                }
-            }
-            candidates.insert(
-                &allergen,
-                counts
-                    .iter()
-                    .filter(|(_, &count)| count == threshold)
-                    .map(|(&s, _)| s)
-                    .collect(),
-            );
-        }
-        let mut ingredients: HashMap<&str, &str> = HashMap::with_capacity(candidates.len());
+        let mut candidates = self.candidates();
+        let mut dangerous_ingredients: HashMap<&str, &str> =
+            HashMap::with_capacity(candidates.len());
         while !candidates.is_empty() {
-            let mut v: Vec<&str> = Vec::new();
-            for (&allergen, set) in candidates.iter().filter(|(_, set)| set.len() == 1) {
-                if let Some(ingredient) = set.iter().next() {
-                    ingredients.insert(allergen, ingredient);
-                    v.push(allergen);
-                }
+            let mut figure_outs: Vec<&str> = Vec::new();
+            for (&allergen, ingredients) in candidates
+                .iter()
+                .filter(|(_, ingredients)| ingredients.len() == 1)
+            {
+                dangerous_ingredients.insert(allergen, ingredients[0]);
+                figure_outs.push(allergen);
             }
-            for &allergen in v.iter() {
-                if let Some(set) = candidates.remove(allergen) {
-                    if let Some(&removed) = set.iter().next() {
-                        candidates.values_mut().for_each(|set| {
-                            set.retain(|&ingredient| ingredient != removed);
-                        });
-                    }
+            for &allergen in figure_outs.iter() {
+                if let Some(removed) = candidates.remove(allergen) {
+                    candidates.values_mut().for_each(|ingredients| {
+                        ingredients.retain(|&ingredient| ingredient != removed[0]);
+                    });
                 }
             }
         }
-        let mut allergens: Vec<&str> = self.allergens.iter().map(|s| s.as_str()).collect();
+        let mut allergens: Vec<&&str> = dangerous_ingredients.keys().collect();
         allergens.sort_unstable();
         allergens
             .iter()
-            .filter_map(|&allergen| ingredients.get(allergen))
+            .filter_map(|&allergen| dangerous_ingredients.get(allergen))
             .map(|&s| s.to_string())
             .collect::<Vec<String>>()
             .join(",")
+    }
+    fn candidates(&self) -> HashMap<&str, Vec<&str>> {
+        let mut counts_map: HashMap<&str, HashMap<&str, usize>> = HashMap::new();
+        for input in self.inputs.iter() {
+            for allergen in input.1.iter() {
+                for ingredient in input.0.iter() {
+                    *counts_map
+                        .entry(&allergen)
+                        .or_insert_with(HashMap::new)
+                        .entry(&ingredient)
+                        .or_insert(0) += 1;
+                }
+            }
+        }
+        let mut candidates: HashMap<&str, Vec<&str>> = HashMap::new();
+        for (allergen, counts) in counts_map.iter() {
+            if let Some(&max) = counts.values().max() {
+                candidates.insert(
+                    allergen,
+                    counts
+                        .iter()
+                        .filter(|(_, &count)| count == max)
+                        .map(|(&ingredient, _)| ingredient)
+                        .collect(),
+                );
+            }
+        }
+        candidates
     }
 }
 
