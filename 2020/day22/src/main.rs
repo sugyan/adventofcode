@@ -51,14 +51,13 @@ impl Solution {
             })
             .sum()
     }
-    fn combat(decks: &mut [VecDeque<u32>; 2], recursive: bool) {
+    fn combat(decks: &mut [VecDeque<u32>; 2], recursive: bool) -> bool {
         let mut memo = HashSet::new();
         while decks.iter().all(|deck| !deck.is_empty()) {
             if recursive {
                 let key = format!("{:?}", decks);
                 if memo.contains(&key) {
-                    decks[1].clear();
-                    return;
+                    return true;
                 }
                 memo.insert(key);
             }
@@ -71,8 +70,7 @@ impl Solution {
                         decks[0].clone().into_iter().take(top0 as usize).collect(),
                         decks[1].clone().into_iter().take(top1 as usize).collect(),
                     ];
-                    Solution::combat(&mut new_decks, recursive);
-                    new_decks[1].is_empty()
+                    Solution::combat(&mut new_decks, recursive)
                 } else {
                     top0 > top1
                 };
@@ -85,6 +83,7 @@ impl Solution {
                 }
             }
         }
+        decks[1].is_empty()
     }
 }
 
