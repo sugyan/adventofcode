@@ -13,7 +13,7 @@ impl Solution {
         if let Some((minutes, id)) = self.inputs[1]
             .split(',')
             .filter_map(|s| s.parse::<i32>().ok())
-            .map(|id| (id * ((timestamp - 1) / id + 1) - timestamp, id))
+            .map(|id| (id * (timestamp / id + 1) - timestamp, id))
             .min_by_key(|&e| e.0)
         {
             id * minutes
@@ -22,36 +22,21 @@ impl Solution {
         }
     }
     fn solve_2(&self) -> i64 {
-        let v: Vec<(usize, i64)> = self.inputs[1]
+        self.inputs[1]
             .split(',')
             .enumerate()
             .filter_map(|(i, s)| {
                 if let Ok(id) = s.parse::<i64>() {
-                    Some((i, id))
+                    Some((i as i64, id))
                 } else {
                     None
                 }
             })
-            .collect();
-        let mut n = (0, 1);
-        for &e in v.iter().skip(1) {
-            let d = Solution::common_target((-(v[0].0 as i64), v[0].1), (-(e.0 as i64), e.1));
-            n.0 = Solution::common_target(n, (d / v[0].1, e.1));
-            n.1 *= e.1;
-        }
-        n.0 * v[0].1
-    }
-    fn common_target(p1: (i64, i64), p2: (i64, i64)) -> i64 {
-        let mut n1 = p1.0;
-        let mut n2 = p2.0;
-        loop {
-            match n1.cmp(&n2) {
-                std::cmp::Ordering::Less => n1 += ((n2 - n1 - 1) / p1.1 + 1) * p1.1,
-                std::cmp::Ordering::Equal => break,
-                std::cmp::Ordering::Greater => n2 += ((n1 - n2 - 1) / p2.1 + 1) * p2.1,
-            }
-        }
-        n1
+            .fold((1, 0), |(a, b), (i, id)| {
+                let m = (0..).find(|m| (a * m + b + i) % id == 0).unwrap();
+                (a * id, a * m + b)
+            })
+            .1
     }
 }
 
