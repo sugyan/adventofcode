@@ -37,29 +37,31 @@ impl Solution {
     }
     fn solve_2(&self) -> u64 {
         let mut mem: HashMap<u64, u64> = HashMap::new();
-        let mut mask = "";
+        let mut masks = (Vec::new(), 0);
         for input in self.inputs.iter() {
             if let Some(m) = input.strip_prefix("mask = ") {
-                mask = m;
+                masks.0.clear();
+                masks.1 = 0;
+                for (i, c) in m.chars().rev().enumerate() {
+                    match c {
+                        '1' => masks.1 |= 1 << i,
+                        'X' => masks.0.push(i),
+                        _ => {}
+                    }
+                }
             } else if let Some(cap) = self.re.captures(input) {
                 if let (Ok(address), Ok(value)) = (cap[1].parse::<u64>(), cap[2].parse::<u64>()) {
-                    let mut vd: VecDeque<u64> = VecDeque::new();
-                    vd.push_back(address);
-                    for (i, c) in mask.chars().rev().enumerate() {
-                        match c {
-                            '1' => vd.iter_mut().for_each(|v| *v |= 1 << i),
-                            'X' => {
-                                for _ in 0..vd.len() {
-                                    if let Some(front) = vd.pop_front() {
-                                        vd.push_back(front | 1 << i);
-                                        vd.push_back(front & !(1 << i));
-                                    }
-                                }
+                    let mut addresses: VecDeque<u64> = VecDeque::new();
+                    addresses.push_back(address | masks.1);
+                    for &i in masks.0.iter() {
+                        for _ in 0..addresses.len() {
+                            if let Some(front) = addresses.pop_front() {
+                                addresses.push_back(front | 1 << i);
+                                addresses.push_back(front & !(1 << i));
                             }
-                            _ => {}
                         }
                     }
-                    for &address in vd.iter() {
+                    for &address in addresses.iter() {
                         mem.insert(address, value);
                     }
                 }
