@@ -9,34 +9,28 @@ impl Solution {
     fn new(inputs: Vec<String>) -> Self {
         let mut flipped = HashSet::new();
         for input in inputs.iter() {
-            let s: Vec<char> = input.chars().collect();
             let mut p = (0, 0);
-            let mut i = 0;
-            while i < s.len() {
-                match s[i] {
-                    'e' => p.0 += 2,
+            let mut ns = false;
+            for c in input.chars() {
+                match c {
+                    'e' => {
+                        p.0 += if ns { 1 } else { 2 };
+                        ns = false;
+                    }
                     's' => {
                         p.1 -= 1;
-                        match s[i + 1] {
-                            'e' => p.0 += 1,
-                            'w' => p.0 -= 1,
-                            _ => unreachable!(),
-                        }
-                        i += 1
+                        ns = true;
                     }
-                    'w' => p.0 -= 2,
+                    'w' => {
+                        p.0 -= if ns { 1 } else { 2 };
+                        ns = false;
+                    }
                     'n' => {
                         p.1 += 1;
-                        match s[i + 1] {
-                            'e' => p.0 += 1,
-                            'w' => p.0 -= 1,
-                            _ => unreachable!(),
-                        }
-                        i += 1
+                        ns = true;
                     }
                     _ => unreachable!(),
                 }
-                i += 1;
             }
             if flipped.contains(&p) {
                 flipped.remove(&p);
