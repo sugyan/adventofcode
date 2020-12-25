@@ -1,36 +1,42 @@
-use regex::Regex;
 use std::io::{BufRead, BufReader};
 
 struct Solution {
-    rules: Vec<(String, [(u32, u32); 2])>,
+    rules: Vec<(String, Vec<(u32, u32)>)>,
     ticket: Vec<u32>,
     nearby: Vec<Vec<u32>>,
 }
 
 impl Solution {
     fn new(inputs: Vec<String>) -> Self {
-        let re_field = Regex::new(r"^(.+?): (\d+)\-(\d+) or (\d+)\-(\d+)$").unwrap();
         let mut rules = Vec::new();
         let mut nearby = Vec::new();
         let mut ticket = Vec::new();
         let mut read_nearby = false;
-        for line in inputs.iter() {
-            if let Some(cap) = re_field.captures(line) {
-                if let (Ok(n1), Ok(n2), Ok(n3), Ok(n4)) = (
-                    cap[2].parse::<u32>(),
-                    cap[3].parse::<u32>(),
-                    cap[4].parse::<u32>(),
-                    cap[5].parse::<u32>(),
-                ) {
-                    rules.push((cap[1].to_string(), [(n1, n2), (n3, n4)]));
-                }
-            }
-            if line.starts_with(|c: char| c.is_numeric()) {
+        for line in inputs.iter().filter(|&s| !s.is_empty()) {
+            if line.starts_with(char::is_numeric) {
+                let values = line.split(',').filter_map(|s| s.parse().ok()).collect();
                 if read_nearby {
-                    nearby.push(line.split(',').filter_map(|s| s.parse().ok()).collect())
+                    nearby.push(values);
                 } else {
-                    ticket.extend(line.split(',').filter_map(|s| s.parse::<u32>().ok()));
+                    ticket.extend(values);
                 }
+            } else if line.ends_with(char::is_numeric) {
+                let kv: Vec<&str> = line.split(": ").collect();
+                let ranges: Vec<(u32, u32)> = kv[1]
+                    .split(" or ")
+                    .filter_map(|range| {
+                        if let Some(minmax) = range
+                            .split('-')
+                            .map(|s| s.parse::<u32>().ok())
+                            .collect::<Option<Vec<u32>>>()
+                        {
+                            Some((minmax[0], minmax[1]))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+                rules.push((kv[0].to_string(), ranges));
             }
             if line.starts_with("nearby") {
                 read_nearby = true;
@@ -79,8 +85,7 @@ impl Solution {
             }
             if valid {
                 for (i, &val) in ticket.iter().enumerate() {
-                    let n = v[val as usize];
-                    candidates[i] &= n;
+                    candidates[i] &= v[val as usize];
                 }
             }
         }
