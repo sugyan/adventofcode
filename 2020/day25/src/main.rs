@@ -6,6 +6,8 @@ struct Solution {
     door_key: u64,
 }
 
+const DIV: u64 = 20_201_227;
+
 impl Solution {
     fn new(inputs: Vec<u64>) -> Self {
         Self {
@@ -14,27 +16,24 @@ impl Solution {
         }
     }
     fn solve_1(&self) -> u64 {
-        for subject_number in 2..30 {
-            if let Some(card_loop_size) = self.loop_size(subject_number, self.card_key) {
-                if let Some(door_loop_size) = self.loop_size(subject_number, self.door_key) {
-                    if card_loop_size != door_loop_size {
-                        return (0..card_loop_size)
-                            .fold(1, |acc, _| (acc * self.door_key) % 20201227);
-                    }
+        fn loop_size(target: u64) -> Option<u64> {
+            let mut value = 1;
+            for i in 0..DIV {
+                if value == target {
+                    return Some(i);
+                }
+                value = (value * 7) % DIV;
+            }
+            None
+        }
+        if let Some(card_loop_size) = loop_size(self.card_key) {
+            if let Some(door_loop_size) = loop_size(self.door_key) {
+                if card_loop_size != door_loop_size {
+                    return (0..card_loop_size).fold(1, |acc, _| (acc * self.door_key) % DIV);
                 }
             }
         }
-        0
-    }
-    fn loop_size(&self, subject_number: u64, target: u64) -> Option<usize> {
-        let mut value = 1;
-        for i in 0..20201227 {
-            if value == target {
-                return Some(i);
-            }
-            value = (value * subject_number) % 20201227;
-        }
-        None
+        unreachable!()
     }
 }
 
