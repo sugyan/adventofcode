@@ -1,4 +1,3 @@
-// use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
 
 struct Solution {
@@ -16,9 +15,9 @@ impl Solution {
         }
     }
     fn solve_1(&self) -> u64 {
-        fn loop_size(target: u64) -> Option<u64> {
+        fn loop_size(target: u64) -> Option<usize> {
             let mut value = 1;
-            for i in 0..DIV {
+            for i in 0..DIV as usize {
                 if value == target {
                     return Some(i);
                 }
