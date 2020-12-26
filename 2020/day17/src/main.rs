@@ -49,20 +49,22 @@ impl Solution {
         let mut grid = self.grid.clone();
         for _ in 0..6 {
             let mut targets = HashSet::new();
-            grid.iter().for_each(|&p| {
+            for &p in grid.iter() {
                 targets.insert(p);
-                neighbors.iter().for_each(|&d| {
+                for &d in neighbors.iter() {
                     targets.insert((p.0 + d.0, p.1 + d.1, p.2 + d.2, p.3 + d.3));
+                }
+            }
+            grid = targets
+                .into_iter()
+                .filter(|&p| {
+                    let count = neighbors
+                        .iter()
+                        .filter(|d| grid.contains(&(p.0 + d.0, p.1 + d.1, p.2 + d.2, p.3 + d.3)))
+                        .count();
+                    count == 3 || (count == 2 && grid.contains(&p))
                 })
-            });
-            let next = targets.into_iter().filter(|&p| {
-                let count = neighbors
-                    .iter()
-                    .filter(|d| grid.contains(&(p.0 + d.0, p.1 + d.1, p.2 + d.2, p.3 + d.3)))
-                    .count();
-                count == 3 || (count == 2 && grid.contains(&p))
-            });
-            grid = next.collect();
+                .collect();
         }
         grid.len()
     }
