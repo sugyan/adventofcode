@@ -2,20 +2,20 @@ use std::collections::HashSet;
 use std::io::{BufRead, BufReader};
 
 struct Solution {
-    grid: HashSet<(i32, i32, i32, i32)>,
+    active: HashSet<(i32, i32, i32, i32)>,
 }
 
 impl Solution {
     fn new(inputs: Vec<String>) -> Self {
-        let mut grid: HashSet<(i32, i32, i32, i32)> = HashSet::new();
+        let mut active: HashSet<(i32, i32, i32, i32)> = HashSet::new();
         for (i, row) in inputs.iter().enumerate() {
             for (j, col) in row.chars().enumerate() {
                 if col == '#' {
-                    grid.insert((i as i32, j as i32, 0, 0));
+                    active.insert((i as i32, j as i32, 0, 0));
                 }
             }
         }
-        Self { grid }
+        Self { active }
     }
     fn solve_1(&self) -> usize {
         let mut neighbors = Vec::new();
@@ -46,27 +46,27 @@ impl Solution {
         self.simulate(&neighbors)
     }
     fn simulate(&self, neighbors: &[(i32, i32, i32, i32)]) -> usize {
-        let mut grid = self.grid.clone();
+        let mut active = self.active.clone();
         for _ in 0..6 {
             let mut targets = HashSet::new();
-            for &p in grid.iter() {
+            for &p in active.iter() {
                 targets.insert(p);
                 for &d in neighbors.iter() {
                     targets.insert((p.0 + d.0, p.1 + d.1, p.2 + d.2, p.3 + d.3));
                 }
             }
-            grid = targets
+            active = targets
                 .into_iter()
                 .filter(|&p| {
                     let count = neighbors
                         .iter()
-                        .filter(|d| grid.contains(&(p.0 + d.0, p.1 + d.1, p.2 + d.2, p.3 + d.3)))
+                        .filter(|d| active.contains(&(p.0 + d.0, p.1 + d.1, p.2 + d.2, p.3 + d.3)))
                         .count();
-                    count == 3 || (count == 2 && grid.contains(&p))
+                    count == 3 || (count == 2 && active.contains(&p))
                 })
                 .collect();
         }
-        grid.len()
+        active.len()
     }
 }
 
