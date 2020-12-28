@@ -1,108 +1,106 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
 
+#[derive(Clone)]
+enum Rule {
+    Char(char),
+    And(Vec<u8>),
+    Or(Vec<u8>, Vec<u8>),
+}
+
 struct Solution {
-    valid: HashMap<usize, HashSet<String>>, // inputs: Vec<String>,
+    rules: HashMap<u8, Rule>,
     messages: Vec<String>,
 }
 
 impl Solution {
     fn new(inputs: Vec<String>) -> Self {
-        let mut valid: HashMap<usize, HashSet<String>> = HashMap::new();
-        let mut rules: HashMap<usize, Vec<Vec<usize>>> = HashMap::new();
+        let mut rules: HashMap<u8, Rule> = HashMap::new();
         let mut messages: Vec<String> = Vec::new();
         for input in inputs.iter().filter(|&s| !s.is_empty()) {
             if input.starts_with(|c: char| c.is_numeric()) {
                 let s: Vec<&str> = input.split(": ").collect();
                 if let Ok(key) = s[0].parse() {
-                    if s[1].starts_with('"') {
-                        let mut hs = HashSet::new();
-                        hs.insert(s[1][1..2].to_string());
-                        valid.insert(key, hs);
-                    } else {
-                        rules.insert(
-                            key,
-                            s[1].split(" | ")
-                                .map(|s| s.split(' ').filter_map(|s| s.parse().ok()).collect())
-                                .collect(),
-                        );
-                    }
+                    rules.insert(
+                        key,
+                        if s[1].starts_with('"') {
+                            Rule::Char(s[1].chars().nth(1).unwrap())
+                        } else if s[1].contains(" | ") {
+                            let v: Vec<&str> = s[1].split(" | ").collect();
+                            Rule::Or(
+                                v[0].split(' ').filter_map(|s| s.parse().ok()).collect(),
+                                v[1].split(' ').filter_map(|s| s.parse().ok()).collect(),
+                            )
+                        } else {
+                            Rule::And(s[1].split(' ').filter_map(|s| s.parse().ok()).collect())
+                        },
+                    );
                 }
             } else {
                 messages.push(input.to_string());
             }
         }
-        Solution::expand(&mut rules, &mut valid);
-        Self { valid, messages }
-    }
-    fn expand(
-        rules: &mut HashMap<usize, Vec<Vec<usize>>>,
-        valid: &mut HashMap<usize, HashSet<String>>,
-    ) {
-        while !rules.is_empty() {
-            let mut delete: Vec<usize> = Vec::new();
-            for (&k, v) in rules.iter() {
-                if v.iter().all(|v| v.iter().all(|i| valid.contains_key(i))) {
-                    let mut entries: HashSet<String> = HashSet::new();
-                    for v in v.iter() {
-                        let mut vd: VecDeque<String> = VecDeque::new();
-                        vd.push_back(String::new());
-                        for &i in v.iter() {
-                            if let Some(values) = valid.get(&i) {
-                                for _ in 0..vd.len() {
-                                    if let Some(front) = vd.pop_front() {
-                                        for s in values.iter() {
-                                            vd.push_back(front.clone() + s);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        entries.extend(vd.into_iter());
-                    }
-                    valid.insert(k, entries);
-                    delete.push(k);
-                }
-            }
-            for i in delete.iter() {
-                rules.remove(i);
-            }
-        }
+        Self { rules, messages }
     }
     fn solve_1(&self) -> usize {
-        if let Some(valid) = self.valid.get(&0) {
-            self.messages.iter().filter(|&m| valid.contains(m)).count()
-        } else {
-            0
-        }
-    }
-    fn solve_2(&self) -> usize {
-        let valid42 = self.valid.get(&42).unwrap();
-        let valid31 = self.valid.get(&31).unwrap();
-        let l42 = valid42.iter().next().unwrap().len();
-        let l31 = valid31.iter().next().unwrap().len();
         self.messages
             .iter()
-            .filter(|&m| {
-                for i in 2..m.len() / l42 {
-                    let (m42, m31) = (&m[..i * l42], &m[i * l42..]);
-                    if m31.is_empty()
-                        || m42.len() % l42 != 0
-                        || m31.len() % l31 != 0
-                        || m42.len() / l42 <= m31.len() / l31
-                    {
-                        continue;
-                    }
-                    if (0..i).all(|j| valid42.contains(&m42[j * l42..(j + 1) * l42]))
-                        && (0..m31.len() / l31)
-                            .all(|j| valid31.contains(&m31[j * l31..(j + 1) * l31]))
-                    {
-                        return true;
-                    }
-                }
-                false
+            .filter(|&message| {
+                Solution::matches(message, &self.rules, 0)
+                    .iter()
+                    .any(|&s| s.is_empty())
             })
             .count()
+    }
+    fn solve_2(&self) -> usize {
+        let mut rules = self.rules.clone();
+        rules.insert(8, Rule::Or(vec![42], vec![42, 8]));
+        rules.insert(11, Rule::Or(vec![42, 31], vec![42, 11, 31]));
+        self.messages
+            .iter()
+            .filter(|&message| {
+                Solution::matches(message, &rules, 0)
+                    .iter()
+                    .any(|&s| s.is_empty())
+            })
+            .count()
+    }
+    fn matches_all<'a>(
+        message: &'a str,
+        rules_map: &HashMap<u8, Rule>,
+        rules: &[u8],
+    ) -> Vec<&'a str> {
+        let mut ret = vec![message];
+        for &rule in rules.iter() {
+            let mut next = Vec::new();
+            for &message in ret.iter() {
+                next.extend(Solution::matches(message, rules_map, rule));
+            }
+            ret = next;
+        }
+        ret
+    }
+    fn matches<'a>(message: &'a str, rules_map: &HashMap<u8, Rule>, rule: u8) -> Vec<&'a str> {
+        if let Some(rule) = rules_map.get(&rule) {
+            match rule {
+                Rule::Char(c) => {
+                    if Some(*c) == message.chars().next() {
+                        vec![&message[1..]]
+                    } else {
+                        Vec::new()
+                    }
+                }
+                Rule::And(v) => Solution::matches_all(message, rules_map, v),
+                Rule::Or(r1, r2) => {
+                    let mut ret = Vec::new();
+                    ret.extend(Solution::matches_all(message, rules_map, r1));
+                    ret.extend(Solution::matches_all(message, rules_map, r2));
+                    ret
+                }
+            }
+        } else {
+            Vec::new()
+        }
     }
 }
 
