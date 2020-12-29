@@ -57,7 +57,7 @@ impl Solution {
         let mut rules: HashMap<u8, Rule> = HashMap::new();
         let mut messages: Vec<String> = Vec::new();
         for input in inputs.iter().filter(|&s| !s.is_empty()) {
-            if input.starts_with(|c: char| c.is_numeric()) {
+            if input.starts_with(char::is_numeric) {
                 let s: Vec<&str> = input.split(": ").collect();
                 if let Ok(key) = s[0].parse() {
                     rules.insert(
@@ -127,7 +127,7 @@ impl Solution {
         if let Some(rule) = rules.get(&0) {
             self.messages
                 .iter()
-                .filter(|&message| rule.matches(message, &rules).iter().any(|&s| s.is_empty()))
+                .filter(|&message| rule.matches(message, &rules).into_iter().any(str::is_empty))
                 .count()
         } else {
             0
