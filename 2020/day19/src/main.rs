@@ -3,9 +3,48 @@ use std::io::{BufRead, BufReader};
 
 #[derive(Clone)]
 enum Rule {
+    Ref(u8),
     Char(char),
-    And(Vec<u8>),
-    Or(Vec<u8>, Vec<u8>),
+    Sequence(Vec<Rule>),
+    Or(Box<Rule>, Box<Rule>),
+}
+
+impl Rule {
+    fn matches<'a>(&self, message: &'a str, rules: &HashMap<u8, Rule>) -> Vec<&'a str> {
+        match self {
+            Rule::Ref(u) => {
+                if let Some(rule) = rules.get(u) {
+                    rule.matches(message, rules)
+                } else {
+                    Vec::new()
+                }
+            }
+            Rule::Char(c) => {
+                if Some(*c) == message.chars().next() {
+                    vec![&message[1..]]
+                } else {
+                    Vec::new()
+                }
+            }
+            Rule::Sequence(v) => {
+                let mut ret = vec![message];
+                for rule in v.iter() {
+                    let mut messages = Vec::new();
+                    for &m in ret.iter() {
+                        messages.append(&mut rule.matches(m, rules));
+                    }
+                    ret = messages;
+                }
+                ret
+            }
+            Rule::Or(r1, r2) => {
+                let mut ret = Vec::new();
+                ret.append(&mut r1.as_ref().matches(message, rules));
+                ret.append(&mut r2.as_ref().matches(message, rules));
+                ret
+            }
+        }
+    }
 }
 
 struct Solution {
@@ -28,11 +67,26 @@ impl Solution {
                         } else if s[1].contains(" | ") {
                             let v: Vec<&str> = s[1].split(" | ").collect();
                             Rule::Or(
-                                v[0].split(' ').filter_map(|s| s.parse().ok()).collect(),
-                                v[1].split(' ').filter_map(|s| s.parse().ok()).collect(),
+                                Box::new(Rule::Sequence(
+                                    v[0].split(' ')
+                                        .filter_map(|s| s.parse().ok())
+                                        .map(|n| Rule::Ref(n))
+                                        .collect(),
+                                )),
+                                Box::new(Rule::Sequence(
+                                    v[1].split(' ')
+                                        .filter_map(|s| s.parse().ok())
+                                        .map(|n| Rule::Ref(n))
+                                        .collect(),
+                                )),
                             )
                         } else {
-                            Rule::And(s[1].split(' ').filter_map(|s| s.parse().ok()).collect())
+                            Rule::Sequence(
+                                s[1].split(' ')
+                                    .filter_map(|s| s.parse().ok())
+                                    .map(|n| Rule::Ref(n))
+                                    .collect(),
+                            )
                         },
                     );
                 }
@@ -43,63 +97,40 @@ impl Solution {
         Self { rules, messages }
     }
     fn solve_1(&self) -> usize {
-        self.messages
-            .iter()
-            .filter(|&message| {
-                Solution::matches(message, &self.rules, 0)
-                    .iter()
-                    .any(|&s| s.is_empty())
-            })
-            .count()
+        self.count_matches(&self.rules)
     }
     fn solve_2(&self) -> usize {
         let mut rules = self.rules.clone();
-        rules.insert(8, Rule::Or(vec![42], vec![42, 8]));
-        rules.insert(11, Rule::Or(vec![42, 31], vec![42, 11, 31]));
-        self.messages
-            .iter()
-            .filter(|&message| {
-                Solution::matches(message, &rules, 0)
-                    .iter()
-                    .any(|&s| s.is_empty())
-            })
-            .count()
+        rules.insert(
+            8,
+            Rule::Or(
+                Box::new(Rule::Ref(42)),
+                Box::new(Rule::Sequence(
+                    [42, 8].iter().map(|&u| Rule::Ref(u)).collect(),
+                )),
+            ),
+        );
+        rules.insert(
+            11,
+            Rule::Or(
+                Box::new(Rule::Sequence(
+                    [42, 31].iter().map(|&u| Rule::Ref(u)).collect(),
+                )),
+                Box::new(Rule::Sequence(
+                    [42, 11, 31].iter().map(|&u| Rule::Ref(u)).collect(),
+                )),
+            ),
+        );
+        self.count_matches(&rules)
     }
-    fn matches_all<'a>(
-        message: &'a str,
-        rules_map: &HashMap<u8, Rule>,
-        rules: &[u8],
-    ) -> Vec<&'a str> {
-        let mut ret = vec![message];
-        for &rule in rules.iter() {
-            let mut next = Vec::new();
-            for &message in ret.iter() {
-                next.extend(Solution::matches(message, rules_map, rule));
-            }
-            ret = next;
-        }
-        ret
-    }
-    fn matches<'a>(message: &'a str, rules_map: &HashMap<u8, Rule>, rule: u8) -> Vec<&'a str> {
-        if let Some(rule) = rules_map.get(&rule) {
-            match rule {
-                Rule::Char(c) => {
-                    if Some(*c) == message.chars().next() {
-                        vec![&message[1..]]
-                    } else {
-                        Vec::new()
-                    }
-                }
-                Rule::And(v) => Solution::matches_all(message, rules_map, v),
-                Rule::Or(r1, r2) => {
-                    let mut ret = Vec::new();
-                    ret.extend(Solution::matches_all(message, rules_map, r1));
-                    ret.extend(Solution::matches_all(message, rules_map, r2));
-                    ret
-                }
-            }
+    fn count_matches(&self, rules: &HashMap<u8, Rule>) -> usize {
+        if let Some(rule) = rules.get(&0) {
+            self.messages
+                .iter()
+                .filter(|&message| rule.matches(message, &rules).iter().any(|&s| s.is_empty()))
+                .count()
         } else {
-            Vec::new()
+            0
         }
     }
 }
