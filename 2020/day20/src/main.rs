@@ -1,38 +1,16 @@
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy)]
 enum Orientation {
     Rotate000,
     Rotate090,
     Rotate180,
     Rotate270,
-    Mirror000,
-    Mirror090,
-    Mirror180,
-    Mirror270,
-}
-
-struct Tile {
-    id: u64,
-    orientation: Orientation,
-    image: Image,
-}
-
-#[derive(Clone)]
-struct Image {
-    data: Vec<Vec<char>>,
-}
-
-struct Borders {
-    top: String,
-    bottom: String,
-    left: String,
-    right: String,
-}
-
-struct Solution {
-    tiles: Vec<Vec<Tile>>,
+    Rotate000Flipped,
+    Rotate090Flipped,
+    Rotate180Flipped,
+    Rotate270Flipped,
 }
 
 impl Orientation {
@@ -42,88 +20,120 @@ impl Orientation {
             Orientation::Rotate090,
             Orientation::Rotate180,
             Orientation::Rotate270,
-            Orientation::Mirror000,
-            Orientation::Mirror090,
-            Orientation::Mirror180,
-            Orientation::Mirror270,
+            Orientation::Rotate000Flipped,
+            Orientation::Rotate090Flipped,
+            Orientation::Rotate180Flipped,
+            Orientation::Rotate270Flipped,
         ]
     }
 }
 
+#[derive(Clone)]
+struct Tile {
+    image: Vec<Vec<bool>>,
+}
+
+struct Borders {
+    top: Vec<bool>,
+    left: Vec<bool>,
+    bottom: Vec<bool>,
+    right: Vec<bool>,
+}
+
 impl Borders {
-    fn all(&self) -> [&String; 4] {
-        [&self.top, &self.bottom, &self.left, &self.right]
+    fn all(&self) -> [&Vec<bool>; 4] {
+        [&self.top, &self.left, &self.bottom, &self.right]
     }
 }
 
-impl Image {
+impl Tile {
     fn borders(&self, orientation: Orientation) -> Borders {
-        let len = self.data.len();
+        let size = self.image.len();
         match orientation {
             Orientation::Rotate000 => Borders {
-                top: self.data[0].iter().collect(),
-                bottom: self.data[len - 1].iter().collect(),
-                left: (0..len).map(|i| self.data[i][0]).collect(),
-                right: (0..len).map(|i| self.data[i][len - 1]).collect(),
+                top: self.image[0].clone(),
+                left: self.image.iter().map(|row| row[0]).collect(),
+                bottom: self.image[size - 1].clone(),
+                right: self.image.iter().map(|row| row[row.len() - 1]).collect(),
             },
             Orientation::Rotate090 => Borders {
-                top: (0..len).map(|i| self.data[len - 1 - i][0]).collect(),
-                bottom: (0..len).map(|i| self.data[len - 1 - i][len - 1]).collect(),
-                left: self.data[len - 1].iter().collect(),
-                right: self.data[0].iter().collect(),
+                top: self.image.iter().map(|row| row[0]).rev().collect(),
+                left: self.image[size - 1].clone(),
+                bottom: self
+                    .image
+                    .iter()
+                    .map(|row| row[row.len() - 1])
+                    .rev()
+                    .collect(),
+                right: self.image[0].clone(),
             },
             Orientation::Rotate180 => Borders {
-                top: self.data[len - 1].iter().rev().collect(),
-                bottom: self.data[0].iter().rev().collect(),
-                left: (0..len).map(|i| self.data[len - 1 - i][len - 1]).collect(),
-                right: (0..len).map(|i| self.data[len - 1 - i][0]).collect(),
+                top: self.image[size - 1].clone().into_iter().rev().collect(),
+                left: self
+                    .image
+                    .iter()
+                    .map(|row| row[row.len() - 1])
+                    .rev()
+                    .collect(),
+                bottom: self.image[0].clone().into_iter().rev().collect(),
+                right: self.image.iter().map(|row| row[0]).rev().collect(),
             },
             Orientation::Rotate270 => Borders {
-                top: (0..len).map(|i| self.data[i][len - 1]).collect(),
-                bottom: (0..len).map(|i| self.data[i][0]).collect(),
-                left: self.data[0].iter().rev().collect(),
-                right: self.data[len - 1].iter().rev().collect(),
+                top: self.image.iter().map(|row| row[row.len() - 1]).collect(),
+                left: self.image[0].clone().into_iter().rev().collect(),
+                bottom: self.image.iter().map(|row| row[0]).collect(),
+                right: self.image[size - 1].clone().into_iter().rev().collect(),
             },
-            Orientation::Mirror000 => Borders {
-                top: (0..len).map(|i| self.data[i][0]).collect(),
-                bottom: (0..len).map(|i| self.data[i][len - 1]).collect(),
-                left: self.data[0].iter().collect(),
-                right: self.data[len - 1].iter().collect(),
+            Orientation::Rotate000Flipped => Borders {
+                top: self.image.iter().map(|row| row[0]).collect(),
+                left: self.image[0].clone(),
+                bottom: self.image.iter().map(|row| row[row.len() - 1]).collect(),
+                right: self.image[size - 1].clone(),
             },
-            Orientation::Mirror090 => Borders {
-                top: self.data[0].iter().rev().collect(),
-                bottom: self.data[len - 1].iter().rev().collect(),
-                left: (0..len).map(|i| self.data[i][len - 1]).collect(),
-                right: (0..len).map(|i| self.data[i][0]).collect(),
+            Orientation::Rotate090Flipped => Borders {
+                top: self.image[size - 1].clone(),
+                left: self.image.iter().map(|row| row[0]).rev().collect(),
+                bottom: self.image[0].clone(),
+                right: self
+                    .image
+                    .iter()
+                    .map(|row| row[row.len() - 1])
+                    .rev()
+                    .collect(),
             },
-            Orientation::Mirror180 => Borders {
-                top: (0..len).map(|i| self.data[len - 1 - i][len - 1]).collect(),
-                bottom: (0..len).map(|i| self.data[len - 1 - i][0]).collect(),
-                left: self.data[len - 1].iter().rev().collect(),
-                right: self.data[0].iter().rev().collect(),
+            Orientation::Rotate180Flipped => Borders {
+                top: self
+                    .image
+                    .iter()
+                    .map(|row| row[row.len() - 1])
+                    .rev()
+                    .collect(),
+                left: self.image[size - 1].clone().into_iter().rev().collect(),
+                bottom: self.image.iter().map(|row| row[0]).rev().collect(),
+                right: self.image[0].clone().into_iter().rev().collect(),
             },
-            Orientation::Mirror270 => Borders {
-                top: self.data[len - 1].iter().collect(),
-                bottom: self.data[0].iter().collect(),
-                left: (0..len).map(|i| self.data[len - 1 - i][0]).collect(),
-                right: (0..len).map(|i| self.data[len - 1 - i][len - 1]).collect(),
+            Orientation::Rotate270Flipped => Borders {
+                top: self.image[0].clone().into_iter().rev().collect(),
+                left: self.image.iter().map(|row| row[row.len() - 1]).collect(),
+                bottom: self.image[size - 1].clone().into_iter().rev().collect(),
+                right: self.image.iter().map(|row| row[0]).collect(),
             },
         }
     }
-    fn rotated(&self, orientation: Orientation) -> Vec<Vec<char>> {
-        let len = self.data.len();
-        (0..len)
+    fn translated(&self, orientation: Orientation) -> Vec<Vec<bool>> {
+        let size = self.image.len();
+        (0..size)
             .map(|i| {
-                (0..len)
+                (0..size)
                     .map(|j| match orientation {
-                        Orientation::Rotate000 => self.data[i][j],
-                        Orientation::Rotate090 => self.data[len - 1 - j][i],
-                        Orientation::Rotate180 => self.data[len - 1 - i][len - 1 - j],
-                        Orientation::Rotate270 => self.data[j][len - 1 - i],
-                        Orientation::Mirror000 => self.data[j][i],
-                        Orientation::Mirror090 => self.data[i][len - 1 - j],
-                        Orientation::Mirror180 => self.data[len - 1 - j][len - 1 - i],
-                        Orientation::Mirror270 => self.data[len - 1 - i][j],
+                        Orientation::Rotate000 => self.image[i][j],
+                        Orientation::Rotate090 => self.image[size - 1 - j][i],
+                        Orientation::Rotate180 => self.image[size - 1 - i][size - 1 - j],
+                        Orientation::Rotate270 => self.image[j][size - 1 - i],
+                        Orientation::Rotate000Flipped => self.image[j][i],
+                        Orientation::Rotate090Flipped => self.image[size - 1 - i][j],
+                        Orientation::Rotate180Flipped => self.image[size - 1 - j][size - 1 - i],
+                        Orientation::Rotate270Flipped => self.image[i][size - 1 - j],
                     })
                     .collect()
             })
@@ -131,185 +141,105 @@ impl Image {
     }
 }
 
+struct Solution {
+    tiles: Vec<Vec<(u64, Tile, Orientation)>>,
+}
+
 impl Solution {
     fn new(inputs: Vec<String>) -> Self {
-        let mut imagemap: HashMap<u64, Image> = HashMap::new();
-        {
-            let mut id: u64 = 0;
-            let mut tile: Vec<Vec<char>> = Vec::new();
-            for line in inputs.iter() {
-                if let Some(idstr) = line.strip_prefix("Tile ").map(|s| s.trim_end_matches(':')) {
-                    if let Ok(n) = idstr.parse::<u64>() {
-                        id = n;
-                    }
-                } else if line.is_empty() {
-                    imagemap.insert(id, Image { data: tile.clone() });
-                    tile.clear();
-                } else {
-                    tile.push(line.chars().collect());
+        let mut tiles_map = HashMap::new();
+        let (mut id, mut tile) = (0, Vec::new());
+        for line in inputs.iter() {
+            if let Some(idstr) = line.strip_prefix("Tile ").map(|s| s.trim_end_matches(':')) {
+                if let Ok(n) = idstr.parse::<u64>() {
+                    id = n;
                 }
-            }
-            if !tile.is_empty() {
-                imagemap.insert(id, Image { data: tile });
-            }
-        }
-        let mut edgesdict: HashMap<String, Vec<u64>> = HashMap::new();
-        for (&k, image) in imagemap.iter() {
-            for &border in image.borders(Orientation::Rotate000).all().iter() {
-                edgesdict
-                    .entry(border.clone())
-                    .or_insert_with(Vec::new)
-                    .push(k);
-            }
-            for &border in image.borders(Orientation::Mirror180).all().iter() {
-                edgesdict
-                    .entry(border.clone())
-                    .or_insert_with(Vec::new)
-                    .push(k);
-            }
-        }
-        let mut tiles: Vec<Vec<Tile>> = Vec::new();
-        if let Some((&id, image)) = imagemap.iter().find(|(_, tile)| {
-            tile.borders(Orientation::Rotate000)
-                .all()
-                .iter()
-                .filter(|&&border| {
-                    if let Some(v) = edgesdict.get(border) {
-                        v.len() == 1
-                    } else {
-                        false
-                    }
-                })
-                .count()
-                == 2
-        }) {
-            let mut row: Vec<Tile> = Vec::new();
-            if let Some(&orientation) = Orientation::all().iter().find(|&orientation| {
-                image
-                    .borders(*orientation)
-                    .all()
-                    .iter()
-                    .filter_map(|&border| edgesdict.get(border))
-                    .map(|v| v.len())
-                    .collect::<Vec<usize>>()
-                    == vec![1, 2, 1, 2]
-            }) {
-                row.push(Tile {
+            } else if line.is_empty() {
+                tiles_map.insert(
                     id,
-                    orientation,
-                    image: image.clone(),
-                })
+                    Tile {
+                        image: tile.clone(),
+                    },
+                );
+                tile.clear();
+            } else {
+                tile.push(line.chars().map(|c| c == '#').collect());
             }
-            'row: loop {
-                if let Some(last) = row.last() {
-                    let border = &last.image.borders(last.orientation).right;
-                    if let Some(ids) = edgesdict.get(border) {
-                        if let Some(next) = ids.iter().find(|&id| *id != last.id) {
-                            if let Some(image) = imagemap.get(next) {
-                                if let Some(&orientation) =
-                                    Orientation::all().iter().find(|&orientation| {
-                                        image.borders(*orientation).left == *border
-                                    })
-                                {
-                                    row.push(Tile {
-                                        id: *next,
-                                        orientation,
-                                        image: image.clone(),
-                                    });
-                                }
-                            }
-                        } else {
-                            break 'row;
-                        }
-                    }
-                }
-            }
-            tiles.push(row);
         }
-        for i in 1..tiles[0].len() {
-            let mut row: Vec<Tile> = Vec::new();
-            for col in tiles[i - 1].iter() {
-                let border = &col.image.borders(col.orientation).bottom;
-                if let Some(ids) = edgesdict.get(border) {
-                    if let Some(next) = ids.iter().find(|&id| *id != col.id) {
-                        if let Some(image) = imagemap.get(next) {
-                            if let Some(&orientation) = Orientation::all()
-                                .iter()
-                                .find(|&orientation| image.borders(*orientation).top == *border)
-                            {
-                                row.push(Tile {
-                                    id: *next,
-                                    orientation,
-                                    image: image.clone(),
-                                });
-                            }
-                        }
-                    }
-                }
-            }
-            tiles.push(row);
+        if !tile.is_empty() {
+            tiles_map.insert(id, Tile { image: tile });
         }
-        Self { tiles }
+        Self {
+            tiles: Solution::build_image(&tiles_map),
+        }
     }
     fn solve_1(&self) -> u64 {
-        let size = self.tiles.len();
+        let (row, col) = (self.tiles.len(), self.tiles[0].len());
         [
-            &self.tiles[0][0],
-            &self.tiles[0][size - 1],
-            &self.tiles[size - 1][0],
-            &self.tiles[size - 1][size - 1],
+            self.tiles[0][0].0,
+            self.tiles[0][col - 1].0,
+            self.tiles[row - 1][0].0,
+            self.tiles[row - 1][col - 1].0,
         ]
         .iter()
-        .map(|&image| image.id)
         .product()
     }
-    fn solve_2(&self) -> u64 {
-        let size = self.tiles.len();
-        let tile_size = self.tiles[0][0].image.data.len();
-        let mut image = Image {
-            data: Vec::with_capacity((tile_size - 2) * size),
-        };
-        for i in 0..size {
-            let images: Vec<Vec<Vec<char>>> = self.tiles[i]
+    fn solve_2(&self) -> usize {
+        let actual = Tile {
+            image: self
+                .tiles
                 .iter()
-                .map(|tile| tile.image.rotated(tile.orientation))
-                .collect();
-            for j in 1..tile_size - 1 {
-                let mut row: Vec<char> = Vec::with_capacity((tile_size - 2) * size);
-                for image in images.iter() {
-                    row.extend(image[j].iter().skip(1).take(tile_size - 2));
-                }
-                image.data.push(row);
-            }
-        }
-        let sea_monster: Vec<Vec<char>> = [
+                .map(|row| {
+                    let size = row[0].1.image.len();
+                    (1..size - 1)
+                        .map(|i| {
+                            row.iter()
+                                .map(|tile| {
+                                    tile.1.translated(tile.2)[i]
+                                        .clone()
+                                        .into_iter()
+                                        .skip(1)
+                                        .take(size - 2)
+                                        .collect::<Vec<bool>>()
+                                })
+                                .flatten()
+                                .collect()
+                        })
+                        .collect::<Vec<Vec<bool>>>()
+                })
+                .flatten()
+                .collect(),
+        };
+        let sea_monster = [
             "                  # ",
             "#    ##    ##    ###",
             " #  #  #  #  #  #   ",
         ]
         .iter()
-        .map(|s| s.chars().collect())
-        .collect();
-        let positions: Vec<(usize, usize)> = sea_monster
+        .enumerate()
+        .map(|(i, &row)| {
+            row.chars()
+                .enumerate()
+                .filter_map(|(j, c)| if c == '#' { Some((i, j)) } else { None })
+                .collect::<Vec<(usize, usize)>>()
+        })
+        .flatten()
+        .collect::<Vec<(usize, usize)>>();
+        let mut ret = actual
+            .image
             .iter()
-            .enumerate()
-            .map(|(i, row)| {
-                row.iter()
-                    .enumerate()
-                    .filter(|(_, &col)| col == '#')
-                    .map(|(j, _)| (i, j))
-                    .collect::<Vec<(usize, usize)>>()
-            })
-            .flatten()
-            .collect();
+            .map(|row| row.iter().filter(|&b| *b).count())
+            .sum();
         if let Some(found) = Orientation::all()
             .iter()
             .map(|&orientation| {
-                let rotated = image.rotated(orientation);
+                let image = actual.translated(orientation);
                 let mut count = 0;
-                for i in 0..rotated.len() - sea_monster.len() {
-                    for j in 0..rotated.len() - sea_monster[0].len() {
-                        if positions.iter().all(|&p| rotated[i + p.0][j + p.1] == '#') {
+                for i in 0..image.len() {
+                    for j in 0..image[i].len() {
+                        if sea_monster.iter().all(|&(di, dj)| {
+                            i + di < image.len() && j + dj < image[i].len() && image[i + di][j + dj]
+                        }) {
                             count += 1;
                         }
                     }
@@ -318,15 +248,88 @@ impl Solution {
             })
             .max()
         {
-            (image
-                .data
-                .iter()
-                .map(|row| row.iter().filter(|&c| *c == '#').count())
-                .sum::<usize>()
-                - positions.len() * found) as u64
-        } else {
-            0
+            ret -= found * sea_monster.len()
         }
+        ret
+    }
+    fn build_image(tiles_map: &HashMap<u64, Tile>) -> Vec<Vec<(u64, Tile, Orientation)>> {
+        let mut borders_map = HashMap::new();
+        for (&id, tile) in tiles_map.iter() {
+            for &orientation in [Orientation::Rotate000, Orientation::Rotate180].iter() {
+                for &border in tile.borders(orientation).all().iter() {
+                    borders_map
+                        .entry(border.clone())
+                        .or_insert_with(Vec::new)
+                        .push(id);
+                }
+            }
+        }
+        let mut tiles = Vec::new();
+        if let Some((&id, tile)) = tiles_map.iter().find(|&(_, tile)| {
+            tile.borders(Orientation::Rotate000)
+                .all()
+                .iter()
+                .filter_map(|&border| borders_map.get(border))
+                .filter(|&v| v.len() == 1)
+                .count()
+                == 2
+        }) {
+            if let Some(&orientation) = Orientation::all().iter().find(|&orientation| {
+                tile.borders(*orientation)
+                    .all()
+                    .iter()
+                    .filter_map(|&border| borders_map.get(border))
+                    .map(|v| v.len())
+                    .collect::<Vec<usize>>()
+                    == vec![1, 1, 2, 2]
+            }) {
+                let mut row = vec![(id, tile.clone(), orientation)];
+                while let Some(last) = row.last() {
+                    let right = last.1.borders(last.2).right;
+                    if let Some(ids) = borders_map.get(&right) {
+                        if ids.len() != 2 {
+                            break;
+                        }
+                        let id = if ids[0] == last.0 { ids[1] } else { ids[0] };
+                        if let Some(tile) = tiles_map.get(&id) {
+                            if let Some(&orientation) = Orientation::all()
+                                .iter()
+                                .find(|&orientation| tile.borders(*orientation).left == right)
+                            {
+                                row.push((id, tile.clone(), orientation));
+                            }
+                        }
+                    }
+                }
+                tiles.push(row);
+            }
+        }
+        while let Some(last_row) = tiles.last() {
+            let mut row = Vec::with_capacity(last_row.len());
+            for last in last_row.iter() {
+                let bottom = last.1.borders(last.2).bottom;
+                if let Some(ids) = borders_map.get(&bottom) {
+                    if ids.len() != 2 {
+                        break;
+                    }
+                    let id = if ids[0] == last.0 { ids[1] } else { ids[0] };
+                    if let Some(tile) = tiles_map.get(&id) {
+                        if let Some(&orientation) = Orientation::all()
+                            .iter()
+                            .find(|&orientation| tile.borders(*orientation).top == bottom)
+                        {
+                            row.push((id, tile.clone(), orientation));
+                        }
+                    }
+                }
+            }
+            if row.is_empty() {
+                break;
+            } else {
+                tiles.push(row);
+            }
+        }
+        tiles
     }
 }
 
