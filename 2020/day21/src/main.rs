@@ -23,7 +23,7 @@ impl Solution {
         let candidates = self.candidates();
         let mut candidate_ingredients = HashSet::new();
         for ingredients in candidates.values() {
-            for &ingredient in ingredients.iter() {
+            for ingredient in ingredients.iter() {
                 candidate_ingredients.insert(ingredient);
             }
         }
@@ -32,63 +32,67 @@ impl Solution {
             .map(|(ingredients, _)| {
                 ingredients
                     .iter()
-                    .filter(|&ingredient| !candidate_ingredients.contains(ingredient.as_str()))
+                    .filter(|&ingredient| !candidate_ingredients.contains(ingredient))
                     .count()
             })
             .sum()
     }
     fn solve_2(&self) -> String {
         let mut candidates = self.candidates();
-        let mut dangerous_ingredients: HashMap<&str, &str> =
-            HashMap::with_capacity(candidates.len());
+        let mut dangerous_ingredients = HashMap::with_capacity(candidates.len());
         while !candidates.is_empty() {
-            let mut figure_outs: Vec<&str> = Vec::new();
-            for (&allergen, ingredients) in candidates
+            let mut figure_outs = Vec::new();
+            for (allergen, ingredients) in candidates
                 .iter()
                 .filter(|(_, ingredients)| ingredients.len() == 1)
             {
-                dangerous_ingredients.insert(allergen, ingredients[0]);
-                figure_outs.push(allergen);
+                dangerous_ingredients.insert(allergen.clone(), ingredients[0].clone());
+                figure_outs.push(allergen.clone());
             }
-            for &allergen in figure_outs.iter() {
+            for allergen in figure_outs.iter() {
                 if let Some(removed) = candidates.remove(allergen) {
                     candidates.values_mut().for_each(|ingredients| {
-                        ingredients.retain(|&ingredient| ingredient != removed[0]);
+                        ingredients.retain(|ingredient| *ingredient != removed[0]);
                     });
                 }
             }
         }
-        let mut allergens: Vec<&&str> = dangerous_ingredients.keys().collect();
+        let mut allergens: Vec<&String> = dangerous_ingredients.keys().collect();
         allergens.sort_unstable();
         allergens
-            .iter()
-            .filter_map(|&allergen| dangerous_ingredients.get(allergen))
-            .map(|&s| s.to_string())
+            .into_iter()
+            .filter_map(|allergen| dangerous_ingredients.get(allergen))
+            .map(String::to_string)
             .collect::<Vec<String>>()
             .join(",")
     }
-    fn candidates(&self) -> HashMap<&str, Vec<&str>> {
-        let mut counts_map: HashMap<&str, HashMap<&str, usize>> = HashMap::new();
-        for input in self.inputs.iter() {
-            for allergen in input.1.iter() {
-                for ingredient in input.0.iter() {
+    fn candidates(&self) -> HashMap<String, Vec<String>> {
+        let mut counts_map = HashMap::new();
+        for (ingredients, allergens) in self.inputs.iter() {
+            for allergen in allergens.iter() {
+                for ingredient in ingredients.iter() {
                     *counts_map
-                        .entry(&allergen)
+                        .entry(allergen.to_string())
                         .or_insert_with(HashMap::new)
-                        .entry(&ingredient)
+                        .entry(ingredient.to_string())
                         .or_insert(0) += 1;
                 }
             }
         }
-        let mut candidates: HashMap<&str, Vec<&str>> = HashMap::new();
+        let mut candidates = HashMap::new();
         for (allergen, counts) in counts_map.iter() {
             if let Some(&max) = counts.values().max() {
                 candidates.insert(
-                    allergen,
+                    allergen.to_string(),
                     counts
                         .iter()
-                        .filter(|(_, &count)| count == max)
-                        .map(|(&ingredient, _)| ingredient)
+                        .filter_map(|(ingredient, &count)| {
+                            if count == max {
+                                Some(ingredient.to_string())
+                            } else {
+                                None
+                            }
+                        })
                         .collect(),
                 );
             }
