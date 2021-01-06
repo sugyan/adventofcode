@@ -2,7 +2,7 @@ use std::collections::{HashSet, VecDeque};
 use std::io::{BufRead, BufReader};
 
 struct Solution {
-    decks: [VecDeque<u32>; 2],
+    decks: [VecDeque<u8>; 2],
 }
 
 impl Solution {
@@ -32,7 +32,7 @@ impl Solution {
                 deck.iter()
                     .rev()
                     .enumerate()
-                    .map(|(i, &card)| (i as u32 + 1) * card)
+                    .map(|(i, &card)| (i as u32 + 1) * card as u32)
                     .sum::<u32>()
             })
             .sum()
@@ -46,16 +46,22 @@ impl Solution {
                 deck.iter()
                     .rev()
                     .enumerate()
-                    .map(|(i, &card)| (i as u32 + 1) * card)
+                    .map(|(i, &card)| (i as u32 + 1) * card as u32)
                     .sum::<u32>()
             })
             .sum()
     }
-    fn combat(decks: &mut [VecDeque<u32>; 2], recursive: bool) -> bool {
+    fn combat(decks: &mut [VecDeque<u8>; 2], recursive: bool) -> bool {
         let mut memo = HashSet::new();
         while decks.iter().all(|deck| !deck.is_empty()) {
             if recursive {
-                let key = format!("{:?}", decks);
+                let key = {
+                    let mut v = Vec::with_capacity(decks[0].len() + decks[1].len() + 1);
+                    v.extend(decks[0].iter());
+                    v.push(0);
+                    v.extend(decks[1].iter());
+                    v
+                };
                 if memo.contains(&key) {
                     return true;
                 }
