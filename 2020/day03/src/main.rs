@@ -44,12 +44,8 @@ fn main() {
 mod tests {
     use super::*;
 
-    #[test]
-    fn example_1() {
-        assert_eq!(
-            7,
-            Solution::new(
-                "
+    fn example_inputs() -> Vec<String> {
+        r"
 ..##.......
 #...#...#..
 .#....#..#.
@@ -60,37 +56,20 @@ mod tests {
 .#........#
 #.##...#...
 #...##....#
-.#..#...#.#"[1..]
-                    .split('\n')
-                    .map(|s| s.to_string())
-                    .collect()
-            )
-            .solve_1()
-        );
+.#..#...#.#"
+            .split('\n')
+            .skip(1)
+            .map(str::to_string)
+            .collect()
+    }
+
+    #[test]
+    fn example_1() {
+        assert_eq!(7, Solution::new(example_inputs()).solve_1());
     }
 
     #[test]
     fn example_2() {
-        assert_eq!(
-            336,
-            Solution::new(
-                "
-..##.......
-#...#...#..
-.#....#..#.
-..#.#...#.#
-.#...##..#.
-..#.##.....
-.#.#.#....#
-.#........#
-#.##...#...
-#...##....#
-.#..#...#.#"[1..]
-                    .split('\n')
-                    .map(|s| s.to_string())
-                    .collect()
-            )
-            .solve_2()
-        );
+        assert_eq!(336, Solution::new(example_inputs()).solve_2());
     }
 }

@@ -18,48 +18,36 @@ impl Solution {
         self.count_valid(true)
     }
     fn count_valid(&self, validate_value: bool) -> usize {
-        let mut ret = 0;
-        let mut fields: HashMap<String, String> = HashMap::new();
-        for line in self.inputs.iter().chain([String::new()].iter()) {
-            if line.is_empty() {
-                if (fields.len() == 8 || (fields.len() == 7 && !fields.contains_key("cid")))
+        self.inputs
+            .split(String::is_empty)
+            .filter(|&lines| {
+                let fields = lines
+                    .iter()
+                    .map(|line| {
+                        line.split(' ').map(|field| {
+                            let v = field.split(':').collect::<Vec<_>>();
+                            (v[0].to_string(), v[1].to_string())
+                        })
+                    })
+                    .flatten()
+                    .collect::<HashMap<_, _>>();
+                (fields.len() == 8 || (fields.len() == 7 && !fields.contains_key("cid")))
                     && (!validate_value || self.validate_values(&fields))
-                {
-                    ret += 1;
-                }
-                fields.clear();
-            } else {
-                fields.extend(line.split(' ').map(|field| {
-                    let v: Vec<&str> = field.split(':').collect();
-                    (v[0].to_string(), v[1].to_string())
-                }));
-            }
-        }
-        ret
+            })
+            .count()
     }
     fn validate_values(&self, fields: &HashMap<String, String>) -> bool {
         fields.iter().all(|(key, value)| match key.as_str() {
-            "byr" => {
-                if let Ok(y) = value.parse::<i32>() {
-                    1920 <= y && y <= 2002
-                } else {
-                    false
-                }
-            }
-            "iyr" => {
-                if let Ok(y) = value.parse::<i32>() {
-                    2010 <= y && y <= 2020
-                } else {
-                    false
-                }
-            }
-            "eyr" => {
-                if let Ok(y) = value.parse::<i32>() {
-                    2020 <= y && y <= 2030
-                } else {
-                    false
-                }
-            }
+            "byr" => value
+                .parse::<i32>()
+                .map_or(false, |y| (1920..=2002).contains(&y)),
+            "iyr" => value
+                .parse::<i32>()
+                .map_or(false, |y| (2010..=2020).contains(&y)),
+            "eyr" => value
+                .parse::<i32>()
+                .map_or(false, |y| (2020..=2030).contains(&y)),
+
             "hgt" => {
                 lazy_static! {
                     static ref RE: Regex = Regex::new(r"^(\d+)(cm|in)$").unwrap();
@@ -67,8 +55,8 @@ impl Solution {
                 if let Some(cap) = RE.captures_iter(value).next() {
                     let n: i32 = cap[1].parse::<i32>().unwrap();
                     match &cap[2] {
-                        "cm" => 150 <= n && n <= 193,
-                        "in" => 59 <= n && n <= 76,
+                        "cm" => (150..=193).contains(&n),
+                        "in" => (59..=76).contains(&n),
                         _ => false,
                     }
                 } else {
@@ -85,7 +73,7 @@ impl Solution {
                 value.as_str(),
                 "amb" | "blu" | "brn" | "gry" | "grn" | "hzl" | "oth"
             ),
-            "pid" => value.len() == 9 && value.chars().all(|c| c.is_numeric()),
+            "pid" => value.len() == 9 && value.chars().all(char::is_numeric),
             "cid" => true,
             _ => false,
         })
@@ -112,7 +100,7 @@ mod tests {
         assert_eq!(
             2,
             Solution::new(
-                "
+                r"
 ecl:gry pid:860033327 eyr:2020 hcl:#fffffd
 byr:1937 iyr:2017 cid:147 hgt:183cm
 
@@ -125,9 +113,10 @@ ecl:brn pid:760753108 byr:1931
 hgt:179cm
 
 hcl:#cfa07d eyr:2025 pid:166559648
-iyr:2011 ecl:brn hgt:59in"[1..]
+iyr:2011 ecl:brn hgt:59in"
                     .split('\n')
-                    .map(|s| s.to_string())
+                    .skip(1)
+                    .map(str::to_string)
                     .collect()
             )
             .solve_1()
@@ -139,7 +128,7 @@ iyr:2011 ecl:brn hgt:59in"[1..]
         assert_eq!(
             0,
             Solution::new(
-                "
+                r"
 eyr:1972 cid:100
 hcl:#18171d ecl:amb hgt:170 pid:186cm iyr:2018 byr:1926
 
@@ -152,9 +141,10 @@ ecl:brn hgt:182cm pid:021572410 eyr:2020 byr:1992 cid:277
 
 hgt:59cm ecl:zzz
 eyr:2038 hcl:74454a iyr:2023
-pid:3556412378 byr:2007"[1..]
+pid:3556412378 byr:2007"
                     .split('\n')
-                    .map(|s| s.to_string())
+                    .skip(1)
+                    .map(str::to_string)
                     .collect()
             )
             .solve_2()
@@ -162,7 +152,7 @@ pid:3556412378 byr:2007"[1..]
         assert_eq!(
             4,
             Solution::new(
-                "
+                r"
 pid:087499704 hgt:74in ecl:grn iyr:2012 eyr:2030 byr:1980
 hcl:#623a2f
 
@@ -174,9 +164,10 @@ hgt:164cm byr:2001 iyr:2015 cid:88
 pid:545766238 ecl:hzl
 eyr:2022
 
-iyr:2010 hgt:158cm hcl:#b6652a ecl:blu byr:1944 eyr:2021 pid:093154719"[1..]
+iyr:2010 hgt:158cm hcl:#b6652a ecl:blu byr:1944 eyr:2021 pid:093154719"
                     .split('\n')
-                    .map(|s| s.to_string())
+                    .skip(1)
+                    .map(str::to_string)
                     .collect()
             )
             .solve_2()

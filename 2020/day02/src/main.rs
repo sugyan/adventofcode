@@ -66,29 +66,24 @@ fn main() {
 mod tests {
     use super::*;
 
+    fn example_inputs() -> Vec<String> {
+        r"
+1-3 a: abcde
+1-3 b: cdefg
+2-9 c: ccccccccc"
+            .split('\n')
+            .skip(1)
+            .map(str::to_string)
+            .collect()
+    }
+
     #[test]
     fn example_1() {
-        assert_eq!(
-            2,
-            Solution::new(vec![
-                String::from("1-3 a: abcde"),
-                String::from("1-3 b: cdefg"),
-                String::from("2-9 c: ccccccccc")
-            ])
-            .solve_1()
-        )
+        assert_eq!(2, Solution::new(example_inputs()).solve_1())
     }
 
     #[test]
     fn example_2() {
-        assert_eq!(
-            1,
-            Solution::new(vec![
-                String::from("1-3 a: abcde"),
-                String::from("1-3 b: cdefg"),
-                String::from("2-9 c: ccccccccc")
-            ])
-            .solve_2()
-        )
+        assert_eq!(1, Solution::new(example_inputs()).solve_2())
     }
 }
