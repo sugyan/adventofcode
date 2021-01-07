@@ -1,8 +1,7 @@
-use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
 
 struct Solution {
-    cups: Vec<u64>,
+    cups: Vec<u32>,
 }
 
 impl Solution {
@@ -11,7 +10,7 @@ impl Solution {
             cups: input
                 .as_bytes()
                 .iter()
-                .map(|&b| (b - b'0') as u64)
+                .map(|&b| (b - b'0') as u32)
                 .collect(),
         }
     }
@@ -20,10 +19,8 @@ impl Solution {
         let mut ret = Vec::new();
         let mut cup = 1;
         for _ in 0..8 {
-            if let Some(&next) = cups.get(&cup) {
-                ret.push(next.to_string());
-                cup = next;
-            }
+            ret.push(cups[cup].to_string());
+            cup = cups[cup] as usize;
         }
         ret.concat()
     }
@@ -32,41 +29,37 @@ impl Solution {
         let mut ret = 1;
         let mut cup = 1;
         for _ in 0..2 {
-            if let Some(&next) = cups.get(&cup) {
-                ret *= next;
-                cup = next;
-            }
+            ret *= cups[cup] as u64;
+            cup = cups[cup] as usize;
         }
         ret
     }
-    fn game(&self, cups: usize, moves: usize) -> HashMap<u64, u64> {
-        let mut hm = HashMap::with_capacity(cups);
+    fn game(&self, cups: usize, moves: usize) -> Vec<u32> {
+        let mut map = vec![0; cups + 1];
         let mut last = None;
         for (i, &cup) in self.cups.iter().enumerate() {
             if i > 0 {
-                hm.insert(self.cups[i - 1], cup);
+                map[self.cups[i - 1] as usize] = cup;
             }
             last = Some(cup);
         }
         for i in self.cups.len()..cups {
             if let Some(l) = last {
-                hm.insert(l, i as u64 + 1);
+                map[l as usize] = i as u32 + 1;
             }
-            last = Some(i as u64 + 1)
+            last = Some(i as u32 + 1)
         }
         if let Some(l) = last {
-            hm.insert(l, self.cups[0]);
+            map[l as usize] = self.cups[0];
         }
 
-        let highest = cups as u64;
-        let mut current = self.cups[0];
+        let highest = cups as usize;
+        let mut current = self.cups[0] as usize;
         let mut pickups = [0; 3];
         for _ in 0..moves {
             let mut p = current;
             for pickup in pickups.iter_mut() {
-                if let Some(&next) = hm.get(&p) {
-                    p = next;
-                }
+                p = map[p] as usize;
                 *pickup = p;
             }
             let mut destination = if current > 1 { current - 1 } else { highest };
@@ -77,18 +70,13 @@ impl Solution {
                     highest
                 };
             }
-            if let (Some(&c_next), Some(&p_next), Some(&d_next)) =
-                (hm.get(&current), hm.get(&p), hm.get(&destination))
-            {
-                hm.insert(current, p_next);
-                hm.insert(p, d_next);
-                hm.insert(destination, c_next);
-            }
-            if let Some(&next) = hm.get(&current) {
-                current = next;
-            }
+            let tmp = map[current];
+            map[current] = map[p];
+            map[p] = map[destination];
+            map[destination] = tmp;
+            current = map[current] as usize;
         }
-        hm
+        map
     }
 }
 
