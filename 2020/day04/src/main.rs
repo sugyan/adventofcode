@@ -11,10 +11,10 @@ impl Solution {
     fn new(inputs: Vec<String>) -> Self {
         Self { inputs }
     }
-    fn solve_1(&self) -> usize {
+    fn part_1(&self) -> usize {
         self.count_valid(false)
     }
-    fn solve_2(&self) -> usize {
+    fn part_2(&self) -> usize {
         self.count_valid(true)
     }
     fn count_valid(&self, validate_value: bool) -> usize {
@@ -87,8 +87,8 @@ fn main() {
             .filter_map(|line| line.ok())
             .collect(),
     );
-    println!("{}", solution.solve_1());
-    println!("{}", solution.solve_2());
+    println!("Part 1: {}", solution.part_1());
+    println!("Part 2: {}", solution.part_2());
 }
 
 #[cfg(test)]
@@ -119,7 +119,7 @@ iyr:2011 ecl:brn hgt:59in"
                     .map(str::to_string)
                     .collect()
             )
-            .solve_1()
+            .part_1()
         );
     }
 
@@ -147,7 +147,7 @@ pid:3556412378 byr:2007"
                     .map(str::to_string)
                     .collect()
             )
-            .solve_2()
+            .part_2()
         );
         assert_eq!(
             4,
@@ -170,7 +170,7 @@ iyr:2010 hgt:158cm hcl:#b6652a ecl:blu byr:1944 eyr:2021 pid:093154719"
                     .map(str::to_string)
                     .collect()
             )
-            .solve_2()
+            .part_2()
         );
     }
 }

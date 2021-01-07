@@ -13,10 +13,10 @@ impl Solution {
                 .collect(),
         }
     }
-    fn solve_1(&self) -> usize {
+    fn part_1(&self) -> usize {
         self.count(3, 1)
     }
-    fn solve_2(&self) -> usize {
+    fn part_2(&self) -> usize {
         [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)]
             .iter()
             .map(|&(right, down)| self.count(right, down))
@@ -31,13 +31,14 @@ impl Solution {
 }
 
 fn main() {
-    let inputs: Vec<String> = BufReader::new(std::io::stdin().lock())
-        .lines()
-        .filter_map(|line| line.ok())
-        .collect();
-    let solution = Solution::new(inputs);
-    println!("{}", solution.solve_1());
-    println!("{}", solution.solve_2());
+    let solution = Solution::new(
+        BufReader::new(std::io::stdin().lock())
+            .lines()
+            .filter_map(|line| line.ok())
+            .collect(),
+    );
+    println!("Part 1: {}", solution.part_1());
+    println!("Part 2: {}", solution.part_2());
 }
 
 #[cfg(test)]
@@ -65,11 +66,11 @@ mod tests {
 
     #[test]
     fn example_1() {
-        assert_eq!(7, Solution::new(example_inputs()).solve_1());
+        assert_eq!(7, Solution::new(example_inputs()).part_1());
     }
 
     #[test]
     fn example_2() {
-        assert_eq!(336, Solution::new(example_inputs()).solve_2());
+        assert_eq!(336, Solution::new(example_inputs()).part_2());
     }
 }

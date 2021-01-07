@@ -9,10 +9,10 @@ impl Solution {
     fn new(inputs: Vec<String>) -> Self {
         Self { inputs }
     }
-    fn solve_1(&self) -> usize {
-        let mut hm: HashMap<&str, Vec<&str>> = HashMap::new();
+    fn part_1(&self) -> usize {
+        let mut hm = HashMap::new();
         for line in self.inputs.iter() {
-            let v: Vec<&str> = line.split(" bags contain ").collect();
+            let v = line.split(" bags contain ").collect::<Vec<_>>();
             if v[1] != "no other bags." {
                 for s in v[1].split(", ") {
                     let l = s.find(' ').unwrap();
@@ -21,8 +21,8 @@ impl Solution {
                 }
             }
         }
-        let mut hs: HashSet<&str> = HashSet::new();
-        let mut stack: Vec<&str> = vec!["shiny gold"];
+        let mut hs = HashSet::new();
+        let mut stack = vec!["shiny gold"];
         while let Some(last) = stack.pop() {
             if !hs.contains(last) {
                 hs.insert(last);
@@ -35,10 +35,10 @@ impl Solution {
         }
         hs.len() - 1
     }
-    fn solve_2(&self) -> usize {
-        let mut hm: HashMap<&str, Vec<(usize, &str)>> = HashMap::new();
+    fn part_2(&self) -> usize {
+        let mut hm = HashMap::new();
         for line in self.inputs.iter() {
-            let v: Vec<&str> = line.split(" bags contain ").collect();
+            let v = line.split(" bags contain ").collect::<Vec<_>>();
             hm.insert(
                 v[0],
                 if v[1] == "no other bags." {
@@ -56,7 +56,7 @@ impl Solution {
             );
         }
         let mut ret = 0;
-        let mut stack: Vec<(usize, &str)> = vec![(1, "shiny gold")];
+        let mut stack = vec![(1, "shiny gold")];
         while let Some(last) = stack.pop() {
             ret += last.0;
             if let Some(v) = hm.get(last.1) {
@@ -76,20 +76,16 @@ fn main() {
             .filter_map(|line| line.ok())
             .collect(),
     );
-    println!("{}", solution.solve_1());
-    println!("{}", solution.solve_2());
+    println!("Part 1: {}", solution.part_1());
+    println!("Part 2: {}", solution.part_2());
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn example_1() {
-        assert_eq!(
-            4,
-            Solution::new(
-                "
+    fn example_inputs_1() -> Vec<String> {
+        r"
 light red bags contain 1 bright white bag, 2 muted yellow bags.
 dark orange bags contain 3 bright white bags, 4 muted yellow bags.
 bright white bags contain 1 shiny gold bag.
@@ -98,52 +94,36 @@ shiny gold bags contain 1 dark olive bag, 2 vibrant plum bags.
 dark olive bags contain 3 faded blue bags, 4 dotted black bags.
 vibrant plum bags contain 5 faded blue bags, 6 dotted black bags.
 faded blue bags contain no other bags.
-dotted black bags contain no other bags."[1..]
-                    .split('\n')
-                    .map(|s| s.to_string())
-                    .collect()
-            )
-            .solve_1()
-        );
+dotted black bags contain no other bags."
+            .split('\n')
+            .skip(1)
+            .map(str::to_string)
+            .collect()
     }
 
-    #[test]
-    fn example_2() {
-        assert_eq!(
-            32,
-            Solution::new(
-                "
-light red bags contain 1 bright white bag, 2 muted yellow bags.
-dark orange bags contain 3 bright white bags, 4 muted yellow bags.
-bright white bags contain 1 shiny gold bag.
-muted yellow bags contain 2 shiny gold bags, 9 faded blue bags.
-shiny gold bags contain 1 dark olive bag, 2 vibrant plum bags.
-dark olive bags contain 3 faded blue bags, 4 dotted black bags.
-vibrant plum bags contain 5 faded blue bags, 6 dotted black bags.
-faded blue bags contain no other bags.
-dotted black bags contain no other bags."[1..]
-                    .split('\n')
-                    .map(|s| s.to_string())
-                    .collect()
-            )
-            .solve_2()
-        );
-        assert_eq!(
-            126,
-            Solution::new(
-                "
+    fn example_inputs_2() -> Vec<String> {
+        r"
 shiny gold bags contain 2 dark red bags.
 dark red bags contain 2 dark orange bags.
 dark orange bags contain 2 dark yellow bags.
 dark yellow bags contain 2 dark green bags.
 dark green bags contain 2 dark blue bags.
 dark blue bags contain 2 dark violet bags.
-dark violet bags contain no other bags."[1..]
-                    .split('\n')
-                    .map(|s| s.to_string())
-                    .collect()
-            )
-            .solve_2()
-        );
+dark violet bags contain no other bags."
+            .split('\n')
+            .skip(1)
+            .map(str::to_string)
+            .collect()
+    }
+
+    #[test]
+    fn example_1() {
+        assert_eq!(4, Solution::new(example_inputs_1()).part_1());
+    }
+
+    #[test]
+    fn example_2() {
+        assert_eq!(32, Solution::new(example_inputs_1()).part_2());
+        assert_eq!(126, Solution::new(example_inputs_2()).part_2());
     }
 }

@@ -13,10 +13,10 @@ impl Solution {
                 .collect(),
         }
     }
-    fn solve_1(&self) -> i32 {
+    fn part_1(&self) -> i32 {
         self.run(None).unwrap_err()
     }
-    fn solve_2(&self) -> i32 {
+    fn part_2(&self) -> i32 {
         for (i, instruction) in self.instructions.iter().enumerate() {
             if instruction.0 != "acc" {
                 if let Ok(n) = self.run(Some(i as i32)) {
@@ -27,7 +27,7 @@ impl Solution {
         0
     }
     fn run(&self, change: Option<i32>) -> Result<i32, i32> {
-        let mut visited: Vec<bool> = vec![false; self.instructions.len()];
+        let mut visited = vec![false; self.instructions.len()];
         let (mut i, mut acc) = (0, 0);
         while i < self.instructions.len() as i32 {
             if visited[i as usize] {
@@ -54,20 +54,16 @@ fn main() {
             .filter_map(|line| line.ok())
             .collect(),
     );
-    println!("{}", solution.solve_1());
-    println!("{}", solution.solve_2());
+    println!("Part 1: {}", solution.part_1());
+    println!("Part 2: {}", solution.part_2());
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn example_1() {
-        assert_eq!(
-            5,
-            Solution::new(
-                "
+    fn example_inputs() -> Vec<String> {
+        r"
 nop +0
 acc +1
 jmp +4
@@ -76,35 +72,20 @@ jmp -3
 acc -99
 acc +1
 jmp -4
-acc +6"[1..]
-                    .split('\n')
-                    .map(|s| s.to_string())
-                    .collect()
-            )
-            .solve_1()
-        );
+acc +6"
+            .split('\n')
+            .skip(1)
+            .map(str::to_string)
+            .collect()
+    }
+
+    #[test]
+    fn example_1() {
+        assert_eq!(5, Solution::new(example_inputs()).part_1());
     }
 
     #[test]
     fn example_2() {
-        assert_eq!(
-            8,
-            Solution::new(
-                "
-nop +0
-acc +1
-jmp +4
-acc +3
-jmp -3
-acc -99
-acc +1
-jmp -4
-acc +6"[1..]
-                    .split('\n')
-                    .map(|s| s.to_string())
-                    .collect()
-            )
-            .solve_2()
-        );
+        assert_eq!(8, Solution::new(example_inputs()).part_2());
     }
 }

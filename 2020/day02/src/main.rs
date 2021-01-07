@@ -13,7 +13,7 @@ impl Solution {
             re: Regex::new(r"^(\d+)\-(\d+) (.): (.+)$").unwrap(),
         }
     }
-    fn solve_1(&self) -> usize {
+    fn part_1(&self) -> usize {
         self.inputs
             .iter()
             .filter(|&input| {
@@ -29,7 +29,7 @@ impl Solution {
             })
             .count()
     }
-    fn solve_2(&self) -> usize {
+    fn part_2(&self) -> usize {
         self.inputs
             .iter()
             .filter(|&input| {
@@ -53,13 +53,14 @@ impl Solution {
 }
 
 fn main() {
-    let inputs: Vec<String> = BufReader::new(std::io::stdin().lock())
-        .lines()
-        .filter_map(|line| line.ok())
-        .collect();
-    let solution = Solution::new(inputs);
-    println!("{}", solution.solve_1());
-    println!("{}", solution.solve_2());
+    let solution = Solution::new(
+        BufReader::new(std::io::stdin().lock())
+            .lines()
+            .filter_map(|line| line.ok())
+            .collect(),
+    );
+    println!("Part 1: {}", solution.part_1());
+    println!("Part 2: {}", solution.part_2());
 }
 
 #[cfg(test)]
@@ -79,11 +80,11 @@ mod tests {
 
     #[test]
     fn example_1() {
-        assert_eq!(2, Solution::new(example_inputs()).solve_1())
+        assert_eq!(2, Solution::new(example_inputs()).part_1())
     }
 
     #[test]
     fn example_2() {
-        assert_eq!(1, Solution::new(example_inputs()).solve_2())
+        assert_eq!(1, Solution::new(example_inputs()).part_2())
     }
 }

@@ -11,7 +11,7 @@ impl Solution {
             reports: inputs.iter().filter_map(|s| s.parse().ok()).collect(),
         }
     }
-    fn solve_1(&self) -> i32 {
+    fn part_1(&self) -> i32 {
         let hs = self.reports.iter().collect::<HashSet<_>>();
         for &i in self.reports.iter() {
             if hs.contains(&(2020 - i)) {
@@ -20,7 +20,7 @@ impl Solution {
         }
         0
     }
-    fn solve_2(&self) -> i32 {
+    fn part_2(&self) -> i32 {
         let hs: HashSet<&i32> = self.reports.iter().collect();
         for i in 0..self.reports.len() - 1 {
             for j in i + 1..self.reports.len() {
@@ -36,13 +36,14 @@ impl Solution {
 }
 
 fn main() {
-    let inputs = BufReader::new(std::io::stdin().lock())
-        .lines()
-        .filter_map(|line| line.ok())
-        .collect();
-    let solution = Solution::new(inputs);
-    println!("{}", solution.solve_1());
-    println!("{}", solution.solve_2());
+    let solution = Solution::new(
+        BufReader::new(std::io::stdin().lock())
+            .lines()
+            .filter_map(|line| line.ok())
+            .collect(),
+    );
+    println!("Part 1: {}", solution.part_1());
+    println!("Part 2: {}", solution.part_2());
 }
 
 #[cfg(test)]
@@ -65,11 +66,11 @@ mod tests {
 
     #[test]
     fn example_1() {
-        assert_eq!(514579, Solution::new(example_inputs()).solve_1());
+        assert_eq!(514579, Solution::new(example_inputs()).part_1());
     }
 
     #[test]
     fn example_2() {
-        assert_eq!(241861950, Solution::new(example_inputs()).solve_2());
+        assert_eq!(241861950, Solution::new(example_inputs()).part_2());
     }
 }

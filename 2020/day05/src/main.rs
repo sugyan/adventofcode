@@ -19,11 +19,11 @@ impl Solution {
                 .collect(),
         }
     }
-    fn solve_1(&self) -> i32 {
+    fn part_1(&self) -> i32 {
         *self.seats.iter().max().unwrap()
     }
-    fn solve_2(&self) -> i32 {
-        let offset = self.solve_1() as usize - self.seats.len();
+    fn part_2(&self) -> i32 {
+        let offset = self.part_1() as usize - self.seats.len();
         let mut v = vec![false; self.seats.len() + 1];
         for &seat in self.seats.iter() {
             v[seat as usize - offset] = true;
@@ -39,8 +39,8 @@ fn main() {
             .filter_map(|line| line.ok())
             .collect(),
     );
-    println!("{}", solution.solve_1());
-    println!("{}", solution.solve_2());
+    println!("Part 1: {}", solution.part_1());
+    println!("Part 2: {}", solution.part_2());
 }
 
 #[cfg(test)]
@@ -56,7 +56,7 @@ mod tests {
                 String::from("FFFBBBFRRR"),
                 String::from("BBFFBBFRLL"),
             ])
-            .solve_1()
+            .part_1()
         );
     }
 }
