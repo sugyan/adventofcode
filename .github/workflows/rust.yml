@@ -10,13 +10,11 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build-2020:
-
+  test-2020:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./2020
-
     steps:
     - uses: actions/checkout@v2
     - name: Build
