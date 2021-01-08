@@ -10,9 +10,7 @@ impl Solution {
             instructions: inputs
                 .iter()
                 .filter_map(|input| {
-                    if let (Some(action), Ok(value)) =
-                        (input.chars().next(), input[1..].parse::<i32>())
-                    {
+                    if let (Some(action), Ok(value)) = (input.chars().next(), input[1..].parse()) {
                         Some((action, value))
                     } else {
                         None
@@ -21,10 +19,10 @@ impl Solution {
                 .collect(),
         }
     }
-    fn solve_1(&self) -> i32 {
+    fn part_1(&self) -> i32 {
         self.run((1, 0), false)
     }
-    fn solve_2(&self) -> i32 {
+    fn part_2(&self) -> i32 {
         self.run((10, 1), true)
     }
     fn run(&self, w: (i32, i32), waypoint: bool) -> i32 {
@@ -65,49 +63,34 @@ fn main() {
             .filter_map(|line| line.ok())
             .collect(),
     );
-    println!("{}", solution.solve_1());
-    println!("{}", solution.solve_2());
+    println!("Part 1: {}", solution.part_1());
+    println!("Part 2: {}", solution.part_2());
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn example_1() {
-        assert_eq!(
-            25,
-            Solution::new(
-                "
+    fn example_inputs() -> Vec<String> {
+        r"
 F10
 N3
 F7
 R90
-F11"[1..]
-                    .split('\n')
-                    .map(|s| s.to_string())
-                    .collect()
-            )
-            .solve_1()
-        );
+F11"
+        .split('\n')
+        .skip(1)
+        .map(str::to_string)
+        .collect()
+    }
+
+    #[test]
+    fn example_1() {
+        assert_eq!(25, Solution::new(example_inputs()).part_1());
     }
 
     #[test]
     fn example_2() {
-        assert_eq!(
-            286,
-            Solution::new(
-                "
-F10
-N3
-F7
-R90
-F11"[1..]
-                    .split('\n')
-                    .map(|s| s.to_string())
-                    .collect()
-            )
-            .solve_2()
-        );
+        assert_eq!(286, Solution::new(example_inputs()).part_2());
     }
 }

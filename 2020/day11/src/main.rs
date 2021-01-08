@@ -11,17 +11,17 @@ impl Solution {
             layout: inputs.iter().map(|s| s.chars().collect()).collect(),
         }
     }
-    fn solve_1(&self) -> usize {
+    fn part_1(&self) -> usize {
         let target_seats = self.target_seats(true);
         self.simulate(&target_seats, 4)
     }
-    fn solve_2(&self) -> usize {
+    fn part_2(&self) -> usize {
         let target_seats = self.target_seats(false);
         self.simulate(&target_seats, 5)
     }
     fn target_seats(&self, adjacent: bool) -> HashMap<(usize, usize), Vec<(usize, usize)>> {
         let (r, c) = (self.layout.len() as i32, self.layout[0].len() as i32);
-        let mut seats: HashMap<(usize, usize), Vec<(usize, usize)>> = HashMap::new();
+        let mut seats = HashMap::new();
         for (i, row) in self.layout.iter().enumerate() {
             for (j, &col) in row.iter().enumerate() {
                 if col == '.' {
@@ -68,7 +68,7 @@ impl Solution {
     ) -> usize {
         let mut curr = self.layout.clone();
         loop {
-            let next: Vec<Vec<char>> = curr
+            let next = curr
                 .iter()
                 .enumerate()
                 .map(|(i, row)| {
@@ -111,20 +111,16 @@ fn main() {
             .filter_map(|line| line.ok())
             .collect(),
     );
-    println!("{}", solution.solve_1());
-    println!("{}", solution.solve_2());
+    println!("Part 1: {}", solution.part_1());
+    println!("Part 2: {}", solution.part_2());
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn example_1() {
-        assert_eq!(
-            37,
-            Solution::new(
-                "
+    fn example_inputs() -> Vec<String> {
+        r"
 L.LL.LL.LL
 LLLLLLL.LL
 L.L.L..L..
@@ -134,36 +130,20 @@ L.LLLLL.LL
 ..L.L.....
 LLLLLLLLLL
 L.LLLLLL.L
-L.LLLLL.LL"[1..]
-                    .split('\n')
-                    .map(|s| s.to_string())
-                    .collect()
-            )
-            .solve_1()
-        );
+L.LLLLL.LL"
+            .split('\n')
+            .skip(1)
+            .map(str::to_string)
+            .collect()
+    }
+
+    #[test]
+    fn example_1() {
+        assert_eq!(37, Solution::new(example_inputs()).part_1());
     }
 
     #[test]
     fn example_2() {
-        assert_eq!(
-            26,
-            Solution::new(
-                "
-L.LL.LL.LL
-LLLLLLL.LL
-L.L.L..L..
-LLLL.LL.LL
-L.LL.LL.LL
-L.LLLLL.LL
-..L.L.....
-LLLLLLLLLL
-L.LLLLLL.L
-L.LLLLL.LL"[1..]
-                    .split('\n')
-                    .map(|s| s.to_string())
-                    .collect()
-            )
-            .solve_2()
-        );
+        assert_eq!(26, Solution::new(example_inputs()).part_2());
     }
 }

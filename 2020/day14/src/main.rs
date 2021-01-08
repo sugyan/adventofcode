@@ -14,9 +14,9 @@ impl Solution {
             re: Regex::new(r"^mem\[(\d+)\] = (\d+)$").unwrap(),
         }
     }
-    fn solve_1(&self) -> u64 {
-        let mut mask: (u64, u64) = ((1 << 36) - 1, 0);
-        let mut mem: HashMap<u64, u64> = HashMap::new();
+    fn part_1(&self) -> u64 {
+        let mut mask = ((1 << 36) - 1, 0);
+        let mut mem = HashMap::new();
         for input in self.inputs.iter() {
             if let Some(m) = input.strip_prefix("mask = ") {
                 mask = ((1 << 36) - 1, 0);
@@ -35,8 +35,8 @@ impl Solution {
         }
         mem.values().sum()
     }
-    fn solve_2(&self) -> u64 {
-        let mut mem: HashMap<u64, u64> = HashMap::new();
+    fn part_2(&self) -> u64 {
+        let mut mem = HashMap::new();
         let mut masks = (Vec::new(), 0);
         for input in self.inputs.iter() {
             if let Some(m) = input.strip_prefix("mask = ") {
@@ -51,7 +51,7 @@ impl Solution {
                 }
             } else if let Some(cap) = self.re.captures(input) {
                 if let (Ok(address), Ok(value)) = (cap[1].parse::<u64>(), cap[2].parse::<u64>()) {
-                    let mut addresses: VecDeque<u64> = VecDeque::new();
+                    let mut addresses = VecDeque::new();
                     addresses.push_back(address | masks.1);
                     for &i in masks.0.iter() {
                         for _ in 0..addresses.len() {
@@ -78,8 +78,8 @@ fn main() {
             .filter_map(|line| line.ok())
             .collect(),
     );
-    println!("{}", solution.solve_1());
-    println!("{}", solution.solve_2());
+    println!("Part 1: {}", solution.part_1());
+    println!("Part 2: {}", solution.part_2());
 }
 
 #[cfg(test)]
@@ -91,16 +91,17 @@ mod tests {
         assert_eq!(
             165,
             Solution::new(
-                "
+                r"
 mask = XXXXXXXXXXXXXXXXXXXXXXXXXXXXX1XXXX0X
 mem[8] = 11
 mem[7] = 101
-mem[8] = 0"[1..]
+mem[8] = 0"
                     .split('\n')
-                    .map(|s| s.to_string())
+                    .skip(1)
+                    .map(str::to_string)
                     .collect()
             )
-            .solve_1()
+            .part_1()
         );
     }
 
@@ -109,17 +110,18 @@ mem[8] = 0"[1..]
         assert_eq!(
             208,
             Solution::new(
-                "
+                r"
 mask = 000000000000000000000000000000X1001X
 mem[42] = 100
 mask = 00000000000000000000000000000000X0XX
 mem[26] = 1
-"[1..]
-                    .split('\n')
-                    .map(|s| s.to_string())
-                    .collect()
+"
+                .split('\n')
+                .skip(1)
+                .map(str::to_string)
+                .collect()
             )
-            .solve_2()
+            .part_2()
         );
     }
 }
