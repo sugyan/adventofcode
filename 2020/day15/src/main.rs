@@ -5,9 +5,12 @@ struct Solution {
 }
 
 impl Solution {
-    fn new(input: String) -> Self {
+    fn new(inputs: Vec<String>) -> Self {
         Self {
-            numbers: input.split(',').filter_map(|s| s.parse().ok()).collect(),
+            numbers: inputs[0]
+                .split(',')
+                .filter_map(|s| s.parse().ok())
+                .collect(),
         }
     }
     fn part_1(&self) -> u32 {
@@ -49,23 +52,23 @@ mod tests {
 
     #[test]
     fn example_1() {
-        assert_eq!(436, Solution::new(String::from("0,3,6")).part_1());
-        assert_eq!(1, Solution::new(String::from("1,3,2")).part_1());
-        assert_eq!(10, Solution::new(String::from("2,1,3")).part_1());
-        assert_eq!(27, Solution::new(String::from("1,2,3")).part_1());
-        assert_eq!(78, Solution::new(String::from("2,3,1")).part_1());
-        assert_eq!(438, Solution::new(String::from("3,2,1")).part_1());
-        assert_eq!(1836, Solution::new(String::from("3,1,2")).part_1());
+        assert_eq!(436, Solution::new(vec![String::from("0,3,6")]).part_1());
+        assert_eq!(1, Solution::new(vec![String::from("1,3,2")]).part_1());
+        assert_eq!(10, Solution::new(vec![String::from("2,1,3")]).part_1());
+        assert_eq!(27, Solution::new(vec![String::from("1,2,3")]).part_1());
+        assert_eq!(78, Solution::new(vec![String::from("2,3,1")]).part_1());
+        assert_eq!(438, Solution::new(vec![String::from("3,2,1")]).part_1());
+        assert_eq!(1836, Solution::new(vec![String::from("3,1,2")]).part_1());
     }
 
     #[test]
     fn example_2() {
-        assert_eq!(175594, Solution::new(String::from("0,3,6")).part_2());
-        // assert_eq!(2578, Solution::new(String::from("1,3,2")).part_2());
-        // assert_eq!(3544142, Solution::new(String::from("2,1,3")).part_2());
-        // assert_eq!(261214, Solution::new(String::from("1,2,3")).part_2());
-        // assert_eq!(6895259, Solution::new(String::from("2,3,1")).part_2());
-        // assert_eq!(18, Solution::new(String::from("3,2,1")).part_2());
-        // assert_eq!(362, Solution::new(String::from("3,1,2")).part_2());
+        assert_eq!(175594, Solution::new(vec![String::from("0,3,6")]).part_2());
+        // assert_eq!(2578, Solution::new(vec![String::from("1,3,2")]).part_2());
+        // assert_eq!(3544142, Solution::new(vec![String::from("2,1,3")]).part_2());
+        // assert_eq!(261214, Solution::new(vec![String::from("1,2,3")]).part_2());
+        // assert_eq!(6895259, Solution::new(vec![String::from("2,3,1")]).part_2());
+        // assert_eq!(18, Solution::new(vec![String::from("3,2,1")]).part_2());
+        // assert_eq!(362, Solution::new(vec![String::from("3,1,2")]).part_2());
     }
 }

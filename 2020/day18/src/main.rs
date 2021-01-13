@@ -2,7 +2,7 @@ use std::io::{BufRead, BufReader};
 use std::str::Chars;
 
 struct Solution {
-    inputs: Vec<String>,
+    expressions: Vec<String>,
 }
 
 #[derive(Copy, Clone)]
@@ -11,35 +11,48 @@ enum Op {
     Mul,
 }
 
+struct Term {
+    op: Op,
+    val: u64,
+}
+
+impl Term {
+    fn new(op: Op, val: u64) -> Self {
+        Self { op, val }
+    }
+}
+
 impl Solution {
     fn new(inputs: Vec<String>) -> Self {
-        Self { inputs }
+        Self {
+            expressions: inputs,
+        }
     }
-    fn solve_1(&self) -> u64 {
-        self.inputs
+    fn part_1(&self) -> u64 {
+        self.expressions
             .iter()
-            .map(|s| Solution::evaluate(s, false))
+            .map(|expression| Solution::evaluate(expression, false))
             .sum()
     }
-    fn solve_2(&self) -> u64 {
-        self.inputs
+    fn part_2(&self) -> u64 {
+        self.expressions
             .iter()
-            .map(|s| Solution::evaluate(s, true))
+            .map(|expression| Solution::evaluate(expression, true))
             .sum()
     }
     fn evaluate(expression: &str, advanced: bool) -> u64 {
         let mut chars = expression.chars();
-        Solution::helper(&mut chars, advanced)
+        Self::evaluate_recursive(&mut chars, advanced)
     }
-    fn helper(chars: &mut Chars, advanced: bool) -> u64 {
-        let mut v: Vec<(Op, u64)> = Vec::new();
+    fn evaluate_recursive(chars: &mut Chars, advanced: bool) -> u64 {
+        let mut v = Vec::new();
         let mut op = Op::Mul;
         while let Some(c) = chars.next() {
             match c {
-                '0'..='9' => v.push((op, (c as u8 - b'0') as u64)),
+                '0'..='9' => v.push(Term::new(op, (c as u8 - b'0') as u64)),
                 '+' => op = Op::Add,
                 '*' => op = Op::Mul,
-                '(' => v.push((op, Solution::helper(chars, advanced))),
+                '(' => v.push(Term::new(op, Self::evaluate_recursive(chars, advanced))),
                 ')' => break,
                 _ => {}
             }
@@ -47,20 +60,20 @@ impl Solution {
         if advanced {
             let mut ret = 1;
             while let Some(last) = v.pop() {
-                match last.0 {
+                match last.op {
                     Op::Add => {
                         if let Some(prev) = v.last_mut() {
-                            prev.1 += last.1;
+                            prev.val += last.val;
                         }
                     }
-                    Op::Mul => ret *= last.1,
+                    Op::Mul => ret *= last.val,
                 }
             }
             ret
         } else {
-            v.iter().fold(1, |acc, x| match x.0 {
-                Op::Add => acc + x.1,
-                Op::Mul => acc * x.1,
+            v.iter().fold(1, |acc, x| match x.op {
+                Op::Add => acc + x.val,
+                Op::Mul => acc * x.val,
             })
         }
     }
@@ -73,8 +86,8 @@ fn main() {
             .filter_map(|line| line.ok())
             .collect(),
     );
-    println!("{}", solution.solve_1());
-    println!("{}", solution.solve_2());
+    println!("Part 1: {}", solution.part_1());
+    println!("Part 2: {}", solution.part_2());
 }
 
 #[cfg(test)]

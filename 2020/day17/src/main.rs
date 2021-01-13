@@ -7,7 +7,7 @@ struct Solution {
 
 impl Solution {
     fn new(inputs: Vec<String>) -> Self {
-        let mut active: HashSet<(i32, i32, i32, i32)> = HashSet::new();
+        let mut active = HashSet::new();
         for (i, row) in inputs.iter().enumerate() {
             for (j, col) in row.chars().enumerate() {
                 if col == '#' {
@@ -17,7 +17,7 @@ impl Solution {
         }
         Self { active }
     }
-    fn solve_1(&self) -> usize {
+    fn part_1(&self) -> usize {
         let mut neighbors = Vec::new();
         for x in -1..=1 {
             for y in -1..=1 {
@@ -30,7 +30,7 @@ impl Solution {
         }
         self.simulate(&neighbors)
     }
-    fn solve_2(&self) -> usize {
+    fn part_2(&self) -> usize {
         let mut neighbors = Vec::new();
         for x in -1..=1 {
             for y in -1..=1 {
@@ -60,7 +60,7 @@ impl Solution {
                 .filter(|&p| {
                     let count = neighbors
                         .iter()
-                        .filter(|d| active.contains(&(p.0 + d.0, p.1 + d.1, p.2 + d.2, p.3 + d.3)))
+                        .filter(|&d| active.contains(&(p.0 + d.0, p.1 + d.1, p.2 + d.2, p.3 + d.3)))
                         .count();
                     count == 3 || (count == 2 && active.contains(&p))
                 })
@@ -77,45 +77,32 @@ fn main() {
             .filter_map(|line| line.ok())
             .collect(),
     );
-    println!("{}", solution.solve_1());
-    println!("{}", solution.solve_2());
+    println!("Part 1: {}", solution.part_1());
+    println!("Part 2: {}", solution.part_2());
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn example_1() {
-        assert_eq!(
-            112,
-            Solution::new(
-                "
+    fn example_inputs() -> Vec<String> {
+        r"
 .#.
 ..#
-###"[1..]
-                    .split('\n')
-                    .map(|s| s.to_string())
-                    .collect()
-            )
-            .solve_1()
-        );
+###"
+        .split('\n')
+        .skip(1)
+        .map(str::to_string)
+        .collect()
+    }
+
+    #[test]
+    fn example_1() {
+        assert_eq!(112, Solution::new(example_inputs()).part_1());
     }
 
     #[test]
     fn example_2() {
-        assert_eq!(
-            848,
-            Solution::new(
-                "
-.#.
-..#
-###"[1..]
-                    .split('\n')
-                    .map(|s| s.to_string())
-                    .collect()
-            )
-            .solve_2()
-        );
+        assert_eq!(848, Solution::new(example_inputs()).part_2());
     }
 }
