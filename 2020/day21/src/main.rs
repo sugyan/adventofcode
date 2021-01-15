@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use std::io::{BufRead, BufReader};
 
 struct Solution {
-    inputs: Vec<(Vec<String>, Vec<String>)>,
+    data: Vec<(Vec<String>, Vec<String>)>,
 }
 
 impl Solution {
@@ -12,22 +12,22 @@ impl Solution {
         let mut data = Vec::new();
         for line in inputs.iter() {
             if let Some(cap) = re.captures(line) {
-                let ingredients: Vec<String> = cap[1].split(' ').map(|s| s.to_string()).collect();
-                let allergens: Vec<String> = cap[2].split(", ").map(|s| s.to_string()).collect();
+                let ingredients = cap[1].split(' ').map(str::to_string).collect();
+                let allergens = cap[2].split(", ").map(str::to_string).collect();
                 data.push((ingredients, allergens));
             }
         }
-        Self { inputs: data }
+        Self { data }
     }
-    fn solve_1(&self) -> usize {
-        let candidates = self.candidates();
+    fn part_1(&self) -> usize {
+        let candidates = self.calc_candidates();
         let mut candidate_ingredients = HashSet::new();
         for ingredients in candidates.values() {
             for ingredient in ingredients.iter() {
                 candidate_ingredients.insert(ingredient);
             }
         }
-        self.inputs
+        self.data
             .iter()
             .map(|(ingredients, _)| {
                 ingredients
@@ -37,8 +37,8 @@ impl Solution {
             })
             .sum()
     }
-    fn solve_2(&self) -> String {
-        let mut candidates = self.candidates();
+    fn part_2(&self) -> String {
+        let mut candidates = self.calc_candidates();
         let mut dangerous_ingredients = HashMap::with_capacity(candidates.len());
         while !candidates.is_empty() {
             let mut figure_outs = Vec::new();
@@ -57,18 +57,18 @@ impl Solution {
                 }
             }
         }
-        let mut allergens: Vec<&String> = dangerous_ingredients.keys().collect();
+        let mut allergens = dangerous_ingredients.keys().collect::<Vec<_>>();
         allergens.sort_unstable();
         allergens
             .into_iter()
             .filter_map(|allergen| dangerous_ingredients.get(allergen))
             .map(String::to_string)
-            .collect::<Vec<String>>()
+            .collect::<Vec<_>>()
             .join(",")
     }
-    fn candidates(&self) -> HashMap<String, Vec<String>> {
+    fn calc_candidates(&self) -> HashMap<String, Vec<String>> {
         let mut counts_map = HashMap::new();
-        for (ingredients, allergens) in self.inputs.iter() {
+        for (ingredients, allergens) in self.data.iter() {
             for allergen in allergens.iter() {
                 for ingredient in ingredients.iter() {
                     *counts_map
@@ -108,47 +108,36 @@ fn main() {
             .filter_map(|line| line.ok())
             .collect(),
     );
-    println!("{}", solution.solve_1());
-    println!("{}", solution.solve_2());
+    println!("Part 1: {}", solution.part_1());
+    println!("Part 2: {}", solution.part_2());
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn example_1() {
-        assert_eq!(
-            5,
-            Solution::new(
-                "
+    fn example_inputs() -> Vec<String> {
+        r"
 mxmxvkd kfcds sqjhc nhms (contains dairy, fish)
 trh fvjkl sbzzf mxmxvkd (contains dairy)
 sqjhc fvjkl (contains soy)
-sqjhc mxmxvkd sbzzf (contains fish)"[1..]
-                    .split('\n')
-                    .map(|s| s.to_string())
-                    .collect()
-            )
-            .solve_1()
-        );
+sqjhc mxmxvkd sbzzf (contains fish)"
+            .split('\n')
+            .skip(1)
+            .map(str::to_string)
+            .collect()
+    }
+
+    #[test]
+    fn example_1() {
+        assert_eq!(5, Solution::new(example_inputs()).part_1());
     }
 
     #[test]
     fn example_2() {
         assert_eq!(
             "mxmxvkd,sqjhc,fvjkl",
-            Solution::new(
-                "
-mxmxvkd kfcds sqjhc nhms (contains dairy, fish)
-trh fvjkl sbzzf mxmxvkd (contains dairy)
-sqjhc fvjkl (contains soy)
-sqjhc mxmxvkd sbzzf (contains fish)"[1..]
-                    .split('\n')
-                    .map(|s| s.to_string())
-                    .collect()
-            )
-            .solve_2()
+            Solution::new(example_inputs()).part_2()
         );
     }
 }

@@ -141,8 +141,24 @@ impl Tile {
     }
 }
 
+struct ArrangedTile {
+    id: u64,
+    tile: Tile,
+    orientation: Orientation,
+}
+
+impl ArrangedTile {
+    fn new(id: u64, tile: Tile, orientation: Orientation) -> Self {
+        Self {
+            id,
+            tile,
+            orientation,
+        }
+    }
+}
+
 struct Solution {
-    tiles: Vec<Vec<(u64, Tile, Orientation)>>,
+    tiles: Vec<Vec<ArrangedTile>>,
 }
 
 impl Solution {
@@ -173,39 +189,39 @@ impl Solution {
             tiles: Solution::build_image(&tiles_map),
         }
     }
-    fn solve_1(&self) -> u64 {
+    fn part_1(&self) -> u64 {
         let (row, col) = (self.tiles.len(), self.tiles[0].len());
         [
-            self.tiles[0][0].0,
-            self.tiles[0][col - 1].0,
-            self.tiles[row - 1][0].0,
-            self.tiles[row - 1][col - 1].0,
+            self.tiles[0][0].id,
+            self.tiles[0][col - 1].id,
+            self.tiles[row - 1][0].id,
+            self.tiles[row - 1][col - 1].id,
         ]
         .iter()
         .product()
     }
-    fn solve_2(&self) -> usize {
+    fn part_2(&self) -> usize {
         let actual = Tile {
             image: self
                 .tiles
                 .iter()
                 .map(|row| {
-                    let size = row[0].1.image.len();
+                    let size = row[0].tile.image.len();
                     (1..size - 1)
                         .map(|i| {
                             row.iter()
-                                .map(|tile| {
-                                    tile.1.translated(tile.2)[i]
+                                .map(|a| {
+                                    a.tile.translated(a.orientation)[i]
                                         .clone()
                                         .into_iter()
                                         .skip(1)
                                         .take(size - 2)
-                                        .collect::<Vec<bool>>()
+                                        .collect::<Vec<_>>()
                                 })
                                 .flatten()
                                 .collect()
                         })
-                        .collect::<Vec<Vec<bool>>>()
+                        .collect::<Vec<_>>()
                 })
                 .flatten()
                 .collect(),
@@ -221,10 +237,10 @@ impl Solution {
             row.chars()
                 .enumerate()
                 .filter_map(|(j, c)| if c == '#' { Some((i, j)) } else { None })
-                .collect::<Vec<(usize, usize)>>()
+                .collect::<Vec<_>>()
         })
         .flatten()
-        .collect::<Vec<(usize, usize)>>();
+        .collect::<Vec<_>>();
         let mut ret = actual
             .image
             .iter()
@@ -252,7 +268,7 @@ impl Solution {
         }
         ret
     }
-    fn build_image(tiles_map: &HashMap<u64, Tile>) -> Vec<Vec<(u64, Tile, Orientation)>> {
+    fn build_image(tiles_map: &HashMap<u64, Tile>) -> Vec<Vec<ArrangedTile>> {
         let mut borders_map = HashMap::new();
         for (&id, tile) in tiles_map.iter() {
             for &orientation in [Orientation::Rotate000, Orientation::Rotate180].iter() {
@@ -283,20 +299,20 @@ impl Solution {
                     .collect::<Vec<usize>>()
                     == vec![1, 1, 2, 2]
             }) {
-                let mut row = vec![(id, tile.clone(), orientation)];
+                let mut row = vec![ArrangedTile::new(id, tile.clone(), orientation)];
                 while let Some(last) = row.last() {
-                    let right = last.1.borders(last.2).right;
+                    let right = last.tile.borders(last.orientation).right;
                     if let Some(ids) = borders_map.get(&right) {
                         if ids.len() != 2 {
                             break;
                         }
-                        let id = if ids[0] == last.0 { ids[1] } else { ids[0] };
+                        let id = if ids[0] == last.id { ids[1] } else { ids[0] };
                         if let Some(tile) = tiles_map.get(&id) {
                             if let Some(&orientation) = Orientation::all()
                                 .iter()
                                 .find(|&orientation| tile.borders(*orientation).left == right)
                             {
-                                row.push((id, tile.clone(), orientation));
+                                row.push(ArrangedTile::new(id, tile.clone(), orientation));
                             }
                         }
                     }
@@ -307,18 +323,18 @@ impl Solution {
         while let Some(last_row) = tiles.last() {
             let mut row = Vec::with_capacity(last_row.len());
             for last in last_row.iter() {
-                let bottom = last.1.borders(last.2).bottom;
+                let bottom = last.tile.borders(last.orientation).bottom;
                 if let Some(ids) = borders_map.get(&bottom) {
                     if ids.len() != 2 {
                         break;
                     }
-                    let id = if ids[0] == last.0 { ids[1] } else { ids[0] };
+                    let id = if ids[0] == last.id { ids[1] } else { ids[0] };
                     if let Some(tile) = tiles_map.get(&id) {
                         if let Some(&orientation) = Orientation::all()
                             .iter()
                             .find(|&orientation| tile.borders(*orientation).top == bottom)
                         {
-                            row.push((id, tile.clone(), orientation));
+                            row.push(ArrangedTile::new(id, tile.clone(), orientation));
                         }
                     }
                 }
@@ -340,17 +356,16 @@ fn main() {
             .filter_map(|line| line.ok())
             .collect(),
     );
-    println!("{}", solution.solve_1());
-    println!("{}", solution.solve_2());
+    println!("Part 1: {}", solution.part_1());
+    println!("Part 2: {}", solution.part_2());
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn solution() -> Solution {
-        Solution::new(
-            "
+    fn example_inputs() -> Vec<String> {
+        r"
 Tile 2311:
 ..##.#..#.
 ##..#.....
@@ -457,20 +472,20 @@ Tile 3079:
 #.#####.##
 ..#.###...
 ..#.......
-..#.###..."[1..]
-                .split('\n')
-                .map(|s| s.to_string())
-                .collect(),
-        )
+..#.###..."
+            .split('\n')
+            .skip(1)
+            .map(str::to_string)
+            .collect()
     }
 
     #[test]
     fn example_1() {
-        assert_eq!(20_899_048_083_289, solution().solve_1());
+        assert_eq!(20_899_048_083_289, Solution::new(example_inputs()).part_1());
     }
 
     #[test]
     fn example_2() {
-        assert_eq!(273, solution().solve_2());
+        assert_eq!(273, Solution::new(example_inputs()).part_2());
     }
 }

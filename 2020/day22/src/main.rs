@@ -1,29 +1,28 @@
 use std::collections::{HashSet, VecDeque};
 use std::io::{BufRead, BufReader};
 
+enum Winner {
+    Player1,
+    Player2,
+}
+
 struct Solution {
     decks: [VecDeque<u8>; 2],
 }
 
 impl Solution {
     fn new(inputs: Vec<String>) -> Self {
-        let mut player1 = true;
         let mut decks = [VecDeque::new(), VecDeque::new()];
-        for input in inputs.iter().filter(|&s| !s.is_empty()) {
-            if input.starts_with("Player 2") {
-                player1 = false;
-            }
-            if let Ok(card) = input.parse() {
-                if player1 {
-                    decks[0].push_back(card);
-                } else {
-                    decks[1].push_back(card)
-                }
-            }
+        for (i, lines) in inputs.split(String::is_empty).enumerate() {
+            lines
+                .iter()
+                .skip(1)
+                .filter_map(|s| s.parse().ok())
+                .for_each(|card| decks[i].push_back(card))
         }
         Self { decks }
     }
-    fn solve_1(&self) -> u32 {
+    fn part_1(&self) -> u32 {
         let mut decks = self.decks.clone();
         Solution::combat(&mut decks, false);
         decks
@@ -37,7 +36,7 @@ impl Solution {
             })
             .sum()
     }
-    fn solve_2(&self) -> u32 {
+    fn part_2(&self) -> u32 {
         let mut decks = self.decks.clone();
         Solution::combat(&mut decks, true);
         decks
@@ -51,7 +50,7 @@ impl Solution {
             })
             .sum()
     }
-    fn combat(decks: &mut [VecDeque<u8>; 2], recursive: bool) -> bool {
+    fn combat(decks: &mut [VecDeque<u8>; 2], recursive: bool) -> Winner {
         let mut memo = HashSet::new();
         while decks.iter().all(|deck| !deck.is_empty()) {
             if recursive {
@@ -63,12 +62,12 @@ impl Solution {
                     v
                 };
                 if memo.contains(&key) {
-                    return true;
+                    return Winner::Player1;
                 }
                 memo.insert(key);
             }
             if let (Some(top0), Some(top1)) = (decks[0].pop_front(), decks[1].pop_front()) {
-                let player1_wins = if recursive
+                let winner = if recursive
                     && top0 as usize <= decks[0].len()
                     && top1 as usize <= decks[1].len()
                 {
@@ -78,18 +77,29 @@ impl Solution {
                     ];
                     Solution::combat(&mut new_decks, recursive)
                 } else {
-                    top0 > top1
+                    if top0 > top1 {
+                        Winner::Player1
+                    } else {
+                        Winner::Player2
+                    }
                 };
-                if player1_wins {
-                    decks[0].push_back(top0);
-                    decks[0].push_back(top1);
-                } else {
-                    decks[1].push_back(top1);
-                    decks[1].push_back(top0);
+                match winner {
+                    Winner::Player1 => {
+                        decks[0].push_back(top0);
+                        decks[0].push_back(top1);
+                    }
+                    Winner::Player2 => {
+                        decks[1].push_back(top1);
+                        decks[1].push_back(top0);
+                    }
                 }
             }
         }
-        decks[1].is_empty()
+        if decks[1].is_empty() {
+            Winner::Player1
+        } else {
+            Winner::Player2
+        }
     }
 }
 
@@ -100,20 +110,16 @@ fn main() {
             .filter_map(|line| line.ok())
             .collect(),
     );
-    println!("{}", solution.solve_1());
-    println!("{}", solution.solve_2());
+    println!("Part 1: {}", solution.part_1());
+    println!("Part 2: {}", solution.part_2());
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn example_1() {
-        assert_eq!(
-            306,
-            Solution::new(
-                "
+    fn example_inputs() -> Vec<String> {
+        r"
 Player 1:
 9
 2
@@ -126,39 +132,20 @@ Player 2:
 8
 4
 7
-10"[1..]
-                    .split('\n')
-                    .map(|s| s.to_string())
-                    .collect()
-            )
-            .solve_1()
-        );
+10"
+        .split('\n')
+        .skip(1)
+        .map(str::to_string)
+        .collect()
+    }
+
+    #[test]
+    fn example_1() {
+        assert_eq!(306, Solution::new(example_inputs()).part_1());
     }
 
     #[test]
     fn example_2() {
-        assert_eq!(
-            291,
-            Solution::new(
-                "
-Player 1:
-9
-2
-6
-3
-1
-
-Player 2:
-5
-8
-4
-7
-10"[1..]
-                    .split('\n')
-                    .map(|s| s.to_string())
-                    .collect()
-            )
-            .solve_2()
-        );
+        assert_eq!(291, Solution::new(example_inputs()).part_2());
     }
 }

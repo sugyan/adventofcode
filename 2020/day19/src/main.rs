@@ -54,29 +54,29 @@ struct Solution {
 
 impl Solution {
     fn new(inputs: Vec<String>) -> Self {
-        let mut rules: HashMap<u8, Rule> = HashMap::new();
-        let mut messages: Vec<String> = Vec::new();
+        let mut rules = HashMap::new();
+        let mut messages = Vec::new();
         for input in inputs.iter().filter(|&s| !s.is_empty()) {
             if input.starts_with(char::is_numeric) {
-                let s: Vec<&str> = input.split(": ").collect();
+                let s = input.split(": ").collect::<Vec<_>>();
                 if let Ok(key) = s[0].parse() {
                     rules.insert(
                         key,
                         if s[1].starts_with('"') {
                             Rule::Char(s[1].chars().nth(1).unwrap())
                         } else if s[1].contains(" | ") {
-                            let v: Vec<&str> = s[1].split(" | ").collect();
+                            let v = s[1].split(" | ").collect::<Vec<_>>();
                             Rule::Or(
                                 Box::new(Rule::Sequence(
                                     v[0].split(' ')
                                         .filter_map(|s| s.parse().ok())
-                                        .map(|n| Rule::Ref(n))
+                                        .map(Rule::Ref)
                                         .collect(),
                                 )),
                                 Box::new(Rule::Sequence(
                                     v[1].split(' ')
                                         .filter_map(|s| s.parse().ok())
-                                        .map(|n| Rule::Ref(n))
+                                        .map(Rule::Ref)
                                         .collect(),
                                 )),
                             )
@@ -96,17 +96,17 @@ impl Solution {
         }
         Self { rules, messages }
     }
-    fn solve_1(&self) -> usize {
+    fn part_1(&self) -> usize {
         self.count_matches(&self.rules)
     }
-    fn solve_2(&self) -> usize {
+    fn part_2(&self) -> usize {
         let mut rules = self.rules.clone();
         rules.insert(
             8,
             Rule::Or(
                 Box::new(Rule::Ref(42)),
                 Box::new(Rule::Sequence(
-                    [42, 8].iter().map(|&u| Rule::Ref(u)).collect(),
+                    vec![42, 8].into_iter().map(Rule::Ref).collect(),
                 )),
             ),
         );
@@ -114,10 +114,10 @@ impl Solution {
             11,
             Rule::Or(
                 Box::new(Rule::Sequence(
-                    [42, 31].iter().map(|&u| Rule::Ref(u)).collect(),
+                    vec![42, 31].into_iter().map(Rule::Ref).collect(),
                 )),
                 Box::new(Rule::Sequence(
-                    [42, 11, 31].iter().map(|&u| Rule::Ref(u)).collect(),
+                    vec![42, 11, 31].into_iter().map(Rule::Ref).collect(),
                 )),
             ),
         );
@@ -142,8 +142,8 @@ fn main() {
             .filter_map(|line| line.ok())
             .collect(),
     );
-    println!("{}", solution.solve_1());
-    println!("{}", solution.solve_2());
+    println!("Part 1: {}", solution.part_1());
+    println!("Part 2: {}", solution.part_2());
 }
 
 #[cfg(test)]
@@ -167,12 +167,13 @@ ababbb
 bababa
 abbbab
 aaabbb
-aaaabbb"#[1..]
+aaaabbb"#
                     .split('\n')
-                    .map(|s| s.to_string())
+                    .skip(1)
+                    .map(str::to_string)
                     .collect()
             )
-            .solve_1()
+            .part_1()
         );
     }
 
@@ -226,12 +227,13 @@ aaaaabbaabaaaaababaa
 aaaabbaaaabbaaa
 aaaabbaabbaaaaaaabbbabbbaaabbaabaaa
 babaaabbbaaabaababbaabababaaab
-aabbbbbaabbbaaaaaabbbbbababaaaaabbaaabba"#[1..]
+aabbbbbaabbbaaaaaabbbbbababaaaaabbaaabba"#
                 .split('\n')
-                .map(|s| s.to_string())
+                .skip(1)
+                .map(str::to_string)
                 .collect(),
         );
-        assert_eq!(3, solution.solve_1());
-        assert_eq!(12, solution.solve_2());
+        assert_eq!(3, solution.part_1());
+        assert_eq!(12, solution.part_2());
     }
 }
