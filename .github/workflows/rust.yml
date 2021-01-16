@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./2020
+        working-directory: ./2020/rust
     steps:
     - uses: actions/checkout@v2
     - name: Build
