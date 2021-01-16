@@ -5,52 +5,52 @@ struct Solution {
 }
 
 impl Solution {
-    fn new(input: String) -> Self {
+    fn new(inputs: Vec<String>) -> Self {
         Self {
-            cups: input
+            cups: inputs[0]
                 .as_bytes()
                 .iter()
                 .map(|&b| (b - b'0') as u32)
                 .collect(),
         }
     }
-    fn solve_1(&self) -> String {
+    fn part_1(&self) -> String {
         let cups = self.game(9, 100);
-        let mut ret = Vec::new();
         let mut cup = 1;
-        for _ in 0..8 {
-            ret.push(cups[cup].to_string());
-            cup = cups[cup] as usize;
-        }
-        ret.concat()
+        (0..8)
+            .map(|_| {
+                cup = cups[cup] as usize;
+                cup.to_string()
+            })
+            .collect()
     }
-    fn solve_2(&self) -> u64 {
+    fn part_2(&self) -> u64 {
         let cups = self.game(1_000_000, 10_000_000);
-        let mut ret = 1;
         let mut cup = 1;
-        for _ in 0..2 {
-            ret *= cups[cup] as u64;
-            cup = cups[cup] as usize;
-        }
-        ret
+        (0..2)
+            .map(|_| {
+                cup = cups[cup] as usize;
+                cup as u64
+            })
+            .product()
     }
     fn game(&self, cups: usize, moves: usize) -> Vec<u32> {
-        let mut map = vec![0; cups + 1];
+        let mut v = vec![0; cups + 1];
         let mut last = None;
         for (i, &cup) in self.cups.iter().enumerate() {
             if i > 0 {
-                map[self.cups[i - 1] as usize] = cup;
+                v[self.cups[i - 1] as usize] = cup;
             }
             last = Some(cup);
         }
         for i in self.cups.len()..cups {
             if let Some(l) = last {
-                map[l as usize] = i as u32 + 1;
+                v[l as usize] = i as u32 + 1;
             }
             last = Some(i as u32 + 1)
         }
         if let Some(l) = last {
-            map[l as usize] = self.cups[0];
+            v[l as usize] = self.cups[0];
         }
 
         let highest = cups as usize;
@@ -59,7 +59,7 @@ impl Solution {
         for _ in 0..moves {
             let mut p = current;
             for pickup in pickups.iter_mut() {
-                p = map[p] as usize;
+                p = v[p] as usize;
                 *pickup = p;
             }
             let mut destination = if current > 1 { current - 1 } else { highest };
@@ -70,13 +70,13 @@ impl Solution {
                     highest
                 };
             }
-            let tmp = map[current];
-            map[current] = map[p];
-            map[p] = map[destination];
-            map[destination] = tmp;
-            current = map[current] as usize;
+            let tmp = v[current];
+            v[current] = v[p];
+            v[p] = v[destination];
+            v[destination] = tmp;
+            current = v[current] as usize;
         }
-        map
+        v
     }
 }
 
@@ -85,11 +85,10 @@ fn main() {
         BufReader::new(std::io::stdin().lock())
             .lines()
             .filter_map(|line| line.ok())
-            .next()
-            .unwrap(),
+            .collect(),
     );
-    println!("{}", solution.solve_1());
-    println!("{}", solution.solve_2());
+    println!("Part 1: {}", solution.part_1());
+    println!("Part 2: {}", solution.part_2());
 }
 
 #[cfg(test)]
@@ -100,7 +99,7 @@ mod tests {
     fn example_1() {
         assert_eq!(
             "67384529",
-            Solution::new(String::from("389125467")).solve_1()
+            Solution::new(vec![String::from("389125467")]).part_1()
         );
     }
 
@@ -108,7 +107,7 @@ mod tests {
     fn example_2() {
         assert_eq!(
             149245887792,
-            Solution::new(String::from("389125467")).solve_2()
+            Solution::new(vec![String::from("389125467")]).part_2()
         );
     }
 }

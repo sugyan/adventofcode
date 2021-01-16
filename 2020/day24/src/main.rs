@@ -40,10 +40,10 @@ impl Solution {
         }
         Self { flipped }
     }
-    fn solve_1(&self) -> usize {
+    fn part_1(&self) -> usize {
         self.flipped.len()
     }
-    fn solve_2(&self) -> usize {
+    fn part_2(&self) -> usize {
         let mut flipped = self.flipped.clone();
         let adjacents = [(2, 0), (1, -1), (-1, -1), (-2, 0), (-1, 1), (1, 1)];
         for _ in 0..100 {
@@ -76,20 +76,16 @@ fn main() {
             .filter_map(|line| line.ok())
             .collect(),
     );
-    println!("{}", solution.solve_1());
-    println!("{}", solution.solve_2());
+    println!("Part 1: {}", solution.part_1());
+    println!("Part 2: {}", solution.part_2());
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn example_1() {
-        assert_eq!(
-            10,
-            Solution::new(
-                "
+    fn example_inputs() -> Vec<String> {
+        r"
 sesenwnenenewseeswwswswwnenewsewsw
 neeenesenwnwwswnenewnwwsewnenwseswesw
 seswneswswsenwwnwse
@@ -109,46 +105,20 @@ wnwnesenesenenwwnenwsewesewsesesew
 nenewswnwewswnenesenwnesewesw
 eneswnwswnwsenenwnwnwwseeswneewsenese
 neswnwewnwnwseenwseesewsenwsweewe
-wseweeenwnesenwwwswnew"[1..]
-                    .split('\n')
-                    .map(str::to_string)
-                    .collect()
-            )
-            .solve_1()
-        );
+wseweeenwnesenwwwswnew"
+            .split('\n')
+            .skip(1)
+            .map(str::to_string)
+            .collect()
+    }
+
+    #[test]
+    fn example_1() {
+        assert_eq!(10, Solution::new(example_inputs()).part_1());
     }
 
     #[test]
     fn example_2() {
-        assert_eq!(
-            2208,
-            Solution::new(
-                "
-sesenwnenenewseeswwswswwnenewsewsw
-neeenesenwnwwswnenewnwwsewnenwseswesw
-seswneswswsenwwnwse
-nwnwneseeswswnenewneswwnewseswneseene
-swweswneswnenwsewnwneneseenw
-eesenwseswswnenwswnwnwsewwnwsene
-sewnenenenesenwsewnenwwwse
-wenwwweseeeweswwwnwwe
-wsweesenenewnwwnwsenewsenwwsesesenwne
-neeswseenwwswnwswswnw
-nenwswwsewswnenenewsenwsenwnesesenew
-enewnwewneswsewnwswenweswnenwsenwsw
-sweneswneswneneenwnewenewwneswswnese
-swwesenesewenwneswnwwneseswwne
-enesenwswwswneneswsenwnewswseenwsese
-wnwnesenesenenwwnenwsewesewsesesew
-nenewswnwewswnenesenwnesewesw
-eneswnwswnwsenenwnwnwwseeswneewsenese
-neswnwewnwnwseenwseesewsenwsweewe
-wseweeenwnesenwwwswnew"[1..]
-                    .split('\n')
-                    .map(str::to_string)
-                    .collect()
-            )
-            .solve_2()
-        );
+        assert_eq!(2208, Solution::new(example_inputs()).part_2());
     }
 }

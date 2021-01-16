@@ -8,13 +8,13 @@ struct Solution {
 const DIV: u64 = 20_201_227;
 
 impl Solution {
-    fn new(inputs: Vec<u64>) -> Self {
+    fn new(inputs: Vec<String>) -> Self {
         Self {
-            card_key: inputs[0],
-            door_key: inputs[1],
+            card_key: inputs[0].parse().unwrap(),
+            door_key: inputs[1].parse().unwrap(),
         }
     }
-    fn solve_1(&self) -> u64 {
+    fn part_1(&self) -> u64 {
         fn loop_size(target: u64) -> Option<usize> {
             let mut value = 1;
             for i in 0..DIV as usize {
@@ -41,10 +41,9 @@ fn main() {
         BufReader::new(std::io::stdin().lock())
             .lines()
             .filter_map(|line| line.ok())
-            .filter_map(|s| s.parse().ok())
             .collect(),
     );
-    println!("{}", solution.solve_1());
+    println!("Part 1: {}", solution.part_1());
 }
 
 #[cfg(test)]
@@ -53,6 +52,9 @@ mod tests {
 
     #[test]
     fn example_1() {
-        assert_eq!(14897079, Solution::new(vec![5764801, 17807724]).solve_1());
+        assert_eq!(
+            14897079,
+            Solution::new(vec![String::from("5764801"), String::from("17807724")]).part_1()
+        );
     }
 }
