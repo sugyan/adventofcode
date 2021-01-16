@@ -18,7 +18,7 @@ impl Solution {
                 return (2020 - i) * i;
             }
         }
-        0
+        unreachable!()
     }
     fn part_2(&self) -> i32 {
         let hs: HashSet<&i32> = self.reports.iter().collect();
@@ -31,7 +31,7 @@ impl Solution {
                 }
             }
         }
-        0
+        unreachable!()
     }
 }
 
