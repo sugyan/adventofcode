@@ -1,82 +1,82 @@
-use lazy_static::lazy_static;
 use regex::Regex;
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
 
 struct Solution {
-    inputs: Vec<String>,
+    passports: Vec<HashMap<String, String>>,
 }
 
 impl Solution {
     fn new(inputs: Vec<String>) -> Self {
-        Self { inputs }
+        Self {
+            passports: inputs
+                .split(String::is_empty)
+                .map(|lines| {
+                    lines
+                        .iter()
+                        .map(|line| {
+                            line.split(' ').map(|field| {
+                                let v = field.split(':').collect::<Vec<_>>();
+                                (v[0].to_string(), v[1].to_string())
+                            })
+                        })
+                        .flatten()
+                        .collect()
+                })
+                .collect(),
+        }
     }
     fn part_1(&self) -> usize {
-        self.count_valid(false)
-    }
-    fn part_2(&self) -> usize {
-        self.count_valid(true)
-    }
-    fn count_valid(&self, validate_value: bool) -> usize {
-        self.inputs
-            .split(String::is_empty)
-            .filter(|&lines| {
-                let fields = lines
-                    .iter()
-                    .map(|line| {
-                        line.split(' ').map(|field| {
-                            let v = field.split(':').collect::<Vec<_>>();
-                            (v[0].to_string(), v[1].to_string())
-                        })
-                    })
-                    .flatten()
-                    .collect::<HashMap<_, _>>();
-                (fields.len() == 8 || (fields.len() == 7 && !fields.contains_key("cid")))
-                    && (!validate_value || self.validate_values(&fields))
+        self.passports
+            .iter()
+            .filter(|&passport| {
+                passport.len() == 8 || (passport.len() == 7 && !passport.contains_key("cid"))
             })
             .count()
     }
-    fn validate_values(&self, fields: &HashMap<String, String>) -> bool {
-        fields.iter().all(|(key, value)| match key.as_str() {
-            "byr" => value
-                .parse::<i32>()
-                .map_or(false, |y| (1920..=2002).contains(&y)),
-            "iyr" => value
-                .parse::<i32>()
-                .map_or(false, |y| (2010..=2020).contains(&y)),
-            "eyr" => value
-                .parse::<i32>()
-                .map_or(false, |y| (2020..=2030).contains(&y)),
-
-            "hgt" => {
-                lazy_static! {
-                    static ref RE: Regex = Regex::new(r"^(\d+)(cm|in)$").unwrap();
-                }
-                if let Some(cap) = RE.captures_iter(value).next() {
-                    let n: i32 = cap[1].parse::<i32>().unwrap();
-                    match &cap[2] {
-                        "cm" => (150..=193).contains(&n),
-                        "in" => (59..=76).contains(&n),
-                        _ => false,
+    fn part_2(&self) -> usize {
+        let re_hgt = Regex::new(r"^(\d+)(cm|in)$").unwrap();
+        let re_hcl = Regex::new(r"^#[0-9a-f]{6}$").unwrap();
+        let validate_values = |fields: &HashMap<String, String>| -> bool {
+            fields.iter().all(|(key, value)| match key.as_str() {
+                "byr" => value
+                    .parse::<i32>()
+                    .map_or(false, |y| (1920..=2002).contains(&y)),
+                "iyr" => value
+                    .parse::<i32>()
+                    .map_or(false, |y| (2010..=2020).contains(&y)),
+                "eyr" => value
+                    .parse::<i32>()
+                    .map_or(false, |y| (2020..=2030).contains(&y)),
+                "hgt" => {
+                    if let Some(cap) = re_hgt.captures_iter(value).next() {
+                        let n = cap[1].parse::<i32>().unwrap();
+                        match &cap[2] {
+                            "cm" => (150..=193).contains(&n),
+                            "in" => (59..=76).contains(&n),
+                            _ => false,
+                        }
+                    } else {
+                        false
                     }
-                } else {
-                    false
                 }
-            }
-            "hcl" => {
-                lazy_static! {
-                    static ref RE: Regex = Regex::new(r"^#[0-9a-f]{6}$").unwrap();
-                }
-                RE.is_match(value)
-            }
-            "ecl" => matches!(
-                value.as_str(),
-                "amb" | "blu" | "brn" | "gry" | "grn" | "hzl" | "oth"
-            ),
-            "pid" => value.len() == 9 && value.chars().all(char::is_numeric),
-            "cid" => true,
-            _ => false,
-        })
+                "hcl" => re_hcl.is_match(value),
+                "ecl" => matches!(
+                    value.as_str(),
+                    "amb" | "blu" | "brn" | "gry" | "grn" | "hzl" | "oth"
+                ),
+                "pid" => value.len() == 9 && value.chars().all(char::is_numeric),
+                "cid" => true,
+                _ => unreachable!(),
+            })
+        };
+        self.passports
+            .iter()
+            .filter(|&passport| {
+                (passport.len() == 8 || (passport.len() == 7 && !passport.contains_key("cid")))
+                    && validate_values(&passport)
+            })
+            .count()
     }
 }
 
