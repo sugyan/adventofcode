@@ -52,6 +52,7 @@ mod tests {
         assert_eq!(
             820,
             Solution::new(vec![
+                String::from("FBFBBFFRLR"),
                 String::from("BFFFBBFRRR"),
                 String::from("FFFBBBFRRR"),
                 String::from("BBFFBBFRLL"),

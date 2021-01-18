@@ -14,8 +14,8 @@ class TestDay01(unittest.TestCase):
 675
 1456""".splitlines()
 
-    def test_part_1(self):
+    def test_part_1(self) -> None:
         self.assertEqual(514_579, Solution(self.example_inputs()).part_1())
 
-    def test_part_2(self):
+    def test_part_2(self) -> None:
         self.assertEqual(241_861_950, Solution(self.example_inputs()).part_2())
