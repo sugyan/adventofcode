@@ -20,9 +20,7 @@ class TestDay03(unittest.TestCase):
 .#..#...#.#""".splitlines()
 
     def test_part_1(self):
-        solution = Solution(self.example_inputs())
-        self.assertEqual(7, solution.part_1())
+        self.assertEqual(7, Solution(self.example_inputs()).part_1())
 
     def test_part_2(self):
-        solution = Solution(self.example_inputs())
-        self.assertEqual(336, solution.part_2())
+        self.assertEqual(336, Solution(self.example_inputs()).part_2())

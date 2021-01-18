@@ -1,6 +1,5 @@
 import sys
 from functools import reduce
-
 from typing import List
 
 
