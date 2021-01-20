@@ -1,19 +1,19 @@
 import sys
 from functools import reduce
-from typing import List
+from typing import Iterable, List
 
 
 class Solution:
     def __init__(self, inputs: List[str]) -> None:
-        def split_at_empty():
+        def split_at_empty() -> Iterable[List[str]]:
             indices = [idx for idx, x in enumerate(inputs) if not x]
             for start, end in zip([-1, *indices], [*indices, len(inputs)]):
                 yield inputs[start + 1 : end]
 
-        def convert(answers) -> int:
+        def convert(answers: str) -> int:
             return sum(map(lambda c: 1 << (ord(c) - ord("a")), answers))
 
-        self.groups: List[List[int]] = []
+        self.groups = []
         for lines in split_at_empty():
             self.groups.append([convert(line) for line in lines])
 

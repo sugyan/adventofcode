@@ -5,7 +5,7 @@ from typing import List
 
 class Solution:
     def __init__(self, inputs: List[str]) -> None:
-        self.grid: List[str] = inputs
+        self.grid = inputs
 
     def part_1(self) -> int:
         return self.__count(3, 1)
@@ -23,9 +23,9 @@ class Solution:
         )
 
     def __count(self, right: int, down: int) -> int:
-        ret: int = 0
+        ret = 0
         for j, i in enumerate(range(0, len(self.grid), down)):
-            row: str = self.grid[i]
+            row = self.grid[i]
             if row[(j * right) % len(row)] == "#":
                 ret += 1
         return ret

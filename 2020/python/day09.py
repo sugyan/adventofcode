@@ -1,7 +1,7 @@
 import sys
 from collections import deque
 from itertools import combinations
-from typing import Deque, Iterable, List
+from typing import Iterable, List
 
 
 class Solution:
@@ -10,13 +10,13 @@ class Solution:
         self.preamble = preamble
 
     def part_1(self) -> int:
-        def has_pair(numbers: Iterable, target: int) -> bool:
+        def has_pair(numbers: Iterable[int], target: int) -> bool:
             for c in combinations(dq, 2):
                 if sum(c) == target:
                     return True
             return False
 
-        dq: Deque[int] = deque(self.numbers[: self.preamble])
+        dq = deque(self.numbers[: self.preamble])
         for number in self.numbers[self.preamble :]:
             if not has_pair(dq, number):
                 return number
@@ -25,7 +25,7 @@ class Solution:
         raise ValueError
 
     def part_2(self) -> int:
-        target: int = self.part_1()
+        target = self.part_1()
         lo, hi = (0, 0)
         total = self.numbers[0]
         while total != target:

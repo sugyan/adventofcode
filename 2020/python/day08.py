@@ -1,6 +1,6 @@
 import sys
 from enum import Enum
-from typing import List, Optional, Set, Tuple
+from typing import List, Optional, Tuple
 
 
 class Operation(Enum):
@@ -15,20 +15,20 @@ class Solution:
             ope, arg = line.split(" ")
             return Operation(ope), int(arg)
 
-        self.instructions: List[Tuple[Operation, int]] = list(map(parse, inputs))
+        self.instructions = list(map(parse, inputs))
 
     def part_1(self) -> int:
         return self.__run()[0]
 
     def part_2(self) -> int:
         for i in range(len(self.instructions)):
-            ret: Tuple[int, bool] = self.__run(i)
+            ret = self.__run(i)
             if ret[1]:
                 return ret[0]
         raise ValueError
 
     def __run(self, change: Optional[int] = None) -> Tuple[int, bool]:
-        visited: Set[int] = set()
+        visited = set()
         i, acc = 0, 0
         while i < len(self.instructions):
             if i in visited:

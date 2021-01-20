@@ -1,5 +1,5 @@
 import sys
-from typing import List, Set
+from typing import List
 
 
 class Solution:
@@ -7,13 +7,13 @@ class Solution:
         def convert(seat: str) -> int:
             return int(seat.translate(str.maketrans("BRFL", "1100")), 2)
 
-        self.seats: List[int] = list(map(convert, inputs))
+        self.seats = list(map(convert, inputs))
 
     def part_1(self) -> int:
         return max(self.seats)
 
     def part_2(self) -> int:
-        s: Set[int] = set(self.seats)
+        s = set(self.seats)
         for seat in range(min(s), max(s) + 1):
             if seat not in s:
                 return seat

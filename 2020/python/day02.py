@@ -1,21 +1,21 @@
 import re
 import sys
-from typing import List, Match, Optional, Pattern
+from typing import List
 
 
 class Solution:
     def __init__(self, inputs: List[str]) -> None:
-        self.lines: List[str] = inputs
-        self.re: Pattern[str] = re.compile(r"(\d+)\-(\d+) (.): (.+)")
+        self.lines = inputs
+        self.re = re.compile(r"(\d+)\-(\d+) (.): (.+)")
 
     def part_1(self) -> int:
         def validate(line: str) -> bool:
-            match: Optional[Match[str]] = self.re.match(line)
+            match = self.re.match(line)
             if match:
-                lo: int = int(match.group(1))
-                hi: int = int(match.group(2))
-                c: str = match.group(3)
-                password: str = match.group(4)
+                lo = int(match.group(1))
+                hi = int(match.group(2))
+                c = match.group(3)
+                password = match.group(4)
                 return lo <= password.count(c) <= hi
             else:
                 return False
@@ -24,12 +24,12 @@ class Solution:
 
     def part_2(self) -> int:
         def validate(line: str) -> bool:
-            match: Optional[Match[str]] = self.re.match(line)
+            match = self.re.match(line)
             if match:
-                p1: int = int(match.group(1)) - 1
-                p2: int = int(match.group(2)) - 1
-                c: str = match.group(3)
-                password: str = match.group(4)
+                p1 = int(match.group(1)) - 1
+                p2 = int(match.group(2)) - 1
+                c = match.group(3)
+                password = match.group(4)
                 return (password[p1] == c) ^ (password[p2] == c)
             else:
                 return False
