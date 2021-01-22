@@ -20,7 +20,7 @@ impl Rule {
                 }
             }
             Rule::Char(c) => {
-                if Some(*c) == message.chars().next() {
+                if message.starts_with(*c) {
                     vec![&message[1..]]
                 } else {
                     Vec::new()
@@ -84,7 +84,7 @@ impl Solution {
                             Rule::Sequence(
                                 s[1].split(' ')
                                     .filter_map(|s| s.parse().ok())
-                                    .map(|n| Rule::Ref(n))
+                                    .map(Rule::Ref)
                                     .collect(),
                             )
                         },

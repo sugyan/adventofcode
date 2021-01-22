@@ -200,6 +200,7 @@ impl Solution {
         .iter()
         .product()
     }
+    #[allow(clippy::needless_collect)]
     fn part_2(&self) -> usize {
         let actual = Tile {
             image: self
@@ -241,6 +242,11 @@ impl Solution {
         })
         .flatten()
         .collect::<Vec<_>>();
+        let search_sea_monster = |image: &[Vec<bool>], i: usize, j: usize| -> bool {
+            sea_monster.iter().all(|&(di, dj)| {
+                i + di < image.len() && j + dj < image[i].len() && image[i + di][j + dj]
+            })
+        };
         let mut ret = actual
             .image
             .iter()
@@ -253,9 +259,7 @@ impl Solution {
                 let mut count = 0;
                 for i in 0..image.len() {
                     for j in 0..image[i].len() {
-                        if sea_monster.iter().all(|&(di, dj)| {
-                            i + di < image.len() && j + dj < image[i].len() && image[i + di][j + dj]
-                        }) {
+                        if search_sea_monster(&image, i, j) {
                             count += 1;
                         }
                     }

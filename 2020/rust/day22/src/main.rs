@@ -76,12 +76,10 @@ impl Solution {
                         decks[1].clone().into_iter().take(top1 as usize).collect(),
                     ];
                     Solution::combat(&mut new_decks, recursive)
+                } else if top0 > top1 {
+                    Winner::Player1
                 } else {
-                    if top0 > top1 {
-                        Winner::Player1
-                    } else {
-                        Winner::Player2
-                    }
+                    Winner::Player2
                 };
                 match winner {
                     Winner::Player1 => {
