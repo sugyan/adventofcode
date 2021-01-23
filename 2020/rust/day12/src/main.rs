@@ -28,27 +28,27 @@ impl Solution {
     fn run(&self, w: (i32, i32), waypoint: bool) -> i32 {
         let mut p = (0, 0);
         let mut w = w;
-        for &inst in self.instructions.iter() {
-            match inst.0 {
-                'N' if waypoint => w.1 += inst.1,
-                'N' => p.1 += inst.1,
-                'S' if waypoint => w.1 -= inst.1,
-                'S' => p.1 -= inst.1,
-                'E' if waypoint => w.0 += inst.1,
-                'E' => p.0 += inst.1,
-                'W' if waypoint => w.0 -= inst.1,
-                'W' => p.0 -= inst.1,
+        for &(action, value) in self.instructions.iter() {
+            match action {
+                'N' if waypoint => w.1 += value,
+                'N' => p.1 += value,
+                'S' if waypoint => w.1 -= value,
+                'S' => p.1 -= value,
+                'E' if waypoint => w.0 += value,
+                'E' => p.0 += value,
+                'W' if waypoint => w.0 -= value,
+                'W' => p.0 -= value,
                 'L' => {
-                    for _ in 0..inst.1 / 90 {
+                    for _ in 0..value / 90 {
                         w = (-w.1, w.0)
                     }
                 }
                 'R' => {
-                    for _ in 0..inst.1 / 90 {
+                    for _ in 0..value / 90 {
                         w = (w.1, -w.0)
                     }
                 }
-                'F' => p = (p.0 + w.0 * inst.1, p.1 + w.1 * inst.1),
+                'F' => p = (p.0 + w.0 * value, p.1 + w.1 * value),
                 _ => {}
             }
         }
