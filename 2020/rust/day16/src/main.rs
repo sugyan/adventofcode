@@ -7,7 +7,7 @@ struct Solution {
 }
 
 impl Solution {
-    fn new(inputs: Vec<String>) -> Self {
+    fn new(inputs: &[String]) -> Self {
         let mut rules = Vec::new();
         let mut nearby = Vec::new();
         let mut ticket = Vec::new();
@@ -25,15 +25,11 @@ impl Solution {
                 let ranges = kv[1]
                     .split(" or ")
                     .filter_map(|range| {
-                        if let Some(minmax) = range
+                        range
                             .split('-')
                             .map(|s| s.parse::<u32>().ok())
                             .collect::<Option<Vec<_>>>()
-                        {
-                            Some((minmax[0], minmax[1]))
-                        } else {
-                            None
-                        }
+                            .map(|minmax| (minmax[0], minmax[1]))
                     })
                     .collect();
                 rules.push((kv[0].to_string(), ranges));
@@ -56,8 +52,13 @@ impl Solution {
             .1
             .iter()
             .enumerate()
-            .filter(|(_, field)| field.starts_with("departure"))
-            .map(|(i, _)| self.ticket[i] as u64)
+            .filter_map(|(i, field)| {
+                if field.starts_with("departure") {
+                    Some(u64::from(self.ticket[i]))
+                } else {
+                    None
+                }
+            })
             .product()
     }
     fn identify(&self) -> (u32, Vec<String>) {
@@ -67,15 +68,15 @@ impl Solution {
             .filter_map(|rule| rule.1.iter().map(|&range| range.1).max())
             .max()
             .unwrap();
-        let mut v = vec![0u32; max as usize + 1];
+        let mut v = vec![0_u32; max as usize + 1];
         for (i, rule) in self.rules.iter().enumerate() {
-            for &r in rule.1.iter() {
+            for &r in &rule.1 {
                 (r.0..=r.1).for_each(|j| v[j as usize] |= 1 << i);
             }
         }
         let mut candidates = vec![(1 << self.ticket.len()) - 1; self.ticket.len()];
         let mut error_rate = 0;
-        for ticket in self.nearby.iter() {
+        for ticket in &self.nearby {
             let mut valid = true;
             for &val in ticket.iter() {
                 if val > max || v[val as usize] == 0 {
@@ -103,10 +104,10 @@ impl Solution {
 
 fn main() {
     let solution = Solution::new(
-        BufReader::new(std::io::stdin().lock())
+        &BufReader::new(std::io::stdin().lock())
             .lines()
-            .filter_map(|line| line.ok())
-            .collect(),
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>(),
     );
     println!("Part 1: {}", solution.part_1());
     println!("Part 2: {}", solution.part_2());
@@ -121,7 +122,7 @@ mod tests {
         assert_eq!(
             71,
             Solution::new(
-                r"
+                &r"
 class: 1-3 or 5-7
 row: 6-11 or 33-44
 seat: 13-40 or 45-50
@@ -137,7 +138,7 @@ nearby tickets:
                     .split('\n')
                     .skip(1)
                     .map(str::to_string)
-                    .collect()
+                    .collect::<Vec<_>>()
             )
             .identify()
             .0
@@ -149,7 +150,7 @@ nearby tickets:
         assert_eq!(
             vec!["row", "class", "seat"],
             Solution::new(
-                r"
+                &r"
 class: 0-1 or 4-19
 row: 0-5 or 8-19
 seat: 0-13 or 16-19
@@ -164,7 +165,7 @@ nearby tickets:
                     .split('\n')
                     .skip(1)
                     .map(str::to_string)
-                    .collect()
+                    .collect::<Vec<_>>()
             )
             .identify()
             .1

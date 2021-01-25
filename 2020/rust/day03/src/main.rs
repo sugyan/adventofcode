@@ -5,7 +5,7 @@ struct Solution {
 }
 
 impl Solution {
-    fn new(inputs: Vec<String>) -> Self {
+    fn new(inputs: &[String]) -> Self {
         Self {
             grid: inputs
                 .iter()
@@ -32,10 +32,10 @@ impl Solution {
 
 fn main() {
     let solution = Solution::new(
-        BufReader::new(std::io::stdin().lock())
+        &BufReader::new(std::io::stdin().lock())
             .lines()
-            .filter_map(|line| line.ok())
-            .collect(),
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>(),
     );
     println!("Part 1: {}", solution.part_1());
     println!("Part 2: {}", solution.part_2());
@@ -66,11 +66,11 @@ mod tests {
 
     #[test]
     fn example_1() {
-        assert_eq!(7, Solution::new(example_inputs()).part_1());
+        assert_eq!(7, Solution::new(&example_inputs()).part_1());
     }
 
     #[test]
     fn example_2() {
-        assert_eq!(336, Solution::new(example_inputs()).part_2());
+        assert_eq!(336, Solution::new(&example_inputs()).part_2());
     }
 }

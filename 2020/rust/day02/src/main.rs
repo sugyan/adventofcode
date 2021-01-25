@@ -7,9 +7,9 @@ struct Solution {
 }
 
 impl Solution {
-    fn new(inputs: Vec<String>) -> Self {
+    fn new(inputs: &[String]) -> Self {
         Self {
-            inputs,
+            inputs: inputs.iter().map(String::to_string).collect(),
             re: Regex::new(r"^(\d+)\-(\d+) (.): (.+)$").unwrap(),
         }
     }
@@ -17,15 +17,13 @@ impl Solution {
         self.inputs
             .iter()
             .filter(|&input| {
-                if let Some(cap) = self.re.captures(input) {
+                self.re.captures(input).map_or(false, |cap| {
                     let min = cap[1].parse::<usize>().unwrap();
                     let max = cap[2].parse::<usize>().unwrap();
                     let chr = cap[3].chars().next().unwrap();
                     let appear = cap[4].chars().filter(|&c| c == chr).count();
                     (min..=max).contains(&appear)
-                } else {
-                    false
-                }
+                })
             })
             .count()
     }
@@ -54,10 +52,10 @@ impl Solution {
 
 fn main() {
     let solution = Solution::new(
-        BufReader::new(std::io::stdin().lock())
+        &BufReader::new(std::io::stdin().lock())
             .lines()
-            .filter_map(|line| line.ok())
-            .collect(),
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>(),
     );
     println!("Part 1: {}", solution.part_1());
     println!("Part 2: {}", solution.part_2());
@@ -80,11 +78,11 @@ mod tests {
 
     #[test]
     fn example_1() {
-        assert_eq!(2, Solution::new(example_inputs()).part_1())
+        assert_eq!(2, Solution::new(&example_inputs()).part_1())
     }
 
     #[test]
     fn example_2() {
-        assert_eq!(1, Solution::new(example_inputs()).part_2())
+        assert_eq!(1, Solution::new(&example_inputs()).part_2())
     }
 }

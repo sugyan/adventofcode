@@ -6,7 +6,7 @@ struct Solution {
 }
 
 impl Solution {
-    fn new(inputs: Vec<String>) -> Self {
+    fn new(inputs: &[String]) -> Self {
         let mut active = HashSet::new();
         for (i, row) in inputs.iter().enumerate() {
             for (j, col) in row.chars().enumerate() {
@@ -49,7 +49,7 @@ impl Solution {
         let mut active = self.active.clone();
         for _ in 0..6 {
             let mut targets = HashSet::new();
-            for &p in active.iter() {
+            for &p in &active {
                 targets.insert(p);
                 for &d in neighbors.iter() {
                     targets.insert((p.0 + d.0, p.1 + d.1, p.2 + d.2, p.3 + d.3));
@@ -72,10 +72,10 @@ impl Solution {
 
 fn main() {
     let solution = Solution::new(
-        BufReader::new(std::io::stdin().lock())
+        &BufReader::new(std::io::stdin().lock())
             .lines()
-            .filter_map(|line| line.ok())
-            .collect(),
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>(),
     );
     println!("Part 1: {}", solution.part_1());
     println!("Part 2: {}", solution.part_2());
@@ -98,11 +98,11 @@ mod tests {
 
     #[test]
     fn example_1() {
-        assert_eq!(112, Solution::new(example_inputs()).part_1());
+        assert_eq!(112, Solution::new(&example_inputs()).part_1());
     }
 
     #[test]
     fn example_2() {
-        assert_eq!(848, Solution::new(example_inputs()).part_2());
+        assert_eq!(848, Solution::new(&example_inputs()).part_2());
     }
 }

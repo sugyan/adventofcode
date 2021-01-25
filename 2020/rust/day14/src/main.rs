@@ -8,16 +8,16 @@ struct Solution {
 }
 
 impl Solution {
-    fn new(inputs: Vec<String>) -> Self {
+    fn new(inputs: &[String]) -> Self {
         Self {
-            inputs,
+            inputs: inputs.iter().map(String::to_string).collect(),
             re: Regex::new(r"^mem\[(\d+)\] = (\d+)$").unwrap(),
         }
     }
     fn part_1(&self) -> u64 {
         let mut mask = ((1 << 36) - 1, 0);
         let mut mem = HashMap::new();
-        for input in self.inputs.iter() {
+        for input in &self.inputs {
             if let Some(m) = input.strip_prefix("mask = ") {
                 mask = ((1 << 36) - 1, 0);
                 for (i, c) in m.chars().rev().enumerate() {
@@ -38,7 +38,7 @@ impl Solution {
     fn part_2(&self) -> u64 {
         let mut mem = HashMap::new();
         let mut masks = (Vec::new(), 0);
-        for input in self.inputs.iter() {
+        for input in &self.inputs {
             if let Some(m) = input.strip_prefix("mask = ") {
                 masks.0.clear();
                 masks.1 = 0;
@@ -53,7 +53,7 @@ impl Solution {
                 if let (Ok(address), Ok(value)) = (cap[1].parse::<u64>(), cap[2].parse::<u64>()) {
                     let mut addresses = VecDeque::new();
                     addresses.push_back(address | masks.1);
-                    for &i in masks.0.iter() {
+                    for &i in &masks.0 {
                         for _ in 0..addresses.len() {
                             if let Some(front) = addresses.pop_front() {
                                 addresses.push_back(front | 1 << i);
@@ -61,7 +61,7 @@ impl Solution {
                             }
                         }
                     }
-                    for &address in addresses.iter() {
+                    for &address in &addresses {
                         mem.insert(address, value);
                     }
                 }
@@ -73,10 +73,10 @@ impl Solution {
 
 fn main() {
     let solution = Solution::new(
-        BufReader::new(std::io::stdin().lock())
+        &BufReader::new(std::io::stdin().lock())
             .lines()
-            .filter_map(|line| line.ok())
-            .collect(),
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>(),
     );
     println!("Part 1: {}", solution.part_1());
     println!("Part 2: {}", solution.part_2());
@@ -91,7 +91,7 @@ mod tests {
         assert_eq!(
             165,
             Solution::new(
-                r"
+                &r"
 mask = XXXXXXXXXXXXXXXXXXXXXXXXXXXXX1XXXX0X
 mem[8] = 11
 mem[7] = 101
@@ -99,7 +99,7 @@ mem[8] = 0"
                     .split('\n')
                     .skip(1)
                     .map(str::to_string)
-                    .collect()
+                    .collect::<Vec<_>>()
             )
             .part_1()
         );
@@ -110,7 +110,7 @@ mem[8] = 0"
         assert_eq!(
             208,
             Solution::new(
-                r"
+                &r"
 mask = 000000000000000000000000000000X1001X
 mem[42] = 100
 mask = 00000000000000000000000000000000X0XX
@@ -119,7 +119,7 @@ mem[26] = 1
                 .split('\n')
                 .skip(1)
                 .map(str::to_string)
-                .collect()
+                .collect::<Vec<_>>()
             )
             .part_2()
         );

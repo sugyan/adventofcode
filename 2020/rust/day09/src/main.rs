@@ -7,7 +7,7 @@ struct Solution {
 }
 
 impl Solution {
-    fn new(inputs: Vec<String>) -> Self {
+    fn new(inputs: &[String]) -> Self {
         Self {
             data: inputs.iter().filter_map(|s| s.parse().ok()).collect(),
             preamble: 25,
@@ -62,10 +62,10 @@ impl Solution {
 
 fn main() {
     let solution = Solution::new(
-        BufReader::new(std::io::stdin().lock())
+        &BufReader::new(std::io::stdin().lock())
             .lines()
-            .filter_map(|line| line.ok())
-            .collect(),
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>(),
     );
     println!("Part 1: {}", solution.part_1());
     println!("Part 2: {}", solution.part_2());
@@ -105,14 +105,14 @@ mod tests {
 
     #[test]
     fn example_1() {
-        let mut solution = Solution::new(example_inputs());
+        let mut solution = Solution::new(&example_inputs());
         solution.set_preamble(5);
         assert_eq!(127, solution.part_1());
     }
 
     #[test]
     fn example_2() {
-        let mut solution = Solution::new(example_inputs());
+        let mut solution = Solution::new(&example_inputs());
         solution.set_preamble(5);
         assert_eq!(62, solution.part_2());
     }

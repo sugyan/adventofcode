@@ -7,7 +7,7 @@ struct Solution {
 }
 
 impl Solution {
-    fn new(inputs: Vec<String>) -> Self {
+    fn new(inputs: &[String]) -> Self {
         let re = Regex::new(r"^(.+?) \(contains (.*?)\)$").unwrap();
         let mut data = Vec::new();
         for line in inputs.iter() {
@@ -49,7 +49,7 @@ impl Solution {
                 dangerous_ingredients.insert(allergen.clone(), ingredients[0].clone());
                 figure_outs.push(allergen.clone());
             }
-            for allergen in figure_outs.iter() {
+            for allergen in &figure_outs {
                 if let Some(removed) = candidates.remove(allergen) {
                     candidates.values_mut().for_each(|ingredients| {
                         ingredients.retain(|ingredient| *ingredient != removed[0]);
@@ -61,14 +61,13 @@ impl Solution {
         allergens.sort_unstable();
         allergens
             .into_iter()
-            .filter_map(|allergen| dangerous_ingredients.get(allergen))
-            .map(String::to_string)
+            .filter_map(|allergen| dangerous_ingredients.get(allergen).map(String::to_string))
             .collect::<Vec<_>>()
             .join(",")
     }
     fn calc_candidates(&self) -> HashMap<String, Vec<String>> {
         let mut counts_map = HashMap::new();
-        for (ingredients, allergens) in self.data.iter() {
+        for (ingredients, allergens) in &self.data {
             for allergen in allergens.iter() {
                 for ingredient in ingredients.iter() {
                     *counts_map
@@ -80,7 +79,7 @@ impl Solution {
             }
         }
         let mut candidates = HashMap::new();
-        for (allergen, counts) in counts_map.iter() {
+        for (allergen, counts) in &counts_map {
             if let Some(&max) = counts.values().max() {
                 candidates.insert(
                     allergen.to_string(),
@@ -103,10 +102,10 @@ impl Solution {
 
 fn main() {
     let solution = Solution::new(
-        BufReader::new(std::io::stdin().lock())
+        &BufReader::new(std::io::stdin().lock())
             .lines()
-            .filter_map(|line| line.ok())
-            .collect(),
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>(),
     );
     println!("Part 1: {}", solution.part_1());
     println!("Part 2: {}", solution.part_2());
@@ -130,14 +129,14 @@ sqjhc mxmxvkd sbzzf (contains fish)"
 
     #[test]
     fn example_1() {
-        assert_eq!(5, Solution::new(example_inputs()).part_1());
+        assert_eq!(5, Solution::new(&example_inputs()).part_1());
     }
 
     #[test]
     fn example_2() {
         assert_eq!(
             "mxmxvkd,sqjhc,fvjkl",
-            Solution::new(example_inputs()).part_2()
+            Solution::new(&example_inputs()).part_2()
         );
     }
 }

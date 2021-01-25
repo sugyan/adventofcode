@@ -6,14 +6,14 @@ struct Solution {
 }
 
 impl Solution {
-    fn new(inputs: Vec<String>) -> Self {
+    fn new(inputs: &[String]) -> Self {
         Self {
             reports: inputs.iter().filter_map(|s| s.parse().ok()).collect(),
         }
     }
     fn part_1(&self) -> i32 {
         let hs = self.reports.iter().collect::<HashSet<_>>();
-        for &i in self.reports.iter() {
+        for &i in &self.reports {
             if hs.contains(&(2020 - i)) {
                 return (2020 - i) * i;
             }
@@ -37,10 +37,10 @@ impl Solution {
 
 fn main() {
     let solution = Solution::new(
-        BufReader::new(std::io::stdin().lock())
+        &BufReader::new(std::io::stdin().lock())
             .lines()
-            .filter_map(|line| line.ok())
-            .collect(),
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>(),
     );
     println!("Part 1: {}", solution.part_1());
     println!("Part 2: {}", solution.part_2());
@@ -66,11 +66,11 @@ mod tests {
 
     #[test]
     fn example_1() {
-        assert_eq!(514579, Solution::new(example_inputs()).part_1());
+        assert_eq!(514_579, Solution::new(&example_inputs()).part_1());
     }
 
     #[test]
     fn example_2() {
-        assert_eq!(241861950, Solution::new(example_inputs()).part_2());
+        assert_eq!(241_861_950, Solution::new(&example_inputs()).part_2());
     }
 }

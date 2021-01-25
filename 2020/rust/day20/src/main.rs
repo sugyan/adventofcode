@@ -162,7 +162,7 @@ struct Solution {
 }
 
 impl Solution {
-    fn new(inputs: Vec<String>) -> Self {
+    fn new(inputs: &[String]) -> Self {
         let mut tiles_map = HashMap::new();
         let (mut id, mut tile) = (0, Vec::new());
         for line in inputs.iter() {
@@ -206,12 +206,12 @@ impl Solution {
             image: self
                 .tiles
                 .iter()
-                .map(|row| {
+                .flat_map(|row| {
                     let size = row[0].tile.image.len();
                     (1..size - 1)
                         .map(|i| {
                             row.iter()
-                                .map(|a| {
+                                .flat_map(|a| {
                                     a.tile.translated(a.orientation)[i]
                                         .clone()
                                         .into_iter()
@@ -219,12 +219,10 @@ impl Solution {
                                         .take(size - 2)
                                         .collect::<Vec<_>>()
                                 })
-                                .flatten()
                                 .collect()
                         })
                         .collect::<Vec<_>>()
                 })
-                .flatten()
                 .collect(),
         };
         let sea_monster = [
@@ -234,13 +232,12 @@ impl Solution {
         ]
         .iter()
         .enumerate()
-        .map(|(i, &row)| {
+        .flat_map(|(i, &row)| {
             row.chars()
                 .enumerate()
                 .filter_map(|(j, c)| if c == '#' { Some((i, j)) } else { None })
                 .collect::<Vec<_>>()
         })
-        .flatten()
         .collect::<Vec<_>>();
         let search_sea_monster = |image: &[Vec<bool>], i: usize, j: usize| -> bool {
             sea_monster.iter().all(|&(di, dj)| {
@@ -275,8 +272,8 @@ impl Solution {
     fn build_image(tiles_map: &HashMap<u64, Tile>) -> Vec<Vec<ArrangedTile>> {
         let mut borders_map = HashMap::new();
         for (&id, tile) in tiles_map.iter() {
-            for &orientation in [Orientation::Rotate000, Orientation::Rotate180].iter() {
-                for &border in tile.borders(orientation).all().iter() {
+            for &orientation in &[Orientation::Rotate000, Orientation::Rotate180] {
+                for &border in &tile.borders(orientation).all() {
                     borders_map
                         .entry(border.clone())
                         .or_insert_with(Vec::new)
@@ -298,8 +295,7 @@ impl Solution {
                 tile.borders(*orientation)
                     .all()
                     .iter()
-                    .filter_map(|&border| borders_map.get(border))
-                    .map(|v| v.len())
+                    .filter_map(|&border| borders_map.get(border).map(Vec::len))
                     .collect::<Vec<usize>>()
                     == vec![1, 1, 2, 2]
             }) {
@@ -355,10 +351,10 @@ impl Solution {
 
 fn main() {
     let solution = Solution::new(
-        BufReader::new(std::io::stdin().lock())
+        &BufReader::new(std::io::stdin().lock())
             .lines()
-            .filter_map(|line| line.ok())
-            .collect(),
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>(),
     );
     println!("Part 1: {}", solution.part_1());
     println!("Part 2: {}", solution.part_2());
@@ -485,11 +481,14 @@ Tile 3079:
 
     #[test]
     fn example_1() {
-        assert_eq!(20_899_048_083_289, Solution::new(example_inputs()).part_1());
+        assert_eq!(
+            20_899_048_083_289,
+            Solution::new(&example_inputs()).part_1()
+        );
     }
 
     #[test]
     fn example_2() {
-        assert_eq!(273, Solution::new(example_inputs()).part_2());
+        assert_eq!(273, Solution::new(&example_inputs()).part_2());
     }
 }

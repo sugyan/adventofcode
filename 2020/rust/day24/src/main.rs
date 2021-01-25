@@ -6,7 +6,7 @@ struct Solution {
 }
 
 impl Solution {
-    fn new(inputs: Vec<String>) -> Self {
+    fn new(inputs: &[String]) -> Self {
         let mut flipped = HashSet::new();
         for input in inputs.iter() {
             let mut p = (0, 0);
@@ -71,10 +71,10 @@ impl Solution {
 
 fn main() {
     let solution = Solution::new(
-        BufReader::new(std::io::stdin().lock())
+        &BufReader::new(std::io::stdin().lock())
             .lines()
-            .filter_map(|line| line.ok())
-            .collect(),
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>(),
     );
     println!("Part 1: {}", solution.part_1());
     println!("Part 2: {}", solution.part_2());
@@ -114,11 +114,11 @@ wseweeenwnesenwwwswnew"
 
     #[test]
     fn example_1() {
-        assert_eq!(10, Solution::new(example_inputs()).part_1());
+        assert_eq!(10, Solution::new(&example_inputs()).part_1());
     }
 
     #[test]
     fn example_2() {
-        assert_eq!(2208, Solution::new(example_inputs()).part_2());
+        assert_eq!(2_208, Solution::new(&example_inputs()).part_2());
     }
 }

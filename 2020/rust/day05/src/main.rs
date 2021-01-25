@@ -5,7 +5,7 @@ struct Solution {
 }
 
 impl Solution {
-    fn new(inputs: Vec<String>) -> Self {
+    fn new(inputs: &[String]) -> Self {
         Self {
             seats: inputs
                 .iter()
@@ -25,7 +25,7 @@ impl Solution {
     fn part_2(&self) -> i32 {
         let offset = self.part_1() as usize - self.seats.len();
         let mut v = vec![false; self.seats.len() + 1];
-        for &seat in self.seats.iter() {
+        for &seat in &self.seats {
             v[seat as usize - offset] = true;
         }
         (v.iter().position(|&b| !b).unwrap() + offset) as i32
@@ -34,10 +34,10 @@ impl Solution {
 
 fn main() {
     let solution = Solution::new(
-        BufReader::new(std::io::stdin().lock())
+        &BufReader::new(std::io::stdin().lock())
             .lines()
-            .filter_map(|line| line.ok())
-            .collect(),
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>(),
     );
     println!("Part 1: {}", solution.part_1());
     println!("Part 2: {}", solution.part_2());
@@ -51,7 +51,7 @@ mod tests {
     fn example_1() {
         assert_eq!(
             820,
-            Solution::new(vec![
+            Solution::new(&[
                 String::from("FBFBBFFRLR"),
                 String::from("BFFFBBFRRR"),
                 String::from("FFFBBBFRRR"),

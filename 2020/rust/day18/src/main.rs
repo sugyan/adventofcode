@@ -23,9 +23,9 @@ impl Term {
 }
 
 impl Solution {
-    fn new(inputs: Vec<String>) -> Self {
+    fn new(inputs: &[String]) -> Self {
         Self {
-            expressions: inputs,
+            expressions: inputs.iter().map(String::to_string).collect(),
         }
     }
     fn part_1(&self) -> u64 {
@@ -49,7 +49,7 @@ impl Solution {
         let mut op = Op::Mul;
         while let Some(c) = chars.next() {
             match c {
-                '0'..='9' => v.push(Term::new(op, (c as u8 - b'0') as u64)),
+                '0'..='9' => v.push(Term::new(op, u64::from(c as u8 - b'0'))),
                 '+' => op = Op::Add,
                 '*' => op = Op::Mul,
                 '(' => v.push(Term::new(op, Self::evaluate_recursive(chars, advanced))),
@@ -81,10 +81,10 @@ impl Solution {
 
 fn main() {
     let solution = Solution::new(
-        BufReader::new(std::io::stdin().lock())
+        &BufReader::new(std::io::stdin().lock())
             .lines()
-            .filter_map(|line| line.ok())
-            .collect(),
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>(),
     );
     println!("Part 1: {}", solution.part_1());
     println!("Part 2: {}", solution.part_2());
@@ -123,7 +123,7 @@ mod tests {
             Solution::evaluate("5 + (8 * 3 + 9 + 3 * 4 * 3)", true)
         );
         assert_eq!(
-            669060,
+            669_060,
             Solution::evaluate("5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))", true)
         );
         assert_eq!(

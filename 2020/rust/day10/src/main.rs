@@ -5,7 +5,7 @@ struct Solution {
 }
 
 impl Solution {
-    fn new(inputs: Vec<String>) -> Self {
+    fn new(inputs: &[String]) -> Self {
         let mut adapters = inputs
             .iter()
             .filter_map(|s| s.parse().ok())
@@ -41,10 +41,10 @@ impl Solution {
 
 fn main() {
     let solution = Solution::new(
-        BufReader::new(std::io::stdin().lock())
+        &BufReader::new(std::io::stdin().lock())
             .lines()
-            .filter_map(|line| line.ok())
-            .collect(),
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>(),
     );
     println!("Part 1: {}", solution.part_1());
     println!("Part 2: {}", solution.part_2());
@@ -114,13 +114,13 @@ mod tests {
 
     #[test]
     fn example_1() {
-        assert_eq!(35, Solution::new(example_inputs_1()).part_1());
-        assert_eq!(220, Solution::new(example_inputs_2()).part_1());
+        assert_eq!(35, Solution::new(&example_inputs_1()).part_1());
+        assert_eq!(220, Solution::new(&example_inputs_2()).part_1());
     }
 
     #[test]
     fn example_2() {
-        assert_eq!(8, Solution::new(example_inputs_1()).part_2());
-        assert_eq!(19_208, Solution::new(example_inputs_2()).part_2());
+        assert_eq!(8, Solution::new(&example_inputs_1()).part_2());
+        assert_eq!(19208, Solution::new(&example_inputs_2()).part_2());
     }
 }

@@ -5,12 +5,12 @@ struct Solution {
 }
 
 impl Solution {
-    fn new(inputs: Vec<String>) -> Self {
+    fn new(inputs: &[String]) -> Self {
         Self {
             cups: inputs[0]
                 .as_bytes()
                 .iter()
-                .map(|&b| (b - b'0') as u32)
+                .map(|&b| u32::from(b - b'0'))
                 .collect(),
         }
     }
@@ -58,7 +58,7 @@ impl Solution {
         let mut pickups = [0; 3];
         for _ in 0..moves {
             let mut p = current;
-            for pickup in pickups.iter_mut() {
+            for pickup in &mut pickups {
                 p = v[p] as usize;
                 *pickup = p;
             }
@@ -82,10 +82,10 @@ impl Solution {
 
 fn main() {
     let solution = Solution::new(
-        BufReader::new(std::io::stdin().lock())
+        &BufReader::new(std::io::stdin().lock())
             .lines()
-            .filter_map(|line| line.ok())
-            .collect(),
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>(),
     );
     println!("Part 1: {}", solution.part_1());
     println!("Part 2: {}", solution.part_2());
@@ -99,15 +99,15 @@ mod tests {
     fn example_1() {
         assert_eq!(
             "67384529",
-            Solution::new(vec![String::from("389125467")]).part_1()
+            Solution::new(&[String::from("389125467")]).part_1()
         );
     }
 
     #[test]
     fn example_2() {
         assert_eq!(
-            149245887792,
-            Solution::new(vec![String::from("389125467")]).part_2()
+            149_245_887_792,
+            Solution::new(&[String::from("389125467")]).part_2()
         );
     }
 }

@@ -8,7 +8,7 @@ struct Solution {
 const DIV: u64 = 20_201_227;
 
 impl Solution {
-    fn new(inputs: Vec<String>) -> Self {
+    fn new(inputs: &[String]) -> Self {
         Self {
             card_key: inputs[0].parse().unwrap(),
             door_key: inputs[1].parse().unwrap(),
@@ -38,10 +38,10 @@ impl Solution {
 
 fn main() {
     let solution = Solution::new(
-        BufReader::new(std::io::stdin().lock())
+        &BufReader::new(std::io::stdin().lock())
             .lines()
-            .filter_map(|line| line.ok())
-            .collect(),
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>(),
     );
     println!("Part 1: {}", solution.part_1());
 }
@@ -53,8 +53,8 @@ mod tests {
     #[test]
     fn example_1() {
         assert_eq!(
-            14897079,
-            Solution::new(vec![String::from("5764801"), String::from("17807724")]).part_1()
+            14_897_079,
+            Solution::new(&[String::from("5764801"), String::from("17807724")]).part_1()
         );
     }
 }

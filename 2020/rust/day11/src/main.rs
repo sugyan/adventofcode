@@ -6,7 +6,7 @@ struct Solution {
 }
 
 impl Solution {
-    fn new(inputs: Vec<String>) -> Self {
+    fn new(inputs: &[String]) -> Self {
         Self {
             layout: inputs.iter().map(|s| s.chars().collect()).collect(),
         }
@@ -27,7 +27,7 @@ impl Solution {
                 if col == '.' {
                     continue;
                 }
-                for &d in [
+                for &d in &[
                     (-1, -1),
                     (-1, 0),
                     (-1, 1),
@@ -36,9 +36,7 @@ impl Solution {
                     (1, -1),
                     (1, 0),
                     (1, 1),
-                ]
-                .iter()
-                {
+                ] {
                     for k in 1.. {
                         if adjacent && k > 1 {
                             break;
@@ -75,19 +73,17 @@ impl Solution {
                     row.iter()
                         .enumerate()
                         .map(|(j, &col)| {
-                            if col != '.' {
-                                let count = if let Some(v) = target_seats.get(&(i, j)) {
+                            if col == '.' {
+                                col
+                            } else {
+                                let count = target_seats.get(&(i, j)).map_or(0, |v| {
                                     v.iter().filter(|&p| curr[p.0][p.1] == '#').count()
-                                } else {
-                                    0
-                                };
+                                });
                                 match col {
                                     'L' if count == 0 => '#',
                                     '#' if count >= threshold => 'L',
                                     c => c,
                                 }
-                            } else {
-                                col
                             }
                         })
                         .collect()
@@ -106,10 +102,10 @@ impl Solution {
 
 fn main() {
     let solution = Solution::new(
-        BufReader::new(std::io::stdin().lock())
+        &BufReader::new(std::io::stdin().lock())
             .lines()
-            .filter_map(|line| line.ok())
-            .collect(),
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>(),
     );
     println!("Part 1: {}", solution.part_1());
     println!("Part 2: {}", solution.part_2());
@@ -139,11 +135,11 @@ L.LLLLL.LL"
 
     #[test]
     fn example_1() {
-        assert_eq!(37, Solution::new(example_inputs()).part_1());
+        assert_eq!(37, Solution::new(&example_inputs()).part_1());
     }
 
     #[test]
     fn example_2() {
-        assert_eq!(26, Solution::new(example_inputs()).part_2());
+        assert_eq!(26, Solution::new(&example_inputs()).part_2());
     }
 }

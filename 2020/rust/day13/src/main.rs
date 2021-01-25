@@ -5,15 +5,20 @@ struct Solution {
 }
 
 impl Solution {
-    fn new(inputs: Vec<String>) -> Self {
-        Self { inputs }
+    fn new(inputs: &[String]) -> Self {
+        Self {
+            inputs: inputs.iter().map(String::to_string).collect(),
+        }
     }
     fn part_1(&self) -> u32 {
         let timestamp = self.inputs[0].parse::<u32>().unwrap();
         if let Some((minutes, id)) = self.inputs[1]
             .split(',')
-            .filter_map(|s| s.parse::<u32>().ok())
-            .map(|id| (id * (timestamp / id + 1) - timestamp, id))
+            .filter_map(|s| {
+                s.parse::<u32>()
+                    .ok()
+                    .map(|id| (id * (timestamp / id + 1) - timestamp, id))
+            })
             .min_by_key(|&e| e.0)
         {
             id * minutes
@@ -42,10 +47,10 @@ impl Solution {
 
 fn main() {
     let solution = Solution::new(
-        BufReader::new(std::io::stdin().lock())
+        &BufReader::new(std::io::stdin().lock())
             .lines()
-            .filter_map(|line| line.ok())
-            .collect(),
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>(),
     );
     println!("Part 1: {}", solution.part_1());
     println!("Part 2: {}", solution.part_2());
@@ -66,31 +71,31 @@ mod tests {
     }
     #[test]
     fn example_1() {
-        assert_eq!(295, Solution::new(example_inputs()).part_1());
+        assert_eq!(295, Solution::new(&example_inputs()).part_1());
     }
 
     #[test]
     fn example_2() {
-        assert_eq!(1068781, Solution::new(example_inputs()).part_2());
+        assert_eq!(1_068_781, Solution::new(&example_inputs()).part_2());
         assert_eq!(
             3417,
-            Solution::new(vec![String::new(), String::from("17,x,13,19")]).part_2()
+            Solution::new(&[String::new(), String::from("17,x,13,19")]).part_2()
         );
         assert_eq!(
-            754018,
-            Solution::new(vec![String::new(), String::from("67,7,59,61")]).part_2()
+            754_018,
+            Solution::new(&[String::new(), String::from("67,7,59,61")]).part_2()
         );
         assert_eq!(
-            779210,
-            Solution::new(vec![String::new(), String::from("67,x,7,59,61")]).part_2()
+            779_210,
+            Solution::new(&[String::new(), String::from("67,x,7,59,61")]).part_2()
         );
         assert_eq!(
-            1261476,
-            Solution::new(vec![String::new(), String::from("67,7,x,59,61")]).part_2()
+            1_261_476,
+            Solution::new(&[String::new(), String::from("67,7,x,59,61")]).part_2()
         );
         assert_eq!(
-            1202161486,
-            Solution::new(vec![String::new(), String::from("1789,37,47,1889")]).part_2()
+            1_202_161_486,
+            Solution::new(&[String::new(), String::from("1789,37,47,1889")]).part_2()
         );
     }
 }

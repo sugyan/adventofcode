@@ -7,20 +7,19 @@ struct Solution {
 }
 
 impl Solution {
-    fn new(inputs: Vec<String>) -> Self {
+    fn new(inputs: &[String]) -> Self {
         Self {
             passports: inputs
                 .split(String::is_empty)
                 .map(|lines| {
                     lines
                         .iter()
-                        .map(|line| {
+                        .flat_map(|line| {
                             line.split(' ').map(|field| {
                                 let v = field.split(':').collect::<Vec<_>>();
                                 (v[0].to_string(), v[1].to_string())
                             })
                         })
-                        .flatten()
                         .collect()
                 })
                 .collect(),
@@ -48,18 +47,14 @@ impl Solution {
                 "eyr" => value
                     .parse::<i32>()
                     .map_or(false, |y| (2020..=2030).contains(&y)),
-                "hgt" => {
-                    if let Some(cap) = re_hgt.captures_iter(value).next() {
-                        let n = cap[1].parse::<i32>().unwrap();
-                        match &cap[2] {
-                            "cm" => (150..=193).contains(&n),
-                            "in" => (59..=76).contains(&n),
-                            _ => false,
-                        }
-                    } else {
-                        false
+                "hgt" => re_hgt.captures_iter(value).next().map_or(false, |cap| {
+                    let n = cap[1].parse::<i32>().unwrap();
+                    match &cap[2] {
+                        "cm" => (150..=193).contains(&n),
+                        "in" => (59..=76).contains(&n),
+                        _ => false,
                     }
-                }
+                }),
                 "hcl" => re_hcl.is_match(value),
                 "ecl" => matches!(
                     value.as_str(),
@@ -82,10 +77,10 @@ impl Solution {
 
 fn main() {
     let solution = Solution::new(
-        BufReader::new(std::io::stdin().lock())
+        &BufReader::new(std::io::stdin().lock())
             .lines()
-            .filter_map(|line| line.ok())
-            .collect(),
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>(),
     );
     println!("Part 1: {}", solution.part_1());
     println!("Part 2: {}", solution.part_2());
@@ -100,7 +95,7 @@ mod tests {
         assert_eq!(
             2,
             Solution::new(
-                r"
+                &r"
 ecl:gry pid:860033327 eyr:2020 hcl:#fffffd
 byr:1937 iyr:2017 cid:147 hgt:183cm
 
@@ -117,7 +112,7 @@ iyr:2011 ecl:brn hgt:59in"
                     .split('\n')
                     .skip(1)
                     .map(str::to_string)
-                    .collect()
+                    .collect::<Vec<_>>()
             )
             .part_1()
         );
@@ -128,7 +123,7 @@ iyr:2011 ecl:brn hgt:59in"
         assert_eq!(
             0,
             Solution::new(
-                r"
+                &r"
 eyr:1972 cid:100
 hcl:#18171d ecl:amb hgt:170 pid:186cm iyr:2018 byr:1926
 
@@ -145,14 +140,14 @@ pid:3556412378 byr:2007"
                     .split('\n')
                     .skip(1)
                     .map(str::to_string)
-                    .collect()
+                    .collect::<Vec<_>>()
             )
             .part_2()
         );
         assert_eq!(
             4,
             Solution::new(
-                r"
+                &r"
 pid:087499704 hgt:74in ecl:grn iyr:2012 eyr:2030 byr:1980
 hcl:#623a2f
 
@@ -168,7 +163,7 @@ iyr:2010 hgt:158cm hcl:#b6652a ecl:blu byr:1944 eyr:2021 pid:093154719"
                     .split('\n')
                     .skip(1)
                     .map(str::to_string)
-                    .collect()
+                    .collect::<Vec<_>>()
             )
             .part_2()
         );

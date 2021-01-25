@@ -11,7 +11,7 @@ struct Solution {
 }
 
 impl Solution {
-    fn new(inputs: Vec<String>) -> Self {
+    fn new(inputs: &[String]) -> Self {
         let mut decks = [VecDeque::new(), VecDeque::new()];
         for (i, lines) in inputs.split(String::is_empty).enumerate() {
             lines
@@ -31,7 +31,7 @@ impl Solution {
                 deck.iter()
                     .rev()
                     .enumerate()
-                    .map(|(i, &card)| (i as u32 + 1) * card as u32)
+                    .map(|(i, &card)| (i as u32 + 1) * u32::from(card))
                     .sum::<u32>()
             })
             .sum()
@@ -45,7 +45,7 @@ impl Solution {
                 deck.iter()
                     .rev()
                     .enumerate()
-                    .map(|(i, &card)| (i as u32 + 1) * card as u32)
+                    .map(|(i, &card)| (i as u32 + 1) * u32::from(card))
                     .sum::<u32>()
             })
             .sum()
@@ -103,10 +103,10 @@ impl Solution {
 
 fn main() {
     let solution = Solution::new(
-        BufReader::new(std::io::stdin().lock())
+        &BufReader::new(std::io::stdin().lock())
             .lines()
-            .filter_map(|line| line.ok())
-            .collect(),
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>(),
     );
     println!("Part 1: {}", solution.part_1());
     println!("Part 2: {}", solution.part_2());
@@ -139,11 +139,11 @@ Player 2:
 
     #[test]
     fn example_1() {
-        assert_eq!(306, Solution::new(example_inputs()).part_1());
+        assert_eq!(306, Solution::new(&example_inputs()).part_1());
     }
 
     #[test]
     fn example_2() {
-        assert_eq!(291, Solution::new(example_inputs()).part_2());
+        assert_eq!(291, Solution::new(&example_inputs()).part_2());
     }
 }

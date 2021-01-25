@@ -2,16 +2,18 @@ use std::collections::{HashMap, HashSet};
 use std::io::{BufRead, BufReader};
 
 struct Solution {
-    inputs: Vec<String>,
+    rules: Vec<String>,
 }
 
 impl Solution {
-    fn new(inputs: Vec<String>) -> Self {
-        Self { inputs }
+    fn new(inputs: &[String]) -> Self {
+        Self {
+            rules: inputs.iter().map(String::to_string).collect(),
+        }
     }
     fn part_1(&self) -> usize {
         let mut hm = HashMap::new();
-        for line in self.inputs.iter() {
+        for line in &self.rules {
             let v = line.split(" bags contain ").collect::<Vec<_>>();
             if v[1] != "no other bags." {
                 for s in v[1].split(", ") {
@@ -37,7 +39,7 @@ impl Solution {
     }
     fn part_2(&self) -> usize {
         let mut hm = HashMap::new();
-        for line in self.inputs.iter() {
+        for line in &self.rules {
             let v = line.split(" bags contain ").collect::<Vec<_>>();
             hm.insert(
                 v[0],
@@ -71,10 +73,10 @@ impl Solution {
 
 fn main() {
     let solution = Solution::new(
-        BufReader::new(std::io::stdin().lock())
+        &BufReader::new(std::io::stdin().lock())
             .lines()
-            .filter_map(|line| line.ok())
-            .collect(),
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>(),
     );
     println!("Part 1: {}", solution.part_1());
     println!("Part 2: {}", solution.part_2());
@@ -118,12 +120,12 @@ dark violet bags contain no other bags."
 
     #[test]
     fn example_1() {
-        assert_eq!(4, Solution::new(example_inputs_1()).part_1());
+        assert_eq!(4, Solution::new(&example_inputs_1()).part_1());
     }
 
     #[test]
     fn example_2() {
-        assert_eq!(32, Solution::new(example_inputs_1()).part_2());
-        assert_eq!(126, Solution::new(example_inputs_2()).part_2());
+        assert_eq!(32, Solution::new(&example_inputs_1()).part_2());
+        assert_eq!(126, Solution::new(&example_inputs_2()).part_2());
     }
 }

@@ -12,13 +12,9 @@ enum Rule {
 impl Rule {
     fn matches<'a>(&self, message: &'a str, rules: &HashMap<u8, Rule>) -> Vec<&'a str> {
         match self {
-            Rule::Ref(u) => {
-                if let Some(rule) = rules.get(u) {
-                    rule.matches(message, rules)
-                } else {
-                    Vec::new()
-                }
-            }
+            Rule::Ref(u) => rules
+                .get(u)
+                .map_or_else(Vec::new, |rule| rule.matches(message, rules)),
             Rule::Char(c) => {
                 if message.starts_with(*c) {
                     vec![&message[1..]]
@@ -30,7 +26,7 @@ impl Rule {
                 let mut ret = vec![message];
                 for rule in v.iter() {
                     let mut messages = Vec::new();
-                    for &m in ret.iter() {
+                    for &m in &ret {
                         messages.append(&mut rule.matches(m, rules));
                     }
                     ret = messages;
@@ -53,7 +49,7 @@ struct Solution {
 }
 
 impl Solution {
-    fn new(inputs: Vec<String>) -> Self {
+    fn new(inputs: &[String]) -> Self {
         let mut rules = HashMap::new();
         let mut messages = Vec::new();
         for input in inputs.iter().filter(|&s| !s.is_empty()) {
@@ -69,22 +65,19 @@ impl Solution {
                             Rule::Or(
                                 Box::new(Rule::Sequence(
                                     v[0].split(' ')
-                                        .filter_map(|s| s.parse().ok())
-                                        .map(Rule::Ref)
+                                        .filter_map(|s| s.parse().ok().map(Rule::Ref))
                                         .collect(),
                                 )),
                                 Box::new(Rule::Sequence(
                                     v[1].split(' ')
-                                        .filter_map(|s| s.parse().ok())
-                                        .map(Rule::Ref)
+                                        .filter_map(|s| s.parse().ok().map(Rule::Ref))
                                         .collect(),
                                 )),
                             )
                         } else {
                             Rule::Sequence(
                                 s[1].split(' ')
-                                    .filter_map(|s| s.parse().ok())
-                                    .map(Rule::Ref)
+                                    .filter_map(|s| s.parse().ok().map(Rule::Ref))
                                     .collect(),
                             )
                         },
@@ -124,23 +117,21 @@ impl Solution {
         self.count_matches(&rules)
     }
     fn count_matches(&self, rules: &HashMap<u8, Rule>) -> usize {
-        if let Some(rule) = rules.get(&0) {
+        rules.get(&0).map_or(0, |rule| {
             self.messages
                 .iter()
                 .filter(|&message| rule.matches(message, &rules).into_iter().any(str::is_empty))
                 .count()
-        } else {
-            0
-        }
+        })
     }
 }
 
 fn main() {
     let solution = Solution::new(
-        BufReader::new(std::io::stdin().lock())
+        &BufReader::new(std::io::stdin().lock())
             .lines()
-            .filter_map(|line| line.ok())
-            .collect(),
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>(),
     );
     println!("Part 1: {}", solution.part_1());
     println!("Part 2: {}", solution.part_2());
@@ -155,7 +146,7 @@ mod tests {
         assert_eq!(
             2,
             Solution::new(
-                r#"
+                &r#"
 0: 4 1 5
 1: 2 3 | 3 2
 2: 4 4 | 5 5
@@ -171,7 +162,7 @@ aaaabbb"#
                     .split('\n')
                     .skip(1)
                     .map(str::to_string)
-                    .collect()
+                    .collect::<Vec<_>>()
             )
             .part_1()
         );
@@ -180,7 +171,7 @@ aaaabbb"#
     #[test]
     fn example_2() {
         let solution = Solution::new(
-            r#"
+            &r#"
 42: 9 14 | 10 1
 9: 14 27 | 1 26
 10: 23 14 | 28 1
@@ -231,7 +222,7 @@ aabbbbbaabbbaaaaaabbbbbababaaaaabbaaabba"#
                 .split('\n')
                 .skip(1)
                 .map(str::to_string)
-                .collect(),
+                .collect::<Vec<_>>(),
         );
         assert_eq!(3, solution.part_1());
         assert_eq!(12, solution.part_2());
