@@ -59,4 +59,4 @@ class TestDay10(unittest.TestCase):
 
     def test_part_2(self) -> None:
         self.assertEqual(8, Solution(self.example_inputs_1()).part_2())
-        self.assertEqual(19_208, Solution(self.example_inputs_2()).part_2())
+        self.assertEqual(19208, Solution(self.example_inputs_2()).part_2())

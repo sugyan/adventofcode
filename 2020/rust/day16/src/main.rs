@@ -11,31 +11,34 @@ impl Solution {
         let mut rules = Vec::new();
         let mut nearby = Vec::new();
         let mut ticket = Vec::new();
-        let mut read_nearby = false;
-        for line in inputs.iter().filter(|&s| !s.is_empty()) {
-            if line.starts_with(char::is_numeric) {
-                let values = line.split(',').filter_map(|s| s.parse().ok()).collect();
-                if read_nearby {
-                    nearby.push(values);
-                } else {
-                    ticket.extend(values);
+        for (i, lines) in inputs.split(String::is_empty).enumerate() {
+            match i {
+                0 => {
+                    for line in lines {
+                        let kv = line.split(": ").collect::<Vec<_>>();
+                        let ranges = kv[1]
+                            .split(" or ")
+                            .filter_map(|range| {
+                                range
+                                    .split('-')
+                                    .map(|s| s.parse::<u32>().ok())
+                                    .collect::<Option<Vec<_>>>()
+                                    .map(|minmax| (minmax[0], minmax[1]))
+                            })
+                            .collect();
+                        rules.push((kv[0].to_string(), ranges));
+                    }
                 }
-            } else if line.ends_with(char::is_numeric) {
-                let kv = line.split(": ").collect::<Vec<_>>();
-                let ranges = kv[1]
-                    .split(" or ")
-                    .filter_map(|range| {
-                        range
-                            .split('-')
-                            .map(|s| s.parse::<u32>().ok())
-                            .collect::<Option<Vec<_>>>()
-                            .map(|minmax| (minmax[0], minmax[1]))
-                    })
-                    .collect();
-                rules.push((kv[0].to_string(), ranges));
-            }
-            if line.starts_with("nearby") {
-                read_nearby = true;
+                1 => ticket.extend(
+                    lines[1]
+                        .split(',')
+                        .filter_map(|s| s.parse().ok())
+                        .collect::<Vec<u32>>(),
+                ),
+                2 => lines.iter().skip(1).for_each(|s| {
+                    nearby.push(s.split(',').filter_map(|s| s.parse().ok()).collect())
+                }),
+                _ => unreachable!(),
             }
         }
         Self {

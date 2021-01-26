@@ -24,7 +24,7 @@ impl Solution {
         self.numbers
             .iter()
             .enumerate()
-            .for_each(|(i, &input)| memory[input as usize] = i as u32 + 1);
+            .for_each(|(i, &number)| memory[number as usize] = i as u32 + 1);
         let mut prev = self.numbers[self.numbers.len() - 1];
         for i in self.numbers.len() as u32..num {
             let last_index = memory[prev as usize];
