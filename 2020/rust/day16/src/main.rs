@@ -32,11 +32,11 @@ impl Solution {
                 1 => ticket.extend(
                     lines[1]
                         .split(',')
-                        .filter_map(|s| s.parse().ok())
-                        .collect::<Vec<u32>>(),
+                        .filter_map(|s| s.parse::<u32>().ok())
+                        .collect::<Vec<_>>(),
                 ),
-                2 => lines.iter().skip(1).for_each(|s| {
-                    nearby.push(s.split(',').filter_map(|s| s.parse().ok()).collect())
+                2 => lines.iter().skip(1).for_each(|line| {
+                    nearby.push(line.split(',').filter_map(|s| s.parse().ok()).collect())
                 }),
                 _ => unreachable!(),
             }
