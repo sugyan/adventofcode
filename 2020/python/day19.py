@@ -11,20 +11,17 @@ class Solution:
                 yield inputs[start + 1 : end]
 
         self.rules: Dict[int, Any] = {}
-        for i, lines in enumerate(split_at_empty()):
-            if i == 0:
-                for line in lines:
-                    k, v = line.split(": ")
-                    if '"' in v:
-                        self.rules[int(k)] = v[1]
-                    elif "|" in v:
-                        self.rules[int(k)] = tuple(
-                            [list(map(int, r.split(" "))) for r in v.split(" | ")]
-                        )
-                    else:
-                        self.rules[int(k)] = list(map(int, v.split(" ")))
-            if i == 1:
-                self.messages = lines
+        rule_lines, self.messages = split_at_empty()
+        for line in rule_lines:
+            k, v = line.split(": ")
+            if '"' in v:
+                self.rules[int(k)] = v[1]
+            elif "|" in v:
+                self.rules[int(k)] = tuple(
+                    [list(map(int, r.split(" "))) for r in v.split(" | ")]
+                )
+            else:
+                self.rules[int(k)] = list(map(int, v.split(" ")))
 
     def part_1(self) -> int:
         return self.__validate(deepcopy(self.rules))
@@ -37,7 +34,7 @@ class Solution:
 
     def __validate(self, rules: Dict[int, Any]) -> int:
         def match(s: str, rule: Any) -> List[str]:
-            ret: List[str] = []
+            ret = []
             if type(rule) == str:
                 if s.startswith(rule):
                     ret.append(s[1:])
