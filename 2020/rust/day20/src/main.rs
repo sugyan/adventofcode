@@ -164,26 +164,26 @@ struct Solution {
 impl Solution {
     fn new(inputs: &[String]) -> Self {
         let mut tiles_map = HashMap::new();
-        let (mut id, mut tile) = (0, Vec::new());
-        for line in inputs.iter() {
-            if let Some(idstr) = line.strip_prefix("Tile ").map(|s| s.trim_end_matches(':')) {
-                if let Ok(n) = idstr.parse::<u64>() {
-                    id = n;
-                }
-            } else if line.is_empty() {
-                tiles_map.insert(
-                    id,
-                    Tile {
-                        image: tile.clone(),
-                    },
-                );
-                tile.clear();
-            } else {
-                tile.push(line.chars().map(|c| c == '#').collect());
+        for lines in inputs.split(String::is_empty) {
+            if lines.is_empty() {
+                continue;
             }
-        }
-        if !tile.is_empty() {
-            tiles_map.insert(id, Tile { image: tile });
+            let (mut id, mut tile) = (0, Vec::new());
+            for line in lines {
+                if let Some(idstr) = line.strip_prefix("Tile ").map(|s| s.trim_end_matches(':')) {
+                    if let Ok(n) = idstr.parse::<u64>() {
+                        id = n;
+                    }
+                } else {
+                    tile.push(line.chars().map(|c| c == '#').collect());
+                }
+            }
+            tiles_map.insert(
+                id,
+                Tile {
+                    image: tile.clone(),
+                },
+            );
         }
         Self {
             tiles: Solution::build_image(&tiles_map),
