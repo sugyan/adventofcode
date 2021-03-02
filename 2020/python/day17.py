@@ -1,6 +1,6 @@
 import sys
 from copy import deepcopy
-from itertools import repeat, product
+from itertools import product, repeat
 from operator import add
 from typing import List, Set, Tuple
 

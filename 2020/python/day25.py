@@ -2,7 +2,6 @@ import sys
 from functools import reduce
 from typing import List
 
-
 DIV = 20_201_227
 
 
