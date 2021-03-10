@@ -6,7 +6,7 @@ from typing import List, Set, Tuple
 
 class Solution:
     def __init__(self, inputs: List[str]) -> None:
-        def position(s: str) -> Tuple[int, ...]:
+        def position(s: str) -> Tuple[int, int]:
             p = [0, 0]
             ns = False
             for c in s:
@@ -22,9 +22,9 @@ class Solution:
                 if c == "n":
                     p[1] += 1
                     ns = True
-            return tuple(p)
+            return p[0], p[1]
 
-        self.flipped: Set[Tuple[int, ...]] = set()
+        self.flipped: Set[Tuple[int, int]] = set()
         for line in inputs:
             pos = position(line)
             if pos in self.flipped:
@@ -36,17 +36,18 @@ class Solution:
         return len(self.flipped)
 
     def part_2(self) -> int:
-        neighbors = [[2, 0], [1, -1], [-1, -1], [-2, 0], [-1, 1], [1, 1]]
+        neighbors = ((2, 0), (1, -1), (-1, -1), (-2, 0), (-1, 1), (1, 1))
         flipped = deepcopy(self.flipped)
 
-        def flip(p: Tuple[int, ...]) -> bool:
+        def flip(p: Tuple[int, int]) -> bool:
             count = sum([tuple(map(add, p, d)) in flipped for d in neighbors])
             return count == 2 or (count == 1 and p in flipped)
 
         for _ in range(100):
             candidates = set(flipped)
             for p in flipped:
-                candidates.update([(tuple(map(add, p, d))) for d in neighbors])
+                for d in neighbors:
+                    candidates.add((p[0] + d[0], p[1] + d[1]))
             flipped = set(filter(flip, candidates))
         return len(flipped)
 
