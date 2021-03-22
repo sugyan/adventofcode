@@ -2,9 +2,13 @@ name: Rust 2020
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
+
+defaults:
+  run:
+    working-directory: ./2020/rust
 
 env:
   CARGO_TERM_COLOR: always
@@ -12,21 +16,15 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./2020/rust
     steps:
-    - uses: actions/checkout@v2
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose
+      - uses: actions/checkout@v2
+      - name: Build
+        run: cargo build --verbose
+      - name: Run tests
+        run: cargo test --verbose
 
   clippy_check:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./2020/rust
     steps:
       - uses: actions/checkout@v1
       - run: rustup component add clippy
