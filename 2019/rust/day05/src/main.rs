@@ -20,7 +20,8 @@ impl Solution {
         computer.run(Some(1)).unwrap()
     }
     fn part_2(&self) -> i32 {
-        42
+        let mut computer = Intcode::new(&self.program);
+        computer.run(Some(5)).unwrap()
     }
 }
 
