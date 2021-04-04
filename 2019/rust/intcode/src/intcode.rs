@@ -20,6 +20,9 @@ impl Intcode {
             ..Intcode::default()
         }
     }
+    /// # Panics
+    ///
+    /// Panics if opecode is unknown
     pub fn run(&mut self, input: Option<i32>) -> Option<i32> {
         let mut output = None;
         loop {
@@ -36,28 +39,22 @@ impl Intcode {
                     let v1 = self.get_value(modes[0]);
                     let v2 = self.get_value(modes[1]);
                     self.set_value(v1 + v2);
-                    self.i += 1;
                 }
                 2 => {
                     let v1 = self.get_value(modes[0]);
                     let v2 = self.get_value(modes[1]);
                     self.set_value(v1 * v2);
-                    self.i += 1;
                 }
                 3 => {
-                    let pos1 = self.program[self.i + 1] as usize;
-                    let val = input.expect("input value");
-                    self.program[pos1] = val;
-                    self.i += 2;
+                    self.set_value(input.expect("input value"));
                 }
                 4 => {
-                    let pos1 = self.program[self.i + 1] as usize;
-                    output = Some(self.program[pos1]);
-                    self.i += 2;
+                    output = Some(self.get_value(Mode::Position));
                 }
                 99 => break,
                 _ => unimplemented!(),
             }
+            self.i += 1;
         }
         output
     }

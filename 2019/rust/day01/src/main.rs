@@ -17,12 +17,12 @@ impl Solution {
         self.modules
             .iter()
             .map(|&mass| {
-                (0..)
-                    .scan(mass, |state, _| {
-                        *state = *state / 3 - 2;
-                        Some(*state).filter(|&m| m >= 0)
-                    })
-                    .sum::<i32>()
+                let (mut m, mut ret) = (mass, 0);
+                while m > 0 {
+                    m = (m / 3 - 2).max(0);
+                    ret += m;
+                }
+                ret
             })
             .sum()
     }
