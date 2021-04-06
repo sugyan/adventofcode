@@ -17,12 +17,8 @@ impl Solution {
         self.modules
             .iter()
             .map(|&mass| {
-                let (mut m, mut ret) = (mass, 0);
-                while m > 0 {
-                    m = (m / 3 - 2).max(0);
-                    ret += m;
-                }
-                ret
+                std::iter::successors(Some(mass / 3 - 2), |&m| Some(m / 3 - 2).filter(|&m| m > 0))
+                    .sum::<i32>()
             })
             .sum()
     }

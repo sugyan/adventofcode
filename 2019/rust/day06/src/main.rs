@@ -40,22 +40,18 @@ impl Solution {
         for relationship in &self.relationships {
             map.insert(relationship.1.clone(), relationship.0.clone());
         }
-        let path = |orbit: &str| -> Vec<String> {
-            let mut v = Vec::new();
-            let mut orbit = orbit;
-            while let Some(o) = map.get(orbit) {
-                v.push(o.clone());
-                orbit = o;
-            }
-            v.reverse();
-            v
-        };
-        let paths = (path("YOU"), path("SAN"));
-        let mut i = 0;
-        while paths.0[i] == paths.1[i] {
-            i += 1;
+        let paths = (
+            std::iter::successors(Some(String::from("YOU")), |o| map.get(o).cloned())
+                .collect::<Vec<_>>(),
+            std::iter::successors(Some(String::from("SAN")), |o| map.get(o).cloned())
+                .collect::<Vec<_>>(),
+        );
+        if let Some(i) = (0..paths.0.len().min(paths.1.len()))
+            .find(|&i| paths.0[paths.0.len() - 1 - i] != paths.1[paths.1.len() - 1 - i])
+        {
+            return paths.0.len() + paths.1.len() - i * 2 - 2;
         }
-        paths.0.len() + paths.1.len() - i * 2
+        unreachable!()
     }
 }
 
