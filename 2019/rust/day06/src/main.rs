@@ -2,33 +2,60 @@ use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
 
 struct Solution {
-    map: HashMap<String, Vec<String>>,
+    relationships: Vec<(String, String)>,
 }
 
 impl Solution {
     fn new(inputs: &[String]) -> Self {
-        let mut map = HashMap::new();
-        for relationship in inputs.iter().map(|s| s.split(')').collect::<Vec<_>>()) {
-            map.entry(relationship[0].to_string())
-                .or_insert_with(Vec::new)
-                .push(relationship[1].to_string())
+        Self {
+            relationships: inputs
+                .iter()
+                .map(|s| {
+                    let v = s.split(')').collect::<Vec<_>>();
+                    (v[0].to_string(), v[1].to_string())
+                })
+                .collect(),
         }
-        Self { map }
     }
     fn part_1(&self) -> usize {
-        fn dfs(map: &HashMap<String, Vec<String>>, orbit: String, depth: usize) -> usize {
+        fn dfs(map: &HashMap<String, Vec<String>>, orbit: &str, depth: usize) -> usize {
             let mut ret = depth;
-            if let Some(orbits) = map.get(&orbit) {
+            if let Some(orbits) = map.get(orbit) {
                 for o in orbits {
-                    ret += dfs(map, o.clone(), depth + 1);
+                    ret += dfs(map, o, depth + 1);
                 }
             }
             ret
         }
-        dfs(&self.map, String::from("COM"), 0)
+        let mut map = HashMap::new();
+        for relationship in &self.relationships {
+            map.entry(relationship.0.clone())
+                .or_insert_with(Vec::new)
+                .push(relationship.1.clone());
+        }
+        dfs(&map, "COM", 0)
     }
-    fn part_2(&self) -> i32 {
-        unimplemented!()
+    fn part_2(&self) -> usize {
+        let mut map = HashMap::new();
+        for relationship in &self.relationships {
+            map.insert(relationship.1.clone(), relationship.0.clone());
+        }
+        let path = |orbit: &str| -> Vec<String> {
+            let mut v = Vec::new();
+            let mut orbit = orbit;
+            while let Some(o) = map.get(orbit) {
+                v.push(o.clone());
+                orbit = o;
+            }
+            v.reverse();
+            v
+        };
+        let paths = (path("YOU"), path("SAN"));
+        let mut i = 0;
+        while paths.0[i] == paths.1[i] {
+            i += 1;
+        }
+        paths.0.len() + paths.1.len() - i * 2
     }
 }
 
@@ -70,6 +97,34 @@ K)L"
                 .collect::<Vec<_>>(),
             )
             .part_1()
+        );
+    }
+
+    #[test]
+    fn example_2() {
+        assert_eq!(
+            4,
+            Solution::new(
+                &r"
+COM)B
+B)C
+C)D
+D)E
+E)F
+B)G
+G)H
+D)I
+E)J
+J)K
+K)L
+K)YOU
+I)SAN"
+                    .split('\n')
+                    .skip(1)
+                    .map(str::to_string)
+                    .collect::<Vec<_>>(),
+            )
+            .part_2()
         );
     }
 }
