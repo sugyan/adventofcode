@@ -40,16 +40,13 @@ impl Solution {
         for relationship in &self.relationships {
             map.insert(relationship.1.clone(), relationship.0.clone());
         }
-        let paths = (
-            std::iter::successors(Some(String::from("YOU")), |o| map.get(o).cloned())
-                .collect::<Vec<_>>(),
-            std::iter::successors(Some(String::from("SAN")), |o| map.get(o).cloned())
-                .collect::<Vec<_>>(),
-        );
-        if let Some(i) = (0..paths.0.len().min(paths.1.len()))
-            .find(|&i| paths.0[paths.0.len() - 1 - i] != paths.1[paths.1.len() - 1 - i])
+        let succ = |o: &String| map.get(o).cloned();
+        let you = std::iter::successors(Some(String::from("YOU")), succ).collect::<Vec<_>>();
+        let san = std::iter::successors(Some(String::from("SAN")), succ).collect::<Vec<_>>();
+        if let Some(i) = (0..you.len().min(san.len()))
+            .find(|&i| you[you.len() - 1 - i] != san[san.len() - 1 - i])
         {
-            return paths.0.len() + paths.1.len() - i * 2 - 2;
+            return you.len() + san.len() - i * 2 - 2;
         }
         unreachable!()
     }
