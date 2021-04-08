@@ -1,4 +1,4 @@
-#[derive(Default, Debug)]
+#[derive(Default)]
 pub struct Intcode {
     pub program: Vec<i32>,
     i: usize,
@@ -23,7 +23,8 @@ impl Intcode {
     /// # Panics
     ///
     /// Panics if opecode is unknown
-    pub fn run(&mut self, input: Option<i32>) -> Option<i32> {
+    pub fn run(&mut self, inputs: Vec<i32>) -> Option<i32> {
+        let mut inputs = inputs.into_iter();
         let mut output = None;
         loop {
             let modes = match self.program[self.i] / 100 {
@@ -46,7 +47,7 @@ impl Intcode {
                     self.set_value(v1 * v2);
                 }
                 3 => {
-                    self.set_value(input.expect("input value"));
+                    self.set_value(inputs.next().expect("input value"));
                 }
                 4 => {
                     output = Some(self.get_value(modes[0]));

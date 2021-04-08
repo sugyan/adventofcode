@@ -19,7 +19,7 @@ impl Solution {
         replaced[1] = 12;
         replaced[2] = 2;
         let mut computer = Intcode::new(&replaced);
-        computer.run(None);
+        computer.run(Vec::new());
         computer.program[0]
     }
     fn part_2(&self) -> i32 {
@@ -29,7 +29,7 @@ impl Solution {
                 replaced[1] = noun;
                 replaced[2] = verb;
                 let mut computer = Intcode::new(&replaced);
-                computer.run(None);
+                computer.run(Vec::new());
                 if computer.program[0] == 19_690_720 {
                     return noun * 100 + verb;
                 }

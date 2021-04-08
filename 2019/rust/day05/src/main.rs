@@ -10,18 +10,17 @@ impl Solution {
         Self {
             program: inputs[0]
                 .split(',')
-                .map(str::parse)
-                .filter_map(Result::ok)
+                .filter_map(|s| s.parse().ok())
                 .collect(),
         }
     }
     fn part_1(&self) -> i32 {
         let mut computer = Intcode::new(&self.program);
-        computer.run(Some(1)).unwrap()
+        computer.run(vec![1]).unwrap()
     }
     fn part_2(&self) -> i32 {
         let mut computer = Intcode::new(&self.program);
-        computer.run(Some(5)).unwrap()
+        computer.run(vec![5]).unwrap()
     }
 }
 
