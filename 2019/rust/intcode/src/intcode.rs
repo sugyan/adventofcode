@@ -1,7 +1,14 @@
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Intcode {
     pub program: Vec<i32>,
     i: usize,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Result {
+    WaitInput,
+    Output(i32),
+    Halted,
 }
 
 #[derive(Clone, Copy)]
@@ -23,9 +30,8 @@ impl Intcode {
     /// # Panics
     ///
     /// Panics if opecode is unknown
-    pub fn run(&mut self, inputs: Vec<i32>) -> Option<i32> {
+    pub fn run(&mut self, inputs: Vec<i32>) -> Result {
         let mut inputs = inputs.into_iter();
-        let mut output = None;
         loop {
             let modes = match self.program[self.i] / 100 {
                 0 => [Mode::Position, Mode::Position],
@@ -47,10 +53,16 @@ impl Intcode {
                     self.set_value(v1 * v2);
                 }
                 3 => {
-                    self.set_value(inputs.next().expect("input value"));
+                    if let Some(input) = inputs.next() {
+                        self.set_value(input);
+                    } else {
+                        return Result::WaitInput;
+                    }
                 }
                 4 => {
-                    output = Some(self.get_value(modes[0]));
+                    let out = self.get_value(modes[0]);
+                    self.i += 1;
+                    return Result::Output(out);
                 }
                 5 => {
                     let v1 = self.get_value(modes[0]);
@@ -83,7 +95,7 @@ impl Intcode {
             }
             self.i += 1;
         }
-        output
+        Result::Halted
     }
     fn get_value(&mut self, mode: Mode) -> i32 {
         self.i += 1;

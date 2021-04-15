@@ -15,25 +15,45 @@ impl Solution {
         }
     }
     fn part_1(&self) -> i32 {
-        Self::permutations(5)
+        Self::permutations(&(0..5).collect::<Vec<_>>())
             .iter()
             .map(|p| {
-                (0..p.len())
-                    .map(|_| Intcode::new(&self.program))
-                    .collect::<Vec<_>>()
-                    .iter_mut()
-                    .enumerate()
-                    .fold(0, |acc, (i, amp)| {
-                        amp.run(vec![p[i], acc]).expect("output value")
-                    })
+                p.iter().fold(0, |acc, &phase| {
+                    match Intcode::new(&self.program).run(vec![phase, acc]) {
+                        intcode::Result::Output(out) => out,
+                        _ => unreachable!(),
+                    }
+                })
             })
             .max()
             .unwrap()
     }
-    fn part_2(&self) -> u32 {
-        unimplemented!()
+    fn part_2(&self) -> i32 {
+        Self::permutations(&(5..10).collect::<Vec<_>>())
+            .iter()
+            .filter_map(|p| {
+                let mut amplifiers = p
+                    .iter()
+                    .map(|&phase| {
+                        let mut amplifier = Intcode::new(&self.program);
+                        amplifier.run(vec![phase]);
+                        amplifier
+                    })
+                    .collect::<Vec<_>>();
+                std::iter::successors(Some(0), |&output| {
+                    amplifiers
+                        .iter_mut()
+                        .try_fold(output, |acc, amp| match amp.run(vec![acc]) {
+                            intcode::Result::Output(n) => Some(n),
+                            _ => None,
+                        })
+                })
+                .last()
+            })
+            .max()
+            .unwrap()
     }
-    fn permutations(size: i32) -> Vec<Vec<i32>> {
+    fn permutations(phases: &[i32]) -> Vec<Vec<i32>> {
         fn backtrack(phases: &[i32], v: &mut Vec<i32>, ret: &mut Vec<Vec<i32>>) {
             if v.len() == phases.len() {
                 ret.push(v.clone());
@@ -47,7 +67,6 @@ impl Solution {
                 }
             }
         }
-        let phases = (0..size as i32).collect::<Vec<_>>();
         let mut v = Vec::new();
         let mut ret = Vec::new();
         backtrack(&phases, &mut v, &mut ret);
@@ -79,10 +98,6 @@ mod tests {
             )])
             .part_1()
         );
-    }
-
-    #[test]
-    fn example_2() {
         assert_eq!(
             54321,
             Solution::new(&[String::from(
@@ -90,16 +105,30 @@ mod tests {
             )])
             .part_1()
         );
-    }
-
-    #[test]
-    fn example_3() {
         assert_eq!(
             65210,
             Solution::new(&[String::from(
                 "3,31,3,32,1002,32,10,32,1001,31,-2,31,1007,31,0,33,1002,33,7,33,1,33,31,31,1,32,31,31,4,31,99,0,0,0"
             )])
             .part_1()
+        );
+    }
+
+    #[test]
+    fn example_2() {
+        assert_eq!(
+            139_629_729,
+            Solution::new(&[String::from(
+                "3,26,1001,26,-4,26,3,27,1002,27,2,27,1,27,26,27,4,27,1001,28,-1,28,1005,28,6,99,0,0,5"
+            )])
+            .part_2()
+        );
+        assert_eq!(
+            18216,
+            Solution::new(&[String::from(
+                "3,52,1001,52,-5,52,3,53,1,52,56,54,1007,54,5,55,1005,55,26,1001,54,-5,54,1105,1,12,1,53,54,53,1008,54,0,55,1001,55,1,55,2,53,55,53,4,53,1001,56,-1,56,1005,56,6,99,0,0,0,0,10"
+            )])
+            .part_2()
         );
     }
 }

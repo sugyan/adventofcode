@@ -16,11 +16,20 @@ impl Solution {
     }
     fn part_1(&self) -> i32 {
         let mut computer = Intcode::new(&self.program);
-        computer.run(vec![1]).unwrap()
+        loop {
+            if let intcode::Result::Output(n) = computer.run(vec![1]) {
+                if n != 0 {
+                    return n;
+                }
+            }
+        }
     }
     fn part_2(&self) -> i32 {
         let mut computer = Intcode::new(&self.program);
-        computer.run(vec![5]).unwrap()
+        match computer.run(vec![5]) {
+            intcode::Result::Output(n) => n,
+            _ => unreachable!(),
+        }
     }
 }
 
