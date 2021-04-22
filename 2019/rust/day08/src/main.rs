@@ -13,7 +13,7 @@ impl Solution {
             layers: inputs[0]
                 .as_bytes()
                 .chunks(W * H)
-                .map(|chunk| chunk.chunks(H).map(|row| row.into()).collect())
+                .map(|chunk| chunk.chunks(W).map(|row| row.into()).collect())
                 .collect(),
         }
     }
@@ -35,8 +35,29 @@ impl Solution {
             .map(|counts| counts[1] * counts[2])
             .unwrap()
     }
-    fn part_2(&self) -> i32 {
-        unimplemented!()
+    fn part_2(&self) {
+        let mut image = vec![vec![b'2'; W]; H];
+        self.layers.iter().for_each(|layer| {
+            for (i, row) in layer.iter().enumerate() {
+                for (j, &col) in row.iter().enumerate() {
+                    if image[i][j] == b'2' {
+                        image[i][j] = col;
+                    }
+                }
+            }
+        });
+        for row in &image {
+            println!(
+                "{}",
+                row.iter()
+                    .map(|b| match b {
+                        b'0' => ' ',
+                        b'1' => '*',
+                        _ => unreachable!(),
+                    })
+                    .collect::<String>()
+            )
+        }
     }
 }
 
@@ -48,5 +69,6 @@ fn main() {
             .collect::<Vec<_>>(),
     );
     println!("Part 1: {}", solution.part_1());
-    println!("Part 2: {}", solution.part_2());
+    println!("Part 2:");
+    solution.part_2();
 }
