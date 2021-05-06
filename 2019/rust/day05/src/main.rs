@@ -2,7 +2,7 @@ use intcode::Intcode;
 use std::io::{BufRead, BufReader};
 
 struct Solution {
-    program: Vec<i32>,
+    program: Vec<i64>,
 }
 
 impl Solution {
@@ -14,7 +14,7 @@ impl Solution {
                 .collect(),
         }
     }
-    fn part_1(&self) -> i32 {
+    fn part_1(&self) -> i64 {
         let mut computer = Intcode::new(&self.program);
         loop {
             if let intcode::Result::Output(n) = computer.run(vec![1]) {
@@ -24,7 +24,7 @@ impl Solution {
             }
         }
     }
-    fn part_2(&self) -> i32 {
+    fn part_2(&self) -> i64 {
         let mut computer = Intcode::new(&self.program);
         match computer.run(vec![5]) {
             intcode::Result::Output(n) => n,

@@ -42,5 +42,12 @@ name = "day08"
 version = "0.1.0"
 
 [[package]]
+name = "day09"
+version = "0.1.0"
+dependencies = [
+ "intcode",
+]
+
+[[package]]
 name = "intcode"
 version = "0.1.0"

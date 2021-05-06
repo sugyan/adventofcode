@@ -15,27 +15,18 @@ impl Solution {
         }
     }
     fn part_1(&self) -> i64 {
-        let mut replaced = self.program.clone();
-        replaced[1] = 12;
-        replaced[2] = 2;
-        let mut computer = Intcode::new(&replaced);
-        computer.run(Vec::new());
-        *computer.memory.get(&0).unwrap()
+        let mut computer = Intcode::new(&self.program);
+        match computer.run(vec![1]) {
+            intcode::Result::Output(out) => out,
+            _ => unreachable!(),
+        }
     }
     fn part_2(&self) -> i64 {
-        for noun in 0..=99 {
-            for verb in 0..=99 {
-                let mut replaced = self.program.clone();
-                replaced[1] = noun;
-                replaced[2] = verb;
-                let mut computer = Intcode::new(&replaced);
-                computer.run(Vec::new());
-                if computer.memory.get(&0) == Some(&19_690_720) {
-                    return noun * 100 + verb;
-                }
-            }
+        let mut computer = Intcode::new(&self.program);
+        match computer.run(vec![2]) {
+            intcode::Result::Output(out) => out,
+            _ => unreachable!(),
         }
-        unreachable!()
     }
 }
 

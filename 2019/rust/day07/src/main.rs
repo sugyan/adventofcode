@@ -2,7 +2,7 @@ use intcode::Intcode;
 use std::io::{BufRead, BufReader};
 
 struct Solution {
-    program: Vec<i32>,
+    program: Vec<i64>,
 }
 
 impl Solution {
@@ -14,7 +14,7 @@ impl Solution {
                 .collect(),
         }
     }
-    fn part_1(&self) -> i32 {
+    fn part_1(&self) -> i64 {
         Self::permutations(&(0..5).collect::<Vec<_>>())
             .iter()
             .map(|p| {
@@ -28,7 +28,7 @@ impl Solution {
             .max()
             .unwrap()
     }
-    fn part_2(&self) -> i32 {
+    fn part_2(&self) -> i64 {
         Self::permutations(&(5..10).collect::<Vec<_>>())
             .iter()
             .filter_map(|p| {
@@ -53,8 +53,8 @@ impl Solution {
             .max()
             .unwrap()
     }
-    fn permutations(phases: &[i32]) -> Vec<Vec<i32>> {
-        fn backtrack(phases: &[i32], v: &mut Vec<i32>, ret: &mut Vec<Vec<i32>>) {
+    fn permutations(phases: &[i64]) -> Vec<Vec<i64>> {
+        fn backtrack(phases: &[i64], v: &mut Vec<i64>, ret: &mut Vec<Vec<i64>>) {
             if v.len() == phases.len() {
                 ret.push(v.clone());
             } else {
