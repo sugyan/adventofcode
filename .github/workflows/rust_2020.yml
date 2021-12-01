@@ -2,9 +2,9 @@ name: Rust 2020
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
-    branches: [master]
+    branches: [main]
 
 defaults:
   run:
