@@ -11,15 +11,14 @@ impl Solution {
         }
     }
     fn part_1(&self) -> usize {
-        self.reports.windows(2).filter(|w| w[1] > w[0]).count()
+        self.count_increasing(1)
     }
     fn part_2(&self) -> usize {
-        self.reports
-            .windows(3)
-            .map(|w| w[0] + w[1] + w[2])
-            .collect::<Vec<_>>()
-            .windows(2)
-            .filter(|w| w[1] > w[0])
+        self.count_increasing(3)
+    }
+    fn count_increasing(&self, size: usize) -> usize {
+        (size..self.reports.len())
+            .filter(|&i| self.reports[i] > self.reports[i - size])
             .count()
     }
 }
