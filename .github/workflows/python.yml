@@ -6,8 +6,12 @@ name: Python
 on:
   push:
     branches: [ main ]
+    paths:
+      - '2020/python/**'
   pull_request:
     branches: [ main ]
+    paths:
+      - '2020/python/**'
 
 jobs:
   test-2020:
