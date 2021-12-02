@@ -11,12 +11,12 @@ impl Solution {
         }
     }
     fn part_1(&self) -> usize {
-        self.count_increasing(1)
+        self.count_increases(1)
     }
     fn part_2(&self) -> usize {
-        self.count_increasing(3)
+        self.count_increases(3)
     }
-    fn count_increasing(&self, size: usize) -> usize {
+    fn count_increases(&self, size: usize) -> usize {
         (size..self.reports.len())
             .filter(|&i| self.reports[i] > self.reports[i - size])
             .count()
@@ -52,7 +52,7 @@ mod tests {
 263"[1..]
             .split('\n')
             .map(String::from)
-            .collect::<Vec<_>>()
+            .collect()
     }
 
     #[test]
