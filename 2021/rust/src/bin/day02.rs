@@ -12,20 +12,18 @@ struct Solution {
 
 impl Solution {
     fn new(inputs: &[String]) -> Self {
+        let parse = |s: &String| {
+            let i = s.find(' ').unwrap();
+            let units = s[i + 1..].parse().unwrap();
+            match &s[..i] {
+                "forward" => Command::Forward(units),
+                "down" => Command::Down(units),
+                "up" => Command::Up(units),
+                _ => unreachable!(),
+            }
+        };
         Self {
-            commands: inputs
-                .iter()
-                .map(|s| {
-                    let v = s.split(' ').collect::<Vec<_>>();
-                    let units = v[1].parse::<u32>().unwrap();
-                    match v[0] {
-                        "forward" => Command::Forward(units),
-                        "down" => Command::Down(units),
-                        "up" => Command::Up(units),
-                        _ => unreachable!(),
-                    }
-                })
-                .collect(),
+            commands: inputs.iter().map(parse).collect(),
         }
     }
     fn part_1(&self) -> u32 {
