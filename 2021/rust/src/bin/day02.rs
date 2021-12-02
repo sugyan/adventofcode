@@ -36,6 +36,14 @@ impl Solution {
         });
         position.0 * position.1
     }
+    fn part_2(&self) -> u32 {
+        let position = self.commands.iter().fold((0, 0, 0), |acc, c| match c {
+            Command::Forward(u) => (acc.0 + u, acc.1 + u * acc.2, acc.2),
+            Command::Down(n) => (acc.0, acc.1, acc.2 + n),
+            Command::Up(n) => (acc.0, acc.1, acc.2 - n),
+        });
+        position.0 * position.1
+    }
 }
 
 fn main() {
@@ -46,6 +54,7 @@ fn main() {
             .collect::<Vec<_>>(),
     );
     println!("{}", solution.part_1());
+    println!("{}", solution.part_2());
 }
 
 #[cfg(test)]
@@ -68,5 +77,10 @@ forward 2"[1..]
     #[test]
     fn example_1() {
         assert_eq!(150, Solution::new(&example_inputs()).part_1());
+    }
+
+    #[test]
+    fn example_2() {
+        assert_eq!(900, Solution::new(&example_inputs()).part_2());
     }
 }
