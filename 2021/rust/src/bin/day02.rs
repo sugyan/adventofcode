@@ -27,20 +27,19 @@ impl Solution {
         }
     }
     fn part_1(&self) -> u32 {
-        let position = self.commands.iter().fold((0, 0), |acc, c| match c {
-            Command::Forward(u) => (acc.0 + u, acc.1),
-            Command::Down(n) => (acc.0, acc.1 + n),
-            Command::Up(n) => (acc.0, acc.1 - n),
-        });
-        position.0 * position.1
+        let position = self.calculate_position();
+        position.0 * position.2
     }
     fn part_2(&self) -> u32 {
-        let position = self.commands.iter().fold((0, 0, 0), |acc, c| match c {
+        let position = self.calculate_position();
+        position.0 * position.1
+    }
+    fn calculate_position(&self) -> (u32, u32, u32) {
+        self.commands.iter().fold((0, 0, 0), |acc, c| match c {
             Command::Forward(u) => (acc.0 + u, acc.1 + u * acc.2, acc.2),
             Command::Down(n) => (acc.0, acc.1, acc.2 + n),
             Command::Up(n) => (acc.0, acc.1, acc.2 - n),
-        });
-        position.0 * position.1
+        })
     }
 }
 
