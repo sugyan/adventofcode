@@ -46,32 +46,27 @@ impl Solution {
         gamma * epsilon
     }
     fn part_2(&self) -> u32 {
-        let mask = 1 << (self.size - 1);
-        let oxygen_generator = Self::filter(&self.reports, mask, Target::MostCommon);
-        let co2_scrubber = Self::filter(&self.reports, mask, Target::LeastCommon);
+        let find_rating = |target: Target| {
+            let mut candidates = self.reports.clone();
+            for i in (0..self.size).rev() {
+                let mask = 1 << i;
+                let zeros = candidates.iter().filter(|&c| c & mask == 0).count();
+                let t = match target {
+                    Target::MostCommon => zeros * 2 > candidates.len(),
+                    Target::LeastCommon => zeros * 2 <= candidates.len(),
+                };
+                candidates.retain(|&c| (c & mask == 0) == t);
+                if candidates.len() == 1 {
+                    break;
+                }
+            }
+            candidates[0]
+        };
+        let (oxygen_generator, co2_scrubber) = (
+            find_rating(Target::MostCommon),
+            find_rating(Target::LeastCommon),
+        );
         oxygen_generator * co2_scrubber
-    }
-    fn filter(candidates: &[u32], mask: u32, target: Target) -> u32 {
-        if candidates.len() == 1 {
-            return candidates[0];
-        }
-        let groups = candidates.iter().partition::<Vec<_>, _>(|&c| c & mask == 0);
-        match target {
-            Target::MostCommon => {
-                if groups.1.len() >= groups.0.len() {
-                    Self::filter(&groups.1, mask >> 1, target)
-                } else {
-                    Self::filter(&groups.0, mask >> 1, target)
-                }
-            }
-            Target::LeastCommon => {
-                if groups.0.len() <= groups.1.len() {
-                    Self::filter(&groups.0, mask >> 1, target)
-                } else {
-                    Self::filter(&groups.1, mask >> 1, target)
-                }
-            }
-        }
     }
 }
 
