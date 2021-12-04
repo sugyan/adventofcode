@@ -1,8 +1,7 @@
 use std::io::{BufRead, BufReader};
 
 struct Solution {
-    numbers: Vec<u32>,
-    boards: Vec<Vec<Vec<u32>>>,
+    scores: Vec<(usize, u32)>,
 }
 
 impl Solution {
@@ -10,7 +9,11 @@ impl Solution {
         let numbers = inputs[0]
             .split(',')
             .filter_map(|s| s.parse().ok())
-            .collect::<Vec<_>>();
+            .collect::<Vec<u32>>();
+        let mut map = vec![0; *numbers.iter().max().unwrap() as usize + 1];
+        numbers.iter().enumerate().for_each(|(i, &n)| {
+            map[n as usize] = i;
+        });
         let boards = inputs[2..]
             .split(String::is_empty)
             .map(|v| {
@@ -18,42 +21,46 @@ impl Solution {
                     .map(|s| {
                         s.split_whitespace()
                             .filter_map(|s| s.parse().ok())
-                            .collect::<Vec<_>>()
+                            .collect::<Vec<u32>>()
                     })
                     .collect::<Vec<_>>()
             })
             .collect::<Vec<_>>();
-        Self { numbers, boards }
+        let scores = boards
+            .iter()
+            .map(|b| {
+                let mapped = b
+                    .iter()
+                    .map(|row| row.iter().map(|&col| map[col as usize]).collect::<Vec<_>>())
+                    .collect::<Vec<_>>();
+                let min = std::cmp::min(
+                    (0..5)
+                        .map(|i| (0..5).map(|j| mapped[i][j]).max().unwrap())
+                        .min()
+                        .unwrap(),
+                    (0..5)
+                        .map(|i| (0..5).map(|j| mapped[j][i]).max().unwrap())
+                        .min()
+                        .unwrap(),
+                );
+                let score = b
+                    .iter()
+                    .map(|row| {
+                        row.iter()
+                            .map(|&col| if map[col as usize] > min { col } else { 0 })
+                            .sum::<u32>()
+                    })
+                    .sum::<u32>();
+                (min, score * numbers[min])
+            })
+            .collect::<Vec<_>>();
+        Self { scores }
     }
     fn part_1(&self) -> u32 {
-        let mut called = vec![vec![vec![false; 5]; 5]; self.boards.len()];
-        for &number in &self.numbers {
-            for (i, board) in self.boards.iter().enumerate() {
-                for (j, row) in board.iter().enumerate() {
-                    for (k, &col) in row.iter().enumerate() {
-                        if col == number {
-                            called[i][j][k] = true;
-                        }
-                    }
-                }
-                if (0..5)
-                    .any(|j| (0..5).all(|k| called[i][j][k]) || (0..5).all(|k| called[i][k][j]))
-                {
-                    let score = board
-                        .iter()
-                        .enumerate()
-                        .map(|(j, row)| {
-                            row.iter()
-                                .enumerate()
-                                .map(|(k, &col)| if !called[i][j][k] { col } else { 0 })
-                                .sum::<u32>()
-                        })
-                        .sum::<u32>();
-                    return score * number;
-                }
-            }
-        }
-        unreachable!()
+        self.scores.iter().min_by_key(|(i, _)| i).unwrap().1
+    }
+    fn part_2(&self) -> u32 {
+        self.scores.iter().max_by_key(|(i, _)| i).unwrap().1
     }
 }
 
@@ -65,6 +72,7 @@ fn main() {
             .collect::<Vec<_>>(),
     );
     println!("{}", solution.part_1());
+    println!("{}", solution.part_2());
 }
 
 #[cfg(test)]
@@ -100,5 +108,10 @@ mod tests {
     #[test]
     fn example_1() {
         assert_eq!(4512, Solution::new(&example_inputs()).part_1());
+    }
+
+    #[test]
+    fn example_2() {
+        assert_eq!(1924, Solution::new(&example_inputs()).part_2());
     }
 }
