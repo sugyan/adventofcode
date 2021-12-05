@@ -1,7 +1,9 @@
+use itertools::Itertools;
+use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
 
 struct Solution {
-    lines: Vec<((usize, usize), (usize, usize))>,
+    lines: Vec<((i32, i32), (i32, i32))>,
 }
 
 impl Solution {
@@ -10,78 +12,40 @@ impl Solution {
             lines: inputs
                 .iter()
                 .map(|line| {
-                    let points = line
-                        .split(" -> ")
+                    line.split(" -> ")
                         .map(|s| {
                             s.split(',')
-                                .map(|s| s.parse::<usize>().unwrap())
-                                .collect::<Vec<_>>()
+                                .map(|s| s.parse().unwrap())
+                                .collect_tuple()
+                                .unwrap()
                         })
-                        .collect::<Vec<_>>();
-                    ((points[0][0], points[0][1]), (points[1][0], points[1][1]))
+                        .collect_tuple()
+                        .unwrap()
                 })
                 .collect(),
         }
     }
     fn part_1(&self) -> usize {
-        let mut grid = self.make_grid();
-        for &((x1, y1), (x2, y2)) in &self.lines {
-            if x1 == x2 {
-                for y in y1.min(y2)..=y1.max(y2) {
-                    grid[y][x1] += 1;
-                }
-            }
-            if y1 == y2 {
-                for x in x1.min(x2)..=x1.max(x2) {
-                    grid[y1][x] += 1;
-                }
-            }
-        }
-        grid.iter()
-            .map(|row| row.iter().filter(|&&v| v > 1).count())
-            .sum()
+        self.count_overlapping(false)
     }
     fn part_2(&self) -> usize {
-        let mut grid = self.make_grid();
+        self.count_overlapping(true)
+    }
+    fn count_overlapping(&self, diagonal: bool) -> usize {
+        let mut points = HashMap::new();
         for &((x1, y1), (x2, y2)) in &self.lines {
-            if x1 == x2 {
-                for y in y1.min(y2)..=y1.max(y2) {
-                    grid[y][x1] += 1;
-                }
+            if !diagonal && x1 != x2 && y1 != y2 {
+                continue;
             }
-            if y1 == y2 {
-                for x in x1.min(x2)..=x1.max(x2) {
-                    grid[y1][x] += 1;
-                }
-            }
-            if x1.max(x2) - x1.min(x2) == y1.max(y2) - y1.min(y2) {
-                let d = (if x2 > x1 { 1 } else { !0 }, if y2 > y1 { 1 } else { !0 });
-                let mut xy = (x1, y1);
-                for _ in 0..=x1.max(x2) - x1.min(x2) {
-                    grid[xy.1][xy.0] += 1;
-                    xy.0 = xy.0.wrapping_add(d.0);
-                    xy.1 = xy.1.wrapping_add(d.1);
-                }
+            let mut xy = (x1, y1);
+            let d = ((x2 - x1).signum(), (y2 - y1).signum());
+            while xy != (x2 + d.0, y2 + d.1) {
+                *points.entry(xy).or_insert(0) += 1;
+                xy.0 += d.0;
+                xy.1 += d.1;
             }
         }
-        grid.iter()
-            .map(|row| row.iter().filter(|&&v| v > 1).count())
-            .sum()
-    }
-    fn make_grid(&self) -> Vec<Vec<u32>> {
-        let xmax = self
-            .lines
-            .iter()
-            .map(|((x1, _), (x2, _))| x1.max(x2))
-            .max()
-            .unwrap();
-        let ymax = self
-            .lines
-            .iter()
-            .map(|((_, y1), (_, y2))| y1.max(y2))
-            .max()
-            .unwrap();
-        vec![vec![0; xmax + 1]; ymax + 1]
+        points.values().filter(|&&v| v > 1).count()
     }
 }
 
