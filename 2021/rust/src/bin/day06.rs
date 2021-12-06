@@ -25,12 +25,8 @@ impl Solution {
             counts[t as usize] += 1;
         }
         for _ in 0..days {
-            let zero = counts[0];
-            for i in 0..8 {
-                counts[i] = counts[i + 1];
-            }
-            counts[6] += zero;
-            counts[8] = zero;
+            counts.rotate_left(1);
+            counts[6] += counts[8];
         }
         counts.iter().sum()
     }
