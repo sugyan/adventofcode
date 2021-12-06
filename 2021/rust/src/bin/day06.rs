@@ -13,19 +13,26 @@ impl Solution {
                 .collect(),
         }
     }
-    fn part_1(&self) -> usize {
-        let mut timers = self.timers.clone();
-        for _ in 0..80 {
-            for i in 0..timers.len() {
-                if timers[i] == 0 {
-                    timers.push(8);
-                    timers[i] = 6
-                } else {
-                    timers[i] -= 1;
-                };
-            }
+    fn part_1(&self) -> u64 {
+        self.count_lanternfishes(80)
+    }
+    fn part_2(&self) -> u64 {
+        self.count_lanternfishes(256)
+    }
+    fn count_lanternfishes(&self, days: usize) -> u64 {
+        let mut counts = [0; 9];
+        for &t in &self.timers {
+            counts[t as usize] += 1;
         }
-        timers.len()
+        for _ in 0..days {
+            let zero = counts[0];
+            for i in 0..8 {
+                counts[i] = counts[i + 1];
+            }
+            counts[6] += zero;
+            counts[8] = zero;
+        }
+        counts.iter().sum()
     }
 }
 
@@ -37,14 +44,24 @@ fn main() {
             .collect::<Vec<_>>(),
     );
     println!("{}", solution.part_1());
+    println!("{}", solution.part_2());
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    fn example_inputs() -> Vec<String> {
+        vec![String::from("3,4,3,1,2")]
+    }
+
     #[test]
     fn example_1() {
-        assert_eq!(5934, Solution::new(&[String::from("3,4,3,1,2")]).part_1());
+        assert_eq!(5934, Solution::new(&example_inputs()).part_1());
+    }
+
+    #[test]
+    fn example_2() {
+        assert_eq!(26_984_457_539, Solution::new(&example_inputs()).part_2());
     }
 }
