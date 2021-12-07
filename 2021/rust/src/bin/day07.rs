@@ -11,20 +11,24 @@ impl Solution {
         }
     }
     fn part_1(&self) -> i32 {
+        self.total_fuels(true)
+    }
+    fn part_2(&self) -> i32 {
+        self.total_fuels(false)
+    }
+    fn total_fuels(&self, constant: bool) -> i32 {
         let max = *self.positions.iter().max().unwrap();
         let mut v = vec![0; max as usize + 1];
-        for &pos in &self.positions {
-            v[pos as usize] += 1;
+        for i in 0..=max {
+            for &p in &self.positions {
+                let d = (p - i).abs();
+                v[i as usize] += match constant {
+                    true => d,
+                    false => d * (d + 1) / 2,
+                };
+            }
         }
-        let mut sum = self.positions.iter().sum::<i32>();
-        let mut ret = sum;
-        let mut num = 0;
-        for &n in v.iter() {
-            num += n;
-            sum += num * 2 - self.positions.len() as i32;
-            ret = ret.min(sum);
-        }
-        ret
+        *v.iter().min().unwrap()
     }
 }
 
@@ -36,6 +40,7 @@ fn main() {
             .collect::<Vec<_>>(),
     );
     println!("{}", solution.part_1());
+    println!("{}", solution.part_2());
 }
 
 #[cfg(test)]
@@ -49,5 +54,10 @@ mod tests {
     #[test]
     fn example_1() {
         assert_eq!(37, Solution::new(&example_inputs()).part_1());
+    }
+
+    #[test]
+    fn example_2() {
+        assert_eq!(168, Solution::new(&example_inputs()).part_2());
     }
 }
