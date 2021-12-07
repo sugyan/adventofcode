@@ -7,10 +7,7 @@ struct Solution {
 impl Solution {
     fn new(inputs: &[String]) -> Self {
         Self {
-            timers: inputs[0]
-                .split(',')
-                .map(|x| x.parse::<u8>().unwrap())
-                .collect(),
+            timers: inputs[0].split(',').map(|x| x.parse().unwrap()).collect(),
         }
     }
     fn part_1(&self) -> u64 {
