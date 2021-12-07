@@ -17,18 +17,23 @@ impl Solution {
         self.total_fuels(false)
     }
     fn total_fuels(&self, constant: bool) -> i32 {
+        let min = *self.positions.iter().min().unwrap();
         let max = *self.positions.iter().max().unwrap();
-        let mut v = vec![0; max as usize + 1];
-        for i in 0..=max {
-            for &p in &self.positions {
-                let d = (p - i).abs();
-                v[i as usize] += match constant {
-                    true => d,
-                    false => d * (d + 1) / 2,
-                };
-            }
-        }
-        *v.iter().min().unwrap()
+        (min..=max)
+            .map(|i| {
+                self.positions
+                    .iter()
+                    .map(|p| {
+                        let d = (p - i).abs();
+                        match constant {
+                            true => d,
+                            false => d * (d + 1) / 2,
+                        }
+                    })
+                    .sum()
+            })
+            .min()
+            .unwrap()
     }
 }
 
