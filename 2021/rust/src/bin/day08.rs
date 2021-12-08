@@ -43,23 +43,18 @@ impl Solution {
                 }
             }
             for &u in &entry.0 {
-                if u.count_ones() == 5 {
-                    if u | map[1] == u {
-                        map[3] = u;
-                    } else if u | map[4] == map[8] {
-                        map[2] = u;
-                    } else {
-                        map[5] = u;
-                    }
-                }
-                if u.count_ones() == 6 {
-                    if u | map[4] == u {
-                        map[9] = u;
-                    } else if u | map[1] == map[8] {
-                        map[6] = u;
-                    } else {
-                        map[0] = u;
-                    }
+                match (
+                    u.count_ones(),
+                    (u & map[4]).count_ones(),
+                    (u & map[7]).count_ones(),
+                ) {
+                    (5, 2, _) => map[2] = u,
+                    (5, 3, 3) => map[3] = u,
+                    (5, 3, 2) => map[5] = u,
+                    (6, 4, _) => map[9] = u,
+                    (6, 3, 3) => map[0] = u,
+                    (6, 3, 2) => map[6] = u,
+                    _ => {}
                 }
             }
             entry
