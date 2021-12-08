@@ -1,19 +1,20 @@
 use std::io::{BufRead, BufReader};
 
 struct Solution {
-    entries: Vec<(Vec<String>, Vec<String>)>,
+    entries: Vec<(Vec<u8>, Vec<u8>)>,
 }
 
 impl Solution {
     fn new(inputs: &[String]) -> Self {
+        let s2u8 = |s: &str| s.bytes().fold(0_u8, |acc, u| acc | 1 << (u - b'a'));
         Self {
             entries: inputs
                 .iter()
                 .map(|s| {
                     let (patterns, output) = s.split_once(" | ").unwrap();
                     (
-                        patterns.splitn(10, ' ').map(String::from).collect(),
-                        output.splitn(4, ' ').map(String::from).collect(),
+                        patterns.splitn(10, ' ').map(s2u8).collect(),
+                        output.splitn(4, ' ').map(s2u8).collect(),
                     )
                 })
                 .collect(),
@@ -24,10 +25,50 @@ impl Solution {
             .iter()
             .map(|(_, o)| {
                 o.iter()
-                    .filter(|s| matches!(s.len(), 2 | 3 | 4 | 7))
+                    .filter(|u| matches!(u.count_ones(), 2 | 3 | 4 | 7))
                     .count()
             })
             .sum()
+    }
+    fn part_2(&self) -> u32 {
+        let get_output = |entry: &(Vec<u8>, Vec<u8>)| {
+            let mut map = [0; 10];
+            for &u in &entry.0 {
+                match u.count_ones() {
+                    2 => map[1] = u,
+                    3 => map[7] = u,
+                    4 => map[4] = u,
+                    7 => map[8] = u,
+                    _ => {}
+                }
+            }
+            for &u in &entry.0 {
+                if u.count_ones() == 5 {
+                    if u | map[1] == u {
+                        map[3] = u;
+                    } else if u | map[4] == map[8] {
+                        map[2] = u;
+                    } else {
+                        map[5] = u;
+                    }
+                }
+                if u.count_ones() == 6 {
+                    if u | map[4] == u {
+                        map[9] = u;
+                    } else if u | map[1] == map[8] {
+                        map[6] = u;
+                    } else {
+                        map[0] = u;
+                    }
+                }
+            }
+            entry
+                .1
+                .iter()
+                .map(|&u| (0..=9).find(|&i| map[i as usize] == u).unwrap())
+                .fold(0, |acc, u| acc * 10 + u)
+        };
+        self.entries.iter().map(get_output).sum()
     }
 }
 
@@ -39,6 +80,7 @@ fn main() {
             .collect::<Vec<_>>(),
     );
     println!("{}", solution.part_1());
+    println!("{}", solution.part_2());
 }
 
 #[cfg(test)]
@@ -65,5 +107,10 @@ gcafb gcf dcaebfg ecagb gf abcdeg gaef cafbge fdbac fegbdc | fgae cfgab fg bagce
     #[test]
     fn example_1() {
         assert_eq!(26, Solution::new(&example_inputs()).part_1());
+    }
+
+    #[test]
+    fn example_2() {
+        assert_eq!(61229, Solution::new(&example_inputs()).part_2());
     }
 }
