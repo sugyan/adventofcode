@@ -15,34 +15,44 @@ impl Solution {
         }
     }
     fn part_1(&self) -> u32 {
-        let mut flashes = 0;
         let mut grid = self.energy_levels.clone();
-        for _ in 0..100 {
-            let mut vd = VecDeque::new();
-            (0..10).for_each(|i| (0..10).for_each(|j| vd.push_back((i, j))));
-            while let Some((i, j)) = vd.pop_front() {
-                grid[i][j] += 1;
-                if grid[i][j] == 10 {
-                    [!0, 0, 1].iter().for_each(|&di| {
-                        [!0, 0, 1].iter().for_each(|&dj| {
-                            let i = i.wrapping_add(di);
-                            let j = j.wrapping_add(dj);
-                            if (0..10).contains(&i) && (0..10).contains(&j) {
-                                vd.push_back((i, j));
-                            }
-                        });
-                    });
-                }
+        (0..100).map(|_| Self::count_flashes(&mut grid)).sum()
+    }
+    fn part_2(&self) -> u32 {
+        let mut grid = self.energy_levels.clone();
+        for i in 1.. {
+            if Self::count_flashes(&mut grid) == 100 {
+                return i;
             }
-            grid.iter_mut().for_each(|row| {
-                row.iter_mut().for_each(|col| {
-                    if *col > 9 {
-                        flashes += 1;
-                        *col = 0;
-                    }
-                });
-            });
         }
+        unreachable!()
+    }
+    fn count_flashes(grid: &mut Vec<Vec<u8>>) -> u32 {
+        let mut flashes = 0;
+        let mut vd = VecDeque::new();
+        (0..10).for_each(|i| (0..10).for_each(|j| vd.push_back((i, j))));
+        while let Some((i, j)) = vd.pop_front() {
+            grid[i][j] += 1;
+            if grid[i][j] == 10 {
+                [!0, 0, 1].iter().for_each(|&di| {
+                    [!0, 0, 1].iter().for_each(|&dj| {
+                        let i = i.wrapping_add(di);
+                        let j = j.wrapping_add(dj);
+                        if (0..10).contains(&i) && (0..10).contains(&j) {
+                            vd.push_back((i, j));
+                        }
+                    });
+                });
+            }
+        }
+        grid.iter_mut().for_each(|row| {
+            row.iter_mut().for_each(|col| {
+                if *col > 9 {
+                    flashes += 1;
+                    *col = 0;
+                }
+            });
+        });
         flashes
     }
 }
@@ -55,6 +65,7 @@ fn main() {
             .collect::<Vec<_>>(),
     );
     println!("{}", solution.part_1());
+    println!("{}", solution.part_2());
 }
 
 #[cfg(test)]
@@ -81,5 +92,10 @@ mod tests {
     #[test]
     fn example_1() {
         assert_eq!(1656, Solution::new(&example_inputs()).part_1());
+    }
+
+    #[test]
+    fn example_2() {
+        assert_eq!(195, Solution::new(&example_inputs()).part_2());
     }
 }
