@@ -2,7 +2,6 @@ use itertools::Itertools;
 use std::collections::HashSet;
 use std::io::{BufRead, BufReader};
 
-#[derive(Clone, Copy)]
 enum Fold {
     X(u32),
     Y(u32),
@@ -41,16 +40,33 @@ impl Solution {
         Self { dots, folds }
     }
     fn part_1(&self) -> usize {
-        let fold = self.folds[0];
-        self.dots
+        self.fold(1).len()
+    }
+    fn part_2(&self) -> String {
+        let dots = self.fold(self.folds.len());
+        let xmax = dots.iter().map(|&(x, _)| x as usize).max().unwrap();
+        let ymax = dots.iter().map(|&(_, y)| y as usize).max().unwrap();
+        let mut paper = vec![vec!['.'; xmax + 1]; ymax + 1];
+        dots.iter()
+            .for_each(|&(x, y)| paper[y as usize][x as usize] = '#');
+        paper
             .iter()
-            .map(|&(x, y)| match fold {
-                Fold::X(value) if x > value => (value * 2 - x, y),
-                Fold::Y(value) if y > value => (x, value * 2 - y),
-                _ => (x, y),
-            })
-            .collect::<HashSet<_>>()
-            .len()
+            .map(|row| row.iter().collect::<String>())
+            .join("\n")
+    }
+    fn fold(&self, end: usize) -> HashSet<(u32, u32)> {
+        let mut dots = self.dots.iter().cloned().collect::<HashSet<_>>();
+        for fold in &self.folds[..end] {
+            dots = dots
+                .iter()
+                .map(|&(x, y)| match fold {
+                    Fold::X(value) if x > *value => (value * 2 - x, y),
+                    Fold::Y(value) if y > *value => (x, value * 2 - y),
+                    _ => (x, y),
+                })
+                .collect::<HashSet<_>>()
+        }
+        dots
     }
 }
 
@@ -62,6 +78,7 @@ fn main() {
             .collect::<Vec<_>>(),
     );
     println!("{}", solution.part_1());
+    println!("{}", solution.part_2());
 }
 
 #[cfg(test)]
