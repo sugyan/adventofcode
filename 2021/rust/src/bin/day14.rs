@@ -31,24 +31,23 @@ impl Solution {
         counts.values().max().unwrap() - counts.values().min().unwrap()
     }
     fn apply(&self, steps: usize) -> HashMap<char, u64> {
-        let mut pairs = HashMap::new();
-        for w in self.template.windows(2) {
-            *pairs.entry((w[0], w[1])).or_insert(0) += 1;
-        }
+        let mut pairs = self.template.windows(2).fold(HashMap::new(), |mut hm, w| {
+            *hm.entry((w[0], w[1])).or_insert(0) += 1;
+            hm
+        });
         for _ in 0..steps {
-            let mut hm = HashMap::new();
-            for (&k, &v) in &pairs {
-                let c = *self.rules.get(&k).unwrap();
+            pairs = pairs.iter().fold(HashMap::new(), |mut hm, (&k, &v)| {
+                let c = self.rules[&k];
                 *hm.entry((k.0, c)).or_insert(0) += v;
                 *hm.entry((c, k.1)).or_insert(0) += v;
-            }
-            pairs = hm;
+                hm
+            });
         }
-        let mut counts = HashMap::new();
-        for (&k, &v) in &pairs {
-            *counts.entry(k.0).or_insert(0) += v;
-            *counts.entry(k.1).or_insert(0) += v;
-        }
+        let mut counts = pairs.iter().fold(HashMap::new(), |mut hm, (&k, &v)| {
+            *hm.entry(k.0).or_insert(0) += v;
+            *hm.entry(k.1).or_insert(0) += v;
+            hm
+        });
         counts.iter_mut().for_each(|(_, v)| *v = (*v + 1) / 2);
         counts
     }
