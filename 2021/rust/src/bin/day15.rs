@@ -1,3 +1,5 @@
+use std::cmp::Reverse;
+use std::collections::BinaryHeap;
 use std::io::{BufRead, BufReader};
 
 struct Solution {
@@ -14,20 +16,41 @@ impl Solution {
         }
     }
     fn part_1(&self) -> u32 {
-        let (rows, cols) = (self.risk_levels.len(), self.risk_levels[0].len());
-        let mut grid = vec![vec![0; cols]; rows];
-        for i in 0..rows {
-            for j in 0..cols {
-                grid[i][j] = self.risk_levels[i][j] as u32
-                    + match (i > 0, j > 0) {
-                        (false, false) => 0,
-                        (false, true) => grid[i][j - 1],
-                        (true, false) => grid[i - 1][j],
-                        (true, true) => grid[i][j - 1].min(grid[i - 1][j]),
-                    }
+        self.lowest_total(1)
+    }
+    fn part_2(&self) -> u32 {
+        self.lowest_total(5)
+    }
+    fn lowest_total(&self, size: usize) -> u32 {
+        let len = self.risk_levels.len();
+        let grid = (0..len * size)
+            .map(|i| {
+                (0..len * size)
+                    .map(|j| {
+                        let offset = (i / len + j / len) as u32;
+                        (self.risk_levels[i % len][j % len] as u32 + offset - 1) % 9 + 1
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+        let mut seen = vec![vec![false; len * size]; len * size];
+        seen[0][0] = true;
+        let mut bh = BinaryHeap::new();
+        bh.push((Reverse(0), (0, 0)));
+        while let Some((Reverse(total), (i, j))) = bh.pop() {
+            if i == size * len - 1 && j == size * len - 1 {
+                return total;
+            }
+            for d in [0, 1, 0, !0, 0].windows(2) {
+                let i = i.wrapping_add(d[0]);
+                let j = j.wrapping_add(d[1]);
+                if (0..len * size).contains(&i) && (0..len * size).contains(&j) && !seen[i][j] {
+                    seen[i][j] = true;
+                    bh.push((Reverse(total + grid[i][j] as u32), (i, j)));
+                }
             }
         }
-        grid[rows - 1][cols - 1] - grid[0][0]
+        unreachable!()
     }
 }
 
@@ -39,6 +62,7 @@ fn main() {
             .collect::<Vec<_>>(),
     );
     println!("{}", solution.part_1());
+    println!("{}", solution.part_2());
 }
 
 #[cfg(test)]
@@ -65,5 +89,10 @@ mod tests {
     #[test]
     fn example_1() {
         assert_eq!(40, Solution::new(&example_inputs()).part_1());
+    }
+
+    #[test]
+    fn example_2() {
+        assert_eq!(315, Solution::new(&example_inputs()).part_2());
     }
 }
