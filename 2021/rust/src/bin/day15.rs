@@ -16,23 +16,13 @@ impl Solution {
         }
     }
     fn part_1(&self) -> u32 {
-        self.lowest_total(1)
+        self.dijkstra(1)
     }
     fn part_2(&self) -> u32 {
-        self.lowest_total(5)
+        self.dijkstra(5)
     }
-    fn lowest_total(&self, size: usize) -> u32 {
+    fn dijkstra(&self, size: usize) -> u32 {
         let len = self.risk_levels.len();
-        let grid = (0..len * size)
-            .map(|i| {
-                (0..len * size)
-                    .map(|j| {
-                        let offset = (i / len + j / len) as u32;
-                        (self.risk_levels[i % len][j % len] as u32 + offset - 1) % 9 + 1
-                    })
-                    .collect::<Vec<_>>()
-            })
-            .collect::<Vec<_>>();
         let mut seen = vec![vec![false; len * size]; len * size];
         seen[0][0] = true;
         let mut bh = BinaryHeap::new();
@@ -46,7 +36,12 @@ impl Solution {
                 let j = j.wrapping_add(d[1]);
                 if (0..len * size).contains(&i) && (0..len * size).contains(&j) && !seen[i][j] {
                     seen[i][j] = true;
-                    bh.push((Reverse(total + grid[i][j] as u32), (i, j)));
+                    let risk_level = ((i / len + j / len) as u32
+                        + (self.risk_levels[i % len][j % len] as u32)
+                        - 1)
+                        % 9
+                        + 1;
+                    bh.push((Reverse(total + risk_level), (i, j)));
                 }
             }
         }
