@@ -2,7 +2,7 @@ use itertools::Itertools;
 use std::io::{BufRead, BufReader};
 
 enum Value {
-    Literal(u32),
+    Literal(u64),
     Operator(Vec<Packet>),
 }
 
@@ -20,6 +20,29 @@ impl Packet {
                 Value::Operator(packets) => packets.iter().map(|p| p.total_version_numbers()).sum(),
             }
     }
+    fn calculate_value(&self) -> u64 {
+        match &self.value {
+            Value::Literal(u) => *u,
+            Value::Operator(packets) => {
+                let values = packets
+                    .iter()
+                    .map(|p| p.calculate_value())
+                    .collect::<Vec<_>>();
+                match self.type_id {
+                    0 => values.iter().sum(),
+                    1 => values.iter().product(),
+                    2 => *values.iter().min().unwrap(),
+                    3 => *values.iter().max().unwrap(),
+                    5 | 6 | 7 if values.len() != 2 => panic!("Invalid packet length"),
+                    5 if values[0] > values[1] => 1,
+                    6 if values[0] < values[1] => 1,
+                    7 if values[0] == values[1] => 1,
+                    5 | 6 | 7 => 0,
+                    _ => unreachable!(),
+                }
+            }
+        }
+    }
 }
 
 struct Solution {
@@ -36,14 +59,12 @@ impl Solution {
         }
     }
     fn part_1(&self) -> u32 {
-        let mut bits = self.bits.as_str();
-        let mut total = 0;
-        while bits.bytes().any(|u| u > b'0') {
-            let (packet, s) = Self::parse(bits);
-            bits = s;
-            total += packet.total_version_numbers();
-        }
-        total
+        let (packet, _) = Self::parse(&self.bits);
+        packet.total_version_numbers()
+    }
+    fn part_2(&self) -> u64 {
+        let (packet, _) = Self::parse(&self.bits);
+        packet.calculate_value()
     }
     fn parse(s: &str) -> (Packet, &str) {
         let (version, s) = Self::get_value(s, 3);
@@ -55,7 +76,7 @@ impl Solution {
                 let (group, ss) = Self::get_value(s, 5);
                 s = ss;
                 value <<= 4;
-                value += group & 0x0f;
+                value += (group & 0x0f) as u64;
                 if group & 0x10 == 0 {
                     break;
                 }
@@ -116,6 +137,7 @@ fn main() {
             .collect::<Vec<_>>(),
     );
     println!("{}", solution.part_1());
+    println!("{}", solution.part_2());
 }
 
 #[cfg(test)]
@@ -139,6 +161,21 @@ mod tests {
         assert_eq!(
             31,
             Solution::new(&[String::from("A0016C880162017C3686B18A3D4780")]).part_1()
+        );
+    }
+
+    #[test]
+    fn example_2() {
+        assert_eq!(3, Solution::new(&[String::from("C200B40A82")]).part_2());
+        assert_eq!(54, Solution::new(&[String::from("04005AC33890")]).part_2());
+        assert_eq!(7, Solution::new(&[String::from("880086C3E88112")]).part_2());
+        assert_eq!(9, Solution::new(&[String::from("CE00C43D881120")]).part_2());
+        assert_eq!(1, Solution::new(&[String::from("D8005AC2A8F0")]).part_2());
+        assert_eq!(0, Solution::new(&[String::from("F600BC2D8F")]).part_2());
+        assert_eq!(0, Solution::new(&[String::from("9C005AC2F8F0")]).part_2());
+        assert_eq!(
+            1,
+            Solution::new(&[String::from("9C0141080250320F1802104A08")]).part_2()
         );
     }
 }
