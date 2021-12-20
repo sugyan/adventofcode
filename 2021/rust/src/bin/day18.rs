@@ -30,12 +30,32 @@ impl Solution {
         Self::reduce(&mut number);
         number = self.numbers.iter().skip(1).fold(number, |mut acc, x| {
             acc.extend(x.iter());
-            acc.iter_mut().for_each(|x| x.1 += 1);
+            acc.iter_mut().for_each(|(_, d)| *d += 1);
             Self::reduce(&mut acc);
             acc
         });
         Self::magnitude(&mut number);
         number[0].0
+    }
+    fn part_2(&self) -> u32 {
+        (0..self.numbers.len())
+            .flat_map(move |i| {
+                (0..self.numbers.len()).filter_map(move |j| {
+                    if i != j {
+                        let mut number = std::iter::empty()
+                            .chain(self.numbers[i].iter().map(|&(n, d)| (n, d + 1)))
+                            .chain(self.numbers[j].iter().map(|&(n, d)| (n, d + 1)))
+                            .collect();
+                        Self::reduce(&mut number);
+                        Self::magnitude(&mut number);
+                        Some(number[0].0)
+                    } else {
+                        None
+                    }
+                })
+            })
+            .max()
+            .unwrap()
     }
     fn reduce(number: &mut Vec<(u32, usize)>) {
         if number.iter().all(|&(n, d)| n < 10 && d < 5) {
@@ -85,6 +105,7 @@ fn main() {
             .collect::<Vec<_>>(),
     );
     println!("{}", solution.part_1());
+    println!("{}", solution.part_2());
 }
 
 #[cfg(test)]
@@ -111,5 +132,10 @@ mod tests {
     #[test]
     fn example_1() {
         assert_eq!(4140, Solution::new(&example_inputs()).part_1());
+    }
+
+    #[test]
+    fn example_2() {
+        assert_eq!(3993, Solution::new(&example_inputs()).part_2());
     }
 }
