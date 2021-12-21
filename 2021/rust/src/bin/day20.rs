@@ -21,8 +21,20 @@ impl Solution {
         Self { enhancement, image }
     }
     fn part_1(&self) -> usize {
+        self.enhance(2)
+            .iter()
+            .map(|row| row.iter().filter(|&&b| b).count())
+            .sum()
+    }
+    fn part_2(&self) -> usize {
+        self.enhance(50)
+            .iter()
+            .map(|row| row.iter().filter(|&&b| b).count())
+            .sum()
+    }
+    fn enhance(&self, times: usize) -> Vec<Vec<bool>> {
         let len = self.image.len();
-        let offset = 2;
+        let offset = times;
         let mut image = vec![vec![false; len + 2 * offset]; len + 2 * offset];
         for (i, row) in self.image.iter().enumerate() {
             for (j, &col) in row.iter().enumerate() {
@@ -40,7 +52,7 @@ impl Solution {
             (1, 0),
             (1, 1),
         ];
-        for k in 0..2 {
+        for k in 0..times {
             image = (0..len + 2 * offset)
                 .map(|i| {
                     (0..len + 2 * offset)
@@ -65,9 +77,6 @@ impl Solution {
                 .collect();
         }
         image
-            .iter()
-            .map(|row| row.iter().filter(|&&b| b).count())
-            .sum()
     }
 }
 
@@ -79,6 +88,7 @@ fn main() {
             .collect::<Vec<_>>(),
     );
     println!("{}", solution.part_1());
+    println!("{}", solution.part_2());
 }
 
 #[cfg(test)]
@@ -102,5 +112,10 @@ mod tests {
     #[test]
     fn example_1() {
         assert_eq!(35, Solution::new(&example_inputs()).part_1());
+    }
+
+    #[test]
+    fn example_2() {
+        assert_eq!(3351, Solution::new(&example_inputs()).part_2());
     }
 }
