@@ -16,17 +16,15 @@ impl Solution {
     fn part_1(&self) -> u32 {
         let mut positions = self.starting_positions.clone();
         let mut scores = vec![0; positions.len()];
-        let mut i = 0;
-        loop {
-            for (j, score) in scores.iter_mut().enumerate() {
-                positions[j] = (positions[j] + ((i * 3 + 6) % 10) as u8) % 10;
-                *score += ((positions[j] + 9) % 10) as u32 + 1;
-                i += 3;
-                if *score >= 1000 {
-                    return scores[1 - j] * i;
-                }
+        for i in (0..).step_by(3) {
+            let j = (i / 3) % 2;
+            positions[j] = (positions[j] + ((i * 3 + 6) % 10) as u8) % 10;
+            scores[j] += ((positions[j] + 9) % 10) as u32 + 1;
+            if scores[j] >= 1000 {
+                return scores[1 - j] * (i + 3) as u32;
             }
         }
+        unreachable!()
     }
 }
 
