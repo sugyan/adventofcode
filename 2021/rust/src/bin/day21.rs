@@ -1,5 +1,7 @@
 use std::io::{BufRead, BufReader};
 
+type Memo = Vec<Vec<Vec<Vec<Vec<Option<[u64; 2]>>>>>>;
+
 struct Solution {
     starting_positions: Vec<u8>,
 }
@@ -9,7 +11,7 @@ impl Solution {
         Self {
             starting_positions: inputs
                 .iter()
-                .map(|s| s.bytes().last().unwrap() - b'0')
+                .map(|s| s.split(": ").last().unwrap().parse::<u8>().unwrap() - 1)
                 .collect(),
         }
     }
@@ -19,12 +21,46 @@ impl Solution {
         for i in (0..).step_by(3) {
             let j = (i / 3) % 2;
             positions[j] = (positions[j] + ((i * 3 + 6) % 10) as u8) % 10;
-            scores[j] += ((positions[j] + 9) % 10) as u32 + 1;
+            scores[j] += (positions[j] % 10 + 1) as u32;
             if scores[j] >= 1000 {
                 return scores[1 - j] * (i + 3) as u32;
             }
         }
         unreachable!()
+    }
+    fn part_2(&self) -> u64 {
+        let positions = [
+            self.starting_positions[0] as usize,
+            self.starting_positions[1] as usize,
+        ];
+        let mut memo = vec![vec![vec![vec![vec![None; 2]; 21]; 21]; 10]; 10];
+        let wins = Self::helper(positions, [0, 0], 0, &mut memo);
+        *wins.iter().max().unwrap()
+    }
+    fn helper(p: [usize; 2], s: [usize; 2], player: usize, memo: &mut Memo) -> [u64; 2] {
+        if let Some(wins) = memo[p[0]][p[1]][s[0]][s[1]][player] {
+            return wins;
+        }
+        let mut ret = [0, 0];
+        for (d, n) in [(3, 1), (4, 3), (5, 6), (6, 7), (7, 6), (8, 3), (9, 1)] {
+            let score = (p[player] + d) % 10 + 1;
+            if s[player] + score > 20 {
+                ret[player] += n;
+            } else {
+                (if player == 0 {
+                    Self::helper([score - 1, p[1]], [s[0] + score, s[1]], 1, memo)
+                } else {
+                    Self::helper([p[0], score - 1], [s[0], s[1] + score], 0, memo)
+                })
+                .iter()
+                .enumerate()
+                .for_each(|(i, &w)| {
+                    ret[i] += w * n;
+                });
+            }
+        }
+        memo[p[0]][p[1]][s[0]][s[1]][player] = Some(ret);
+        ret
     }
 }
 
@@ -36,6 +72,7 @@ fn main() {
             .collect::<Vec<_>>(),
     );
     println!("{}", solution.part_1());
+    println!("{}", solution.part_2());
 }
 
 #[cfg(test)]
@@ -53,6 +90,14 @@ Player 2 starting position: 8"[1..]
 
     #[test]
     fn example_1() {
-        assert_eq!(739785, Solution::new(&example_inputs()).part_1());
+        assert_eq!(739_785, Solution::new(&example_inputs()).part_1());
+    }
+
+    #[test]
+    fn example_2() {
+        assert_eq!(
+            444_356_092_776_315,
+            Solution::new(&example_inputs()).part_2()
+        );
     }
 }
