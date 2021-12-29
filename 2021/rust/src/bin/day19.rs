@@ -1,8 +1,22 @@
 use itertools::Itertools;
+use std::collections::HashSet;
 use std::io::{BufRead, BufReader};
 
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+struct Position {
+    x: i32,
+    y: i32,
+    z: i32,
+}
+
+impl Position {
+    fn new(x: i32, y: i32, z: i32) -> Self {
+        Self { x, y, z }
+    }
+}
+
 struct Solution {
-    reports: Vec<Vec<(i32, i32, i32)>>,
+    reports: Vec<Vec<Position>>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -53,6 +67,74 @@ impl Orientation {
             })
             .collect()
     }
+    fn calculate_position(&self, t: &Position, p: &Position) -> Position {
+        use Axis::*;
+        use Sign::*;
+        match (
+            (&self.facing.axis, &self.facing.sign),
+            (&self.up.axis, &self.up.sign),
+        ) {
+            ((X, Positive), (Y, Positive)) => Position::new(t.x - p.x, t.y - p.y, t.z - p.z),
+            ((X, Positive), (Y, Negative)) => Position::new(t.x - p.x, t.y + p.y, t.z + p.z),
+            ((X, Positive), (Z, Positive)) => Position::new(t.x - p.x, t.y - p.z, t.z + p.y),
+            ((X, Positive), (Z, Negative)) => Position::new(t.x - p.x, t.y + p.z, t.z - p.y),
+            ((X, Negative), (Y, Positive)) => Position::new(t.x + p.x, t.y - p.y, t.z + p.z),
+            ((X, Negative), (Y, Negative)) => Position::new(t.x + p.x, t.y + p.y, t.z - p.z),
+            ((X, Negative), (Z, Positive)) => Position::new(t.x + p.x, t.y - p.z, t.z - p.y),
+            ((X, Negative), (Z, Negative)) => Position::new(t.x + p.x, t.y + p.z, t.z + p.y),
+            ((Y, Positive), (X, Positive)) => Position::new(t.x - p.y, t.y - p.x, t.z + p.z),
+            ((Y, Positive), (X, Negative)) => Position::new(t.x - p.y, t.y + p.x, t.z - p.z),
+            ((Y, Positive), (Z, Positive)) => Position::new(t.x - p.y, t.y - p.z, t.z - p.x),
+            ((Y, Positive), (Z, Negative)) => Position::new(t.x - p.y, t.y + p.z, t.z + p.x),
+            ((Y, Negative), (X, Positive)) => Position::new(t.x + p.y, t.y - p.x, t.z - p.z),
+            ((Y, Negative), (X, Negative)) => Position::new(t.x + p.y, t.y + p.x, t.z + p.z),
+            ((Y, Negative), (Z, Positive)) => Position::new(t.x + p.y, t.y - p.z, t.z + p.x),
+            ((Y, Negative), (Z, Negative)) => Position::new(t.x + p.y, t.y + p.z, t.z - p.x),
+            ((Z, Positive), (X, Positive)) => Position::new(t.x - p.z, t.y - p.x, t.z - p.y),
+            ((Z, Positive), (X, Negative)) => Position::new(t.x - p.z, t.y + p.x, t.z + p.y),
+            ((Z, Positive), (Y, Positive)) => Position::new(t.x - p.z, t.y - p.y, t.z + p.x),
+            ((Z, Positive), (Y, Negative)) => Position::new(t.x - p.z, t.y + p.y, t.z - p.x),
+            ((Z, Negative), (X, Positive)) => Position::new(t.x + p.z, t.y - p.x, t.z + p.y),
+            ((Z, Negative), (X, Negative)) => Position::new(t.x + p.z, t.y + p.x, t.z - p.y),
+            ((Z, Negative), (Y, Positive)) => Position::new(t.x + p.z, t.y - p.y, t.z - p.x),
+            ((Z, Negative), (Y, Negative)) => Position::new(t.x + p.z, t.y + p.y, t.z + p.x),
+            _ => unreachable!(),
+        }
+    }
+    fn translate(&self, p: &Position, o: &Position) -> Position {
+        use Axis::*;
+        use Sign::*;
+        match (
+            (&self.facing.axis, &self.facing.sign),
+            (&self.up.axis, &self.up.sign),
+        ) {
+            ((X, Positive), (Y, Positive)) => Position::new(o.x + p.x, o.y + p.y, o.z + p.z),
+            ((X, Positive), (Y, Negative)) => Position::new(o.x + p.x, o.y - p.y, o.z - p.z),
+            ((X, Positive), (Z, Positive)) => Position::new(o.x + p.x, o.y + p.z, o.z - p.y),
+            ((X, Positive), (Z, Negative)) => Position::new(o.x + p.x, o.y - p.z, o.z + p.y),
+            ((X, Negative), (Y, Positive)) => Position::new(o.x - p.x, o.y + p.y, o.z - p.z),
+            ((X, Negative), (Y, Negative)) => Position::new(o.x - p.x, o.y - p.y, o.z + p.z),
+            ((X, Negative), (Z, Positive)) => Position::new(o.x - p.x, o.y + p.z, o.z + p.y),
+            ((X, Negative), (Z, Negative)) => Position::new(o.x - p.x, o.y - p.z, o.z - p.y),
+            ((Y, Positive), (X, Positive)) => Position::new(o.x + p.y, o.y + p.x, o.z - p.z),
+            ((Y, Positive), (X, Negative)) => Position::new(o.x + p.y, o.y - p.x, o.z + p.z),
+            ((Y, Positive), (Z, Positive)) => Position::new(o.x + p.y, o.y + p.z, o.z + p.x),
+            ((Y, Positive), (Z, Negative)) => Position::new(o.x + p.y, o.y - p.z, o.z - p.x),
+            ((Y, Negative), (X, Positive)) => Position::new(o.x - p.y, o.y + p.x, o.z + p.z),
+            ((Y, Negative), (X, Negative)) => Position::new(o.x - p.y, o.y - p.x, o.z - p.z),
+            ((Y, Negative), (Z, Positive)) => Position::new(o.x - p.y, o.y + p.z, o.z - p.x),
+            ((Y, Negative), (Z, Negative)) => Position::new(o.x - p.y, o.y - p.z, o.z + p.x),
+            ((Z, Positive), (X, Positive)) => Position::new(o.x + p.z, o.y + p.x, o.z + p.y),
+            ((Z, Positive), (X, Negative)) => Position::new(o.x + p.z, o.y - p.x, o.z - p.y),
+            ((Z, Positive), (Y, Positive)) => Position::new(o.x + p.z, o.y + p.y, o.z - p.x),
+            ((Z, Positive), (Y, Negative)) => Position::new(o.x + p.z, o.y - p.y, o.z + p.x),
+            ((Z, Negative), (X, Positive)) => Position::new(o.x - p.z, o.y + p.x, o.z - p.y),
+            ((Z, Negative), (X, Negative)) => Position::new(o.x - p.z, o.y - p.x, o.z + p.y),
+            ((Z, Negative), (Y, Positive)) => Position::new(o.x - p.z, o.y + p.y, o.z + p.x),
+            ((Z, Negative), (Y, Negative)) => Position::new(o.x - p.z, o.y - p.y, o.z - p.x),
+            _ => unreachable!(),
+        }
+    }
 }
 
 impl Solution {
@@ -65,10 +147,12 @@ impl Solution {
                         .iter()
                         .skip(1)
                         .map(|line| {
-                            line.split(',')
+                            let (x, y, z) = line
+                                .split(',')
                                 .map(|s| s.parse().unwrap())
                                 .collect_tuple()
-                                .unwrap()
+                                .unwrap();
+                            Position { x, y, z }
                         })
                         .collect()
                 })
@@ -76,8 +160,31 @@ impl Solution {
         }
     }
     fn part_1(&self) -> u32 {
-        for orientation in Orientation::all() {
-            println!("{:?}", orientation);
+        let hs = self.reports[0].iter().collect::<HashSet<_>>();
+        let find_orientation = |report: &[Position]| -> Option<(Orientation, Position)> {
+            for orientation in Orientation::all() {
+                for p0 in &self.reports[0] {
+                    for p1 in report {
+                        let o = orientation.calculate_position(p0, p1);
+                        if report
+                            .iter()
+                            .filter(|&p| hs.contains(&orientation.translate(p, &o)))
+                            .count()
+                            >= 12
+                        {
+                            return Some((orientation, o));
+                        }
+                    }
+                }
+            }
+            None
+        };
+        for report in self.reports.iter().skip(1) {
+            if let Some((orientation, o)) = find_orientation(report) {
+                println!("{:?} {:?}", orientation, o);
+            } else {
+                println!("failed");
+            }
         }
         unimplemented!()
     }
