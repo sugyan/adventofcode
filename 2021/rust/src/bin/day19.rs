@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use std::collections::HashSet;
+use std::collections::{HashSet, VecDeque};
 use std::io::{BufRead, BufReader};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -16,7 +16,7 @@ impl Position {
 }
 
 struct Solution {
-    reports: Vec<Vec<Position>>,
+    reports: Vec<HashSet<Position>>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -159,34 +159,58 @@ impl Solution {
                 .collect(),
         }
     }
-    fn part_1(&self) -> u32 {
-        let hs = self.reports[0].iter().collect::<HashSet<_>>();
-        let find_orientation = |report: &[Position]| -> Option<(Orientation, Position)> {
-            for orientation in Orientation::all() {
-                for p0 in &self.reports[0] {
-                    for p1 in report {
-                        let o = orientation.calculate_position(p0, p1);
-                        if report
-                            .iter()
-                            .filter(|&p| hs.contains(&orientation.translate(p, &o)))
-                            .count()
-                            >= 12
-                        {
-                            return Some((orientation, o));
+    fn part_1(&self) -> usize {
+        let find_overlap =
+            |r0: &HashSet<Position>, r1: &HashSet<Position>| -> Option<(Orientation, Position)> {
+                for orientation in Orientation::all() {
+                    for p0 in r0 {
+                        for p1 in r1 {
+                            let o = orientation.calculate_position(p0, p1);
+                            if r1
+                                .iter()
+                                .filter(|&p| r0.contains(&orientation.translate(p, &o)))
+                                .count()
+                                >= 12
+                            {
+                                return Some((orientation, o));
+                            }
                         }
                     }
                 }
-            }
-            None
-        };
-        for report in self.reports.iter().skip(1) {
-            if let Some((orientation, o)) = find_orientation(report) {
-                println!("{:?} {:?}", orientation, o);
-            } else {
-                println!("failed");
+                None
+            };
+        let mut graph = vec![Vec::new(); self.reports.len()];
+        for i in 1..self.reports.len() {
+            for j in 0..i {
+                if find_overlap(&self.reports[i], &self.reports[j]).is_some() {
+                    graph[i].push(j);
+                    graph[j].push(i);
+                }
             }
         }
-        unimplemented!()
+        let mut hss = vec![None; self.reports.len()];
+        hss[0] = Some(self.reports[0].clone());
+        let mut vd = VecDeque::new();
+        vd.push_back(0);
+        while let Some(i) = vd.pop_front() {
+            for &j in &graph[i] {
+                if hss[j].is_none() {
+                    let (orientation, o) =
+                        find_overlap(hss[i].as_ref().unwrap(), &self.reports[j]).unwrap();
+                    hss[j] = Some(
+                        self.reports[j]
+                            .iter()
+                            .map(|p| orientation.translate(p, &o))
+                            .collect(),
+                    );
+                    vd.push_back(j);
+                }
+            }
+        }
+        hss.iter()
+            .flat_map(|hs| hs.as_ref().unwrap().iter())
+            .collect::<HashSet<_>>()
+            .len()
     }
 }
 
