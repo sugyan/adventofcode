@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use std::collections::{HashSet, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::io::{BufRead, BufReader};
 
 #[derive(Clone, Copy, Eq, Hash, PartialEq)]
@@ -12,6 +12,9 @@ struct Position {
 impl Position {
     fn new(x: i32, y: i32, z: i32) -> Self {
         Self { x, y, z }
+    }
+    fn distance(&self, p: &Position) -> i32 {
+        (self.x - p.x).abs() + (self.y - p.y).abs() + (self.z - p.z).abs()
     }
 }
 
@@ -176,13 +179,29 @@ impl Solution {
                 }
                 None
             };
-        let mut graph = vec![Vec::new(); reports.len()];
-        for i in 1..reports.len() {
-            for j in 0..i {
-                if find_overlap(&reports[i], &reports[j]).is_some() {
-                    graph[i].push(j);
-                    graph[j].push(i);
+        let dists = reports
+            .iter()
+            .map(|r: &HashSet<Position>| {
+                let mut hm = HashMap::new();
+                for (p0, p1) in r.iter().tuple_combinations() {
+                    *hm.entry(p0.distance(p1)).or_insert(0) += 1;
                 }
+                hm
+            })
+            .collect::<Vec<_>>();
+        let mut graph = vec![Vec::new(); reports.len()];
+        for (i, j) in (0..reports.len()).tuple_combinations() {
+            if dists[i]
+                .iter()
+                .filter_map(|(k, vi)| dists[j].get(k).map(|vj| vi.min(vj)))
+                .sum::<u32>()
+                < 78
+            {
+                continue;
+            }
+            if find_overlap(&reports[i], &reports[j]).is_some() {
+                graph[i].push(j);
+                graph[j].push(i);
             }
         }
         let mut scanners = vec![None; reports.len()];
@@ -223,7 +242,7 @@ impl Solution {
         self.scanners
             .iter()
             .tuple_combinations()
-            .map(|(p0, p1)| (p0.x - p1.x).abs() + (p0.y - p1.y).abs() + (p0.z - p1.z).abs())
+            .map(|(p0, p1)| p0.distance(p1))
             .max()
             .unwrap()
     }
