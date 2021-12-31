@@ -2,7 +2,7 @@ use itertools::Itertools;
 use std::collections::{HashSet, VecDeque};
 use std::io::{BufRead, BufReader};
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Eq, Hash, PartialEq)]
 struct Position {
     x: i32,
     y: i32,
@@ -15,30 +15,26 @@ impl Position {
     }
 }
 
-struct Solution {
-    reports: Vec<HashSet<Position>>,
-}
-
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 enum Axis {
     X,
     Y,
     Z,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 enum Sign {
     Positive,
     Negative,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy)]
 struct Direction {
     axis: Axis,
     sign: Sign,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy)]
 struct Orientation {
     facing: Direction,
     up: Direction,
@@ -137,29 +133,30 @@ impl Orientation {
     }
 }
 
+struct Solution {
+    scanners: Vec<Position>,
+    beacons: Vec<HashSet<Position>>,
+}
+
 impl Solution {
     fn new(inputs: &[String]) -> Self {
-        Self {
-            reports: inputs
-                .split(String::is_empty)
-                .map(|lines| {
-                    lines
-                        .iter()
-                        .skip(1)
-                        .map(|line| {
-                            let (x, y, z) = line
-                                .split(',')
-                                .map(|s| s.parse().unwrap())
-                                .collect_tuple()
-                                .unwrap();
-                            Position { x, y, z }
-                        })
-                        .collect()
-                })
-                .collect(),
-        }
-    }
-    fn part_1(&self) -> usize {
+        let reports = inputs
+            .split(String::is_empty)
+            .map(|lines| {
+                lines
+                    .iter()
+                    .skip(1)
+                    .map(|line| {
+                        let (x, y, z) = line
+                            .split(',')
+                            .map(|s| s.parse().unwrap())
+                            .collect_tuple()
+                            .unwrap();
+                        Position { x, y, z }
+                    })
+                    .collect()
+            })
+            .collect::<Vec<_>>();
         let find_overlap =
             |r0: &HashSet<Position>, r1: &HashSet<Position>| -> Option<(Orientation, Position)> {
                 for orientation in Orientation::all() {
@@ -179,26 +176,29 @@ impl Solution {
                 }
                 None
             };
-        let mut graph = vec![Vec::new(); self.reports.len()];
-        for i in 1..self.reports.len() {
+        let mut graph = vec![Vec::new(); reports.len()];
+        for i in 1..reports.len() {
             for j in 0..i {
-                if find_overlap(&self.reports[i], &self.reports[j]).is_some() {
+                if find_overlap(&reports[i], &reports[j]).is_some() {
                     graph[i].push(j);
                     graph[j].push(i);
                 }
             }
         }
-        let mut hss = vec![None; self.reports.len()];
-        hss[0] = Some(self.reports[0].clone());
+        let mut scanners = vec![None; reports.len()];
+        let mut beacons = vec![None; reports.len()];
+        scanners[0] = Some(Position::new(0, 0, 0));
+        beacons[0] = Some(reports[0].clone());
         let mut vd = VecDeque::new();
         vd.push_back(0);
         while let Some(i) = vd.pop_front() {
             for &j in &graph[i] {
-                if hss[j].is_none() {
+                if scanners[j].is_none() {
                     let (orientation, o) =
-                        find_overlap(hss[i].as_ref().unwrap(), &self.reports[j]).unwrap();
-                    hss[j] = Some(
-                        self.reports[j]
+                        find_overlap(beacons[i].as_ref().unwrap(), &reports[j]).unwrap();
+                    scanners[j] = Some(o);
+                    beacons[j] = Some(
+                        reports[j]
                             .iter()
                             .map(|p| orientation.translate(p, &o))
                             .collect(),
@@ -207,10 +207,25 @@ impl Solution {
                 }
             }
         }
-        hss.iter()
-            .flat_map(|hs| hs.as_ref().unwrap().iter())
+        Self {
+            scanners: scanners.iter().filter_map(|&o| o).collect(),
+            beacons: beacons.iter().filter_map(|o| o.as_ref().cloned()).collect(),
+        }
+    }
+    fn part_1(&self) -> usize {
+        self.beacons
+            .iter()
+            .flat_map(|hs| hs.iter())
             .collect::<HashSet<_>>()
             .len()
+    }
+    fn part_2(&self) -> i32 {
+        self.scanners
+            .iter()
+            .tuple_combinations()
+            .map(|(p0, p1)| (p0.x - p1.x).abs() + (p0.y - p1.y).abs() + (p0.z - p1.z).abs())
+            .max()
+            .unwrap()
     }
 }
 
@@ -222,6 +237,7 @@ fn main() {
             .collect::<Vec<_>>(),
     );
     println!("{}", solution.part_1());
+    println!("{}", solution.part_2());
 }
 
 #[cfg(test)]
@@ -374,5 +390,10 @@ mod tests {
     #[test]
     fn example_1() {
         assert_eq!(79, Solution::new(&example_inputs()).part_1());
+    }
+
+    #[test]
+    fn example_2() {
+        assert_eq!(3621, Solution::new(&example_inputs()).part_2());
     }
 }
