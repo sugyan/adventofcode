@@ -1,29 +1,11 @@
 use aoc2022::Solve;
 use std::io::{BufRead, BufReader, Read};
 
-enum Command {
-    Forward(u32),
-    Down(u32),
-    Up(u32),
-}
-
 #[derive(Default)]
 struct Position(u32, u32, u32);
 
 struct Solution {
-    commands: Vec<Command>,
-}
-
-impl Solution {
-    fn calculate_position(&self) -> Position {
-        self.commands
-            .iter()
-            .fold(Position::default(), |acc, c| match c {
-                Command::Forward(u) => Position(acc.0 + u, acc.1 + u * acc.2, acc.2),
-                Command::Down(u) => Position(acc.0, acc.1, acc.2 + u),
-                Command::Up(u) => Position(acc.0, acc.1, acc.2 - u),
-            })
-    }
+    position: Position,
 }
 
 impl Solve for Solution {
@@ -31,6 +13,11 @@ impl Solve for Solution {
     type Answer2 = u32;
 
     fn new(r: impl Read) -> Self {
+        enum Command {
+            Forward(u32),
+            Down(u32),
+            Up(u32),
+        }
         let parse = |s: String| {
             let i = s.find(' ').unwrap();
             let units = s[i + 1..].parse().unwrap();
@@ -42,27 +29,29 @@ impl Solve for Solution {
             }
         };
         Self {
-            commands: BufReader::new(r)
+            position: BufReader::new(r)
                 .lines()
                 .filter_map(Result::ok)
                 .map(parse)
-                .collect(),
+                .fold(Position::default(), |acc, c| match c {
+                    Command::Forward(u) => Position(acc.0 + u, acc.1 + u * acc.2, acc.2),
+                    Command::Down(u) => Position(acc.0, acc.1, acc.2 + u),
+                    Command::Up(u) => Position(acc.0, acc.1, acc.2 - u),
+                }),
         }
     }
-    fn part1(&self) -> u32 {
-        let position = self.calculate_position();
-        position.0 * position.2
+    fn part1(&self) -> Self::Answer1 {
+        self.position.0 * self.position.2
     }
-    fn part2(&self) -> u32 {
-        let position = self.calculate_position();
-        position.0 * position.1
+    fn part2(&self) -> Self::Answer2 {
+        self.position.0 * self.position.1
     }
 }
 
 fn main() {
     let solution = Solution::new(std::io::stdin().lock());
-    println!("{}", solution.part1());
-    println!("{}", solution.part2());
+    println!("Part 1: {}", solution.part1());
+    println!("Part 2: {}", solution.part2());
 }
 
 #[cfg(test)]
@@ -81,12 +70,12 @@ forward 2"[1..]
     }
 
     #[test]
-    fn example_1() {
+    fn example1() {
         assert_eq!(150, Solution::new(example_input()).part1());
     }
 
     #[test]
-    fn example_2() {
+    fn example2() {
         assert_eq!(900, Solution::new(example_input()).part2());
     }
 }

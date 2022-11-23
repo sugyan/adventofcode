@@ -1,5 +1,6 @@
+use aoc2022::Solve;
 use std::cmp::Ordering;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 
 enum Target {
     MostCommon,
@@ -11,20 +12,24 @@ struct Solution {
     size: usize,
 }
 
-impl Solution {
-    fn new(inputs: &[String]) -> Self {
+impl Solve for Solution {
+    type Answer1 = u32;
+    type Answer2 = u32;
+
+    fn new(r: impl Read) -> Self {
+        let inputs = BufReader::new(r)
+            .lines()
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>();
         Self {
             size: inputs[0].len(),
             reports: inputs
                 .iter()
-                .map(|s| {
-                    s.chars()
-                        .fold(0, |acc, c| (acc << 1) + if c == '1' { 1 } else { 0 })
-                })
+                .map(|s| s.chars().fold(0, |acc, c| (acc << 1) + u32::from(c == '1')))
                 .collect(),
         }
     }
-    fn part_1(&self) -> u32 {
+    fn part1(&self) -> Self::Answer1 {
         let mut counts = vec![(0, 0); self.size];
         for report in &self.reports {
             for (i, c) in counts.iter_mut().rev().enumerate() {
@@ -45,7 +50,7 @@ impl Solution {
         });
         gamma * epsilon
     }
-    fn part_2(&self) -> u32 {
+    fn part2(&self) -> Self::Answer2 {
         let find_rating = |target: Target| {
             let mut candidates = self.reports.clone();
             for i in (0..self.size).rev() {
@@ -71,21 +76,16 @@ impl Solution {
 }
 
 fn main() {
-    let solution = Solution::new(
-        &BufReader::new(std::io::stdin().lock())
-            .lines()
-            .filter_map(Result::ok)
-            .collect::<Vec<_>>(),
-    );
-    println!("{}", solution.part_1());
-    println!("{}", solution.part_2());
+    let solution = Solution::new(std::io::stdin().lock());
+    println!("Part 1: {}", solution.part1());
+    println!("Part 2: {}", solution.part2());
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn example_inputs() -> Vec<String> {
+    fn example_input() -> &'static [u8] {
         r"
 00100
 11110
@@ -99,18 +99,16 @@ mod tests {
 11001
 00010
 01010"[1..]
-            .split('\n')
-            .map(String::from)
-            .collect()
+            .as_bytes()
     }
 
     #[test]
-    fn example_1() {
-        assert_eq!(198, Solution::new(&example_inputs()).part_1());
+    fn example1() {
+        assert_eq!(198, Solution::new(example_input()).part1());
     }
 
     #[test]
-    fn example_2() {
-        assert_eq!(230, Solution::new(&example_inputs()).part_2());
+    fn example2() {
+        assert_eq!(230, Solution::new(example_input()).part2());
     }
 }

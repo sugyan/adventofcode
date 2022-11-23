@@ -1,11 +1,19 @@
-use std::io::{BufRead, BufReader};
+use aoc2022::Solve;
+use std::io::{BufRead, BufReader, Read};
 
 struct Solution {
     scores: Vec<(usize, u32)>,
 }
 
-impl Solution {
-    fn new(inputs: &[String]) -> Self {
+impl Solve for Solution {
+    type Answer1 = u32;
+    type Answer2 = u32;
+
+    fn new(r: impl Read) -> Self {
+        let inputs = BufReader::new(r)
+            .lines()
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>();
         let numbers = inputs[0]
             .split(',')
             .filter_map(|s| s.parse().ok())
@@ -56,30 +64,25 @@ impl Solution {
             .collect::<Vec<_>>();
         Self { scores }
     }
-    fn part_1(&self) -> u32 {
+    fn part1(&self) -> Self::Answer1 {
         self.scores.iter().min_by_key(|(i, _)| i).unwrap().1
     }
-    fn part_2(&self) -> u32 {
+    fn part2(&self) -> Self::Answer2 {
         self.scores.iter().max_by_key(|(i, _)| i).unwrap().1
     }
 }
 
 fn main() {
-    let solution = Solution::new(
-        &BufReader::new(std::io::stdin().lock())
-            .lines()
-            .filter_map(Result::ok)
-            .collect::<Vec<_>>(),
-    );
-    println!("{}", solution.part_1());
-    println!("{}", solution.part_2());
+    let solution = Solution::new(std::io::stdin().lock());
+    println!("Part 1: {}", solution.part1());
+    println!("Part 2: {}", solution.part2());
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn example_inputs() -> Vec<String> {
+    fn example_input() -> &'static [u8] {
         r"
 7,4,9,5,11,17,23,2,0,14,21,24,10,16,13,6,15,25,12,22,18,20,8,19,3,26,1
 
@@ -100,18 +103,16 @@ mod tests {
 18  8 23 26 20
 22 11 13  6  5
  2  0 12  3  7"[1..]
-            .split('\n')
-            .map(String::from)
-            .collect()
+            .as_bytes()
     }
 
     #[test]
-    fn example_1() {
-        assert_eq!(4512, Solution::new(&example_inputs()).part_1());
+    fn example1() {
+        assert_eq!(4512, Solution::new(example_input()).part1());
     }
 
     #[test]
-    fn example_2() {
-        assert_eq!(1924, Solution::new(&example_inputs()).part_2());
+    fn example2() {
+        assert_eq!(1924, Solution::new(example_input()).part2());
     }
 }
