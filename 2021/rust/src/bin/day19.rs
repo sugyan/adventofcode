@@ -1,6 +1,7 @@
+use aoc2021::Solve;
 use itertools::Itertools;
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 
 #[derive(Clone, Copy, Eq, Hash, PartialEq)]
 struct Position {
@@ -141,9 +142,15 @@ struct Solution {
     beacons: Vec<HashSet<Position>>,
 }
 
-impl Solution {
-    fn new(inputs: &[String]) -> Self {
-        let reports = inputs
+impl Solve for Solution {
+    type Answer1 = usize;
+    type Answer2 = i32;
+
+    fn new(r: impl Read) -> Self {
+        let reports = BufReader::new(r)
+            .lines()
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>()
             .split(String::is_empty)
             .map(|lines| {
                 lines
@@ -231,14 +238,14 @@ impl Solution {
             beacons: beacons.iter().filter_map(|o| o.as_ref().cloned()).collect(),
         }
     }
-    fn part_1(&self) -> usize {
+    fn part1(&self) -> Self::Answer1 {
         self.beacons
             .iter()
             .flat_map(|hs| hs.iter())
             .collect::<HashSet<_>>()
             .len()
     }
-    fn part_2(&self) -> i32 {
+    fn part2(&self) -> Self::Answer2 {
         self.scanners
             .iter()
             .tuple_combinations()
@@ -249,21 +256,16 @@ impl Solution {
 }
 
 fn main() {
-    let solution = Solution::new(
-        &BufReader::new(std::io::stdin().lock())
-            .lines()
-            .filter_map(Result::ok)
-            .collect::<Vec<_>>(),
-    );
-    println!("{}", solution.part_1());
-    println!("{}", solution.part_2());
+    let solution = Solution::new(std::io::stdin().lock());
+    println!("Part 1: {}", solution.part1());
+    println!("Part 2: {}", solution.part2());
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn example_inputs() -> Vec<String> {
+    fn example_input() -> &'static [u8] {
         r"
 --- scanner 0 ---
 404,-588,-901
@@ -401,18 +403,16 @@ mod tests {
 891,-625,532
 -652,-548,-490
 30,-46,-14"[1..]
-            .split('\n')
-            .map(String::from)
-            .collect()
+            .as_bytes()
     }
 
     #[test]
-    fn example_1() {
-        assert_eq!(79, Solution::new(&example_inputs()).part_1());
+    fn example1() {
+        assert_eq!(79, Solution::new(example_input()).part1());
     }
 
     #[test]
-    fn example_2() {
-        assert_eq!(3621, Solution::new(&example_inputs()).part_2());
+    fn example2() {
+        assert_eq!(3621, Solution::new(example_input()).part2());
     }
 }

@@ -50,7 +50,7 @@ impl Solve for Solution {
                 let mut vx = ivx;
                 for v in ys.iter_mut() {
                     x += vx;
-                    vx -= if vx > 0 { 1 } else { 0 };
+                    vx -= i32::from(vx > 0);
                     if (self.target_area.0 .0..=self.target_area.0 .1).contains(&x) {
                         ivys.extend(v.iter());
                     }

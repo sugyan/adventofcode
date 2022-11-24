@@ -1,4 +1,6 @@
-use std::io::{BufRead, BufReader};
+use aoc2021::Solve;
+use itertools::Itertools;
+use std::io::{BufRead, BufReader, Read};
 
 struct Solution {
     enhancement: Vec<bool>,
@@ -6,32 +8,6 @@ struct Solution {
 }
 
 impl Solution {
-    fn new(inputs: &[String]) -> Self {
-        let mut sections = inputs.split(String::is_empty);
-        let enhancement = sections.next().unwrap()[0]
-            .chars()
-            .map(|c| c == '#')
-            .collect();
-        let image = sections
-            .next()
-            .unwrap()
-            .iter()
-            .map(|line| line.chars().map(|c| c == '#').collect::<Vec<_>>())
-            .collect::<Vec<_>>();
-        Self { enhancement, image }
-    }
-    fn part_1(&self) -> usize {
-        self.enhance(2)
-            .iter()
-            .map(|row| row.iter().filter(|&&b| b).count())
-            .sum()
-    }
-    fn part_2(&self) -> usize {
-        self.enhance(50)
-            .iter()
-            .map(|row| row.iter().filter(|&&b| b).count())
-            .sum()
-    }
     fn enhance(&self, times: usize) -> Vec<Vec<bool>> {
         let len = self.image.len();
         let offset = times;
@@ -70,7 +46,7 @@ impl Solution {
                                         self.enhancement[0] && k & 1 > 0
                                     }
                                 })
-                                .fold(0, |acc, x| (acc << 1) + if x { 1 } else { 0 })]
+                                .fold(0, |acc, x| (acc << 1) + usize::from(x))]
                         })
                         .collect()
                 })
@@ -80,22 +56,55 @@ impl Solution {
     }
 }
 
-fn main() {
-    let solution = Solution::new(
-        &BufReader::new(std::io::stdin().lock())
+impl Solve for Solution {
+    type Answer1 = usize;
+    type Answer2 = usize;
+
+    fn new(r: impl Read) -> Self {
+        let inputs = BufReader::new(r)
             .lines()
             .filter_map(Result::ok)
-            .collect::<Vec<_>>(),
-    );
-    println!("{}", solution.part_1());
-    println!("{}", solution.part_2());
+            .collect::<Vec<_>>();
+        let sections: (&[String], &[String]) = inputs.split(String::is_empty).next_tuple().unwrap();
+        let enhancement = sections
+            .0
+            .first()
+            .unwrap()
+            .chars()
+            .map(|c| c == '#')
+            .collect();
+        let image = sections
+            .1
+            .iter()
+            .map(|line| line.chars().map(|c| c == '#').collect::<Vec<_>>())
+            .collect::<Vec<_>>();
+        Self { enhancement, image }
+    }
+    fn part1(&self) -> Self::Answer1 {
+        self.enhance(2)
+            .iter()
+            .map(|row| row.iter().filter(|&&b| b).count())
+            .sum()
+    }
+    fn part2(&self) -> Self::Answer2 {
+        self.enhance(50)
+            .iter()
+            .map(|row| row.iter().filter(|&&b| b).count())
+            .sum()
+    }
+}
+
+fn main() {
+    let solution = Solution::new(std::io::stdin().lock());
+    println!("Part 1: {}", solution.part1());
+    println!("Part 2: {}", solution.part2());
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn example_inputs() -> Vec<String> {
+    fn example_input() -> &'static [u8] {
         r"
 ..#.#..#####.#.#.#.###.##.....###.##.#..###.####..#####..#....#..#..##..###..######.###...####..#..#####..##..#.#####...##.#.#..#.##..#.#......#.###.######.###.####...#.##.##..#..#..#####.....#.#....###..#.##......#.....#..#..#..##..#...##.######.####.####.#.#...#.......#..#.#.#...####.##.#......#..#...##.#.##..#...##.#.##..###.#......#.#.......#.#.#.####.###.##...#.....####.#..#..#.##.#....##..#.####....##...##..#...#......#.#.......#.......##..####..#...#.#.#...##..#.#..###..#####........#..####......#..#
 
@@ -103,19 +112,16 @@ mod tests {
 #....
 ##..#
 ..#..
-..###"[1..]
-            .split('\n')
-            .map(String::from)
-            .collect()
+..###"[1..].as_bytes()
     }
 
     #[test]
-    fn example_1() {
-        assert_eq!(35, Solution::new(&example_inputs()).part_1());
+    fn example1() {
+        assert_eq!(35, Solution::new(example_input()).part1());
     }
 
     #[test]
-    fn example_2() {
-        assert_eq!(3351, Solution::new(&example_inputs()).part_2());
+    fn example2() {
+        assert_eq!(3351, Solution::new(example_input()).part2());
     }
 }
