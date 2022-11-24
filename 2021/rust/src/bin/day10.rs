@@ -1,4 +1,6 @@
-use std::io::{BufRead, BufReader};
+use aoc2021::Solve;
+use std::collections::HashMap;
+use std::io::{BufRead, BufReader, Read};
 
 enum Score {
     Incomplete(u64),
@@ -9,44 +11,32 @@ struct Solution {
     scores: Vec<Score>,
 }
 
-impl Solution {
-    fn new(inputs: &[String]) -> Self {
+impl Solve for Solution {
+    type Answer1 = u64;
+    type Answer2 = u64;
+
+    fn new(r: impl Read) -> Self {
+        let hm = HashMap::from([
+            (')', ('(', 3)),
+            (']', ('[', 57)),
+            ('}', ('{', 1197)),
+            ('>', ('<', 25137)),
+        ]);
         Self {
-            scores: inputs
-                .iter()
+            scores: BufReader::new(r)
+                .lines()
+                .filter_map(Result::ok)
                 .map(|line| {
                     let mut stack = Vec::new();
                     for c in line.chars() {
-                        match c {
-                            ')' => {
-                                if stack.last() == Some(&'(') {
-                                    stack.pop();
-                                } else {
-                                    return Score::Corrupted(3);
-                                }
+                        if let Some((p, s)) = hm.get(&c) {
+                            if stack.last() == Some(p) {
+                                stack.pop();
+                            } else {
+                                return Score::Corrupted(*s);
                             }
-                            ']' => {
-                                if stack.last() == Some(&'[') {
-                                    stack.pop();
-                                } else {
-                                    return Score::Corrupted(57);
-                                }
-                            }
-                            '}' => {
-                                if stack.last() == Some(&'{') {
-                                    stack.pop();
-                                } else {
-                                    return Score::Corrupted(1197);
-                                }
-                            }
-                            '>' => {
-                                if stack.last() == Some(&'<') {
-                                    stack.pop();
-                                } else {
-                                    return Score::Corrupted(25137);
-                                }
-                            }
-                            c => stack.push(c),
+                        } else {
+                            stack.push(c)
                         }
                     }
                     Score::Incomplete(stack.iter().rev().fold(0, |acc, &c| {
@@ -63,22 +53,28 @@ impl Solution {
                 .collect(),
         }
     }
-    fn part_1(&self) -> u64 {
+    fn part1(&self) -> Self::Answer1 {
         self.scores
             .iter()
-            .filter_map(|s| match s {
-                Score::Corrupted(u) => Some(*u),
-                _ => None,
+            .filter_map(|s| {
+                if let Score::Corrupted(u) = s {
+                    Some(*u)
+                } else {
+                    None
+                }
             })
             .sum()
     }
-    fn part_2(&self) -> u64 {
+    fn part2(&self) -> Self::Answer2 {
         let mut v = self
             .scores
             .iter()
-            .filter_map(|s| match s {
-                Score::Incomplete(u) => Some(*u),
-                _ => None,
+            .filter_map(|s| {
+                if let Score::Incomplete(u) = s {
+                    Some(*u)
+                } else {
+                    None
+                }
             })
             .collect::<Vec<_>>();
         v.sort_unstable();
@@ -87,21 +83,16 @@ impl Solution {
 }
 
 fn main() {
-    let solution = Solution::new(
-        &BufReader::new(std::io::stdin().lock())
-            .lines()
-            .filter_map(Result::ok)
-            .collect::<Vec<_>>(),
-    );
-    println!("{}", solution.part_1());
-    println!("{}", solution.part_2());
+    let solution = Solution::new(std::io::stdin().lock());
+    println!("Part 1: {}", solution.part1());
+    println!("Part 2: {}", solution.part2());
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn example_inputs() -> Vec<String> {
+    fn example_input() -> &'static [u8] {
         r"
 [({(<(())[]>[[{[]{<()<>>
 [(()[<>])]({[<{<<[]>>(
@@ -113,18 +104,16 @@ mod tests {
 [<(<(<(<{}))><([]([]()
 <{([([[(<>()){}]>(<<{{
 <{([{{}}[<[[[<>{}]]]>[]]"[1..]
-            .split('\n')
-            .map(String::from)
-            .collect()
+            .as_bytes()
     }
 
     #[test]
-    fn example_1() {
-        assert_eq!(26397, Solution::new(&example_inputs()).part_1());
+    fn example1() {
+        assert_eq!(26397, Solution::new(example_input()).part1());
     }
 
     #[test]
-    fn example_2() {
-        assert_eq!(288957, Solution::new(&example_inputs()).part_2());
+    fn example2() {
+        assert_eq!(288957, Solution::new(example_input()).part2());
     }
 }

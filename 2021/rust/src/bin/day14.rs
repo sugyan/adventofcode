@@ -1,6 +1,7 @@
+use aoc2021::Solve;
 use itertools::Itertools;
 use std::collections::HashMap;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 
 struct Solution {
     template: Vec<char>,
@@ -8,28 +9,6 @@ struct Solution {
 }
 
 impl Solution {
-    fn new(inputs: &[String]) -> Self {
-        let mut rules = HashMap::new();
-        for input in &inputs[2..] {
-            let rule = input.split_once(" -> ").unwrap();
-            rules.insert(
-                rule.0.chars().collect_tuple().unwrap(),
-                rule.1.chars().next().unwrap(),
-            );
-        }
-        Self {
-            template: inputs[0].chars().collect(),
-            rules,
-        }
-    }
-    fn part_1(&self) -> u64 {
-        let counts = self.apply(10);
-        counts.values().max().unwrap() - counts.values().min().unwrap()
-    }
-    fn part_2(&self) -> u64 {
-        let counts = self.apply(40);
-        counts.values().max().unwrap() - counts.values().min().unwrap()
-    }
     fn apply(&self, steps: usize) -> HashMap<char, u64> {
         let mut pairs = self.template.windows(2).fold(HashMap::new(), |mut hm, w| {
             *hm.entry((w[0], w[1])).or_insert(0) += 1;
@@ -53,22 +32,49 @@ impl Solution {
     }
 }
 
-fn main() {
-    let solution = Solution::new(
-        &BufReader::new(std::io::stdin().lock())
+impl Solve for Solution {
+    type Answer1 = u64;
+    type Answer2 = u64;
+
+    fn new(r: impl Read) -> Self {
+        let inputs = BufReader::new(r)
             .lines()
             .filter_map(Result::ok)
-            .collect::<Vec<_>>(),
-    );
-    println!("{}", solution.part_1());
-    println!("{}", solution.part_2());
+            .collect::<Vec<_>>();
+        let mut rules = HashMap::new();
+        for input in &inputs[2..] {
+            let rule = input.split_once(" -> ").unwrap();
+            rules.insert(
+                rule.0.chars().collect_tuple().unwrap(),
+                rule.1.chars().next().unwrap(),
+            );
+        }
+        Self {
+            template: inputs[0].chars().collect(),
+            rules,
+        }
+    }
+    fn part1(&self) -> Self::Answer1 {
+        let counts = self.apply(10);
+        counts.values().max().unwrap() - counts.values().min().unwrap()
+    }
+    fn part2(&self) -> Self::Answer2 {
+        let counts = self.apply(40);
+        counts.values().max().unwrap() - counts.values().min().unwrap()
+    }
+}
+
+fn main() {
+    let solution = Solution::new(std::io::stdin().lock());
+    println!("Part 1: {}", solution.part1());
+    println!("Part 2: {}", solution.part2());
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn example_inputs() -> Vec<String> {
+    fn example_input() -> &'static [u8] {
         r"
 NNCB
 
@@ -88,18 +94,16 @@ BB -> N
 BC -> B
 CC -> N
 CN -> C"[1..]
-            .split('\n')
-            .map(String::from)
-            .collect()
+            .as_bytes()
     }
 
     #[test]
-    fn example_1() {
-        assert_eq!(1588, Solution::new(&example_inputs()).part_1());
+    fn example1() {
+        assert_eq!(1588, Solution::new(example_input()).part1());
     }
 
     #[test]
-    fn example_2() {
-        assert_eq!(2_188_189_693_529, Solution::new(&example_inputs()).part_2());
+    fn example2() {
+        assert_eq!(2_188_189_693_529, Solution::new(example_input()).part2());
     }
 }

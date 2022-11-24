@@ -1,6 +1,7 @@
+use aoc2021::Solve;
 use itertools::Itertools;
 use std::collections::HashSet;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 
 enum Fold {
     X(u32),
@@ -13,7 +14,31 @@ struct Solution {
 }
 
 impl Solution {
-    fn new(inputs: &[String]) -> Self {
+    fn fold(&self, end: usize) -> HashSet<(u32, u32)> {
+        let mut dots = self.dots.iter().cloned().collect::<HashSet<_>>();
+        for fold in &self.folds[..end] {
+            dots = dots
+                .iter()
+                .map(|&(x, y)| match fold {
+                    Fold::X(value) if x > *value => (value * 2 - x, y),
+                    Fold::Y(value) if y > *value => (x, value * 2 - y),
+                    _ => (x, y),
+                })
+                .collect::<HashSet<_>>()
+        }
+        dots
+    }
+}
+
+impl Solve for Solution {
+    type Answer1 = usize;
+    type Answer2 = String;
+
+    fn new(r: impl Read) -> Self {
+        let inputs = BufReader::new(r)
+            .lines()
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>();
         let mut parts = inputs.split(String::is_empty);
         let mut dots = Vec::new();
         if let Some(lines) = parts.next() {
@@ -39,53 +64,35 @@ impl Solution {
         }
         Self { dots, folds }
     }
-    fn part_1(&self) -> usize {
+    fn part1(&self) -> Self::Answer1 {
         self.fold(1).len()
     }
-    fn part_2(&self) -> String {
+    fn part2(&self) -> Self::Answer2 {
         let dots = self.fold(self.folds.len());
         let xmax = dots.iter().map(|&(x, _)| x as usize).max().unwrap();
         let ymax = dots.iter().map(|&(_, y)| y as usize).max().unwrap();
         let mut paper = vec![vec!['.'; xmax + 1]; ymax + 1];
         dots.iter()
             .for_each(|&(x, y)| paper[y as usize][x as usize] = '#');
-        paper
-            .iter()
-            .map(|row| row.iter().collect::<String>())
-            .join("\n")
-    }
-    fn fold(&self, end: usize) -> HashSet<(u32, u32)> {
-        let mut dots = self.dots.iter().cloned().collect::<HashSet<_>>();
-        for fold in &self.folds[..end] {
-            dots = dots
+        String::from("\n")
+            + &paper
                 .iter()
-                .map(|&(x, y)| match fold {
-                    Fold::X(value) if x > *value => (value * 2 - x, y),
-                    Fold::Y(value) if y > *value => (x, value * 2 - y),
-                    _ => (x, y),
-                })
-                .collect::<HashSet<_>>()
-        }
-        dots
+                .map(|row| row.iter().collect::<String>())
+                .join("\n")
     }
 }
 
 fn main() {
-    let solution = Solution::new(
-        &BufReader::new(std::io::stdin().lock())
-            .lines()
-            .filter_map(Result::ok)
-            .collect::<Vec<_>>(),
-    );
-    println!("{}", solution.part_1());
-    println!("{}", solution.part_2());
+    let solution = Solution::new(std::io::stdin().lock());
+    println!("Part 1: {}", solution.part1());
+    println!("Part 2: {}", solution.part2());
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn example_inputs() -> Vec<String> {
+    fn example_input() -> &'static [u8] {
         r"
 6,10
 0,14
@@ -108,13 +115,11 @@ mod tests {
 
 fold along y=7
 fold along x=5"[1..]
-            .split('\n')
-            .map(String::from)
-            .collect()
+            .as_bytes()
     }
 
     #[test]
-    fn example_1() {
-        assert_eq!(17, Solution::new(&example_inputs()).part_1());
+    fn example1() {
+        assert_eq!(17, Solution::new(example_input()).part1());
     }
 }

@@ -1,42 +1,12 @@
+use aoc2021::Solve;
 use std::collections::HashMap;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 
 struct Solution {
     map: HashMap<String, Vec<String>>,
 }
 
 impl Solution {
-    fn new(inputs: &[String]) -> Self {
-        let mut map = HashMap::new();
-        for input in inputs {
-            let caves = input.split_once('-').unwrap();
-            if caves.1 != "start" {
-                map.entry(caves.0.to_string())
-                    .or_insert_with(Vec::new)
-                    .push(caves.1.to_string());
-            }
-            if caves.0 != "start" {
-                map.entry(caves.1.to_string())
-                    .or_insert_with(Vec::new)
-                    .push(caves.0.to_string());
-            }
-        }
-        Self { map }
-    }
-    fn part_1(&self) -> u32 {
-        self.backtrack(
-            String::from("start"),
-            &mut vec![String::from("start")],
-            false,
-        )
-    }
-    fn part_2(&self) -> u32 {
-        self.backtrack(
-            String::from("start"),
-            &mut vec![String::from("start")],
-            true,
-        )
-    }
     fn backtrack(&self, src: String, path: &mut Vec<String>, twice: bool) -> u32 {
         if src == "end" {
             return 1;
@@ -61,22 +31,54 @@ impl Solution {
     }
 }
 
+impl Solve for Solution {
+    type Answer1 = u32;
+    type Answer2 = u32;
+
+    fn new(r: impl Read) -> Self {
+        let mut map = HashMap::new();
+        for input in BufReader::new(r).lines().filter_map(Result::ok) {
+            let caves = input.split_once('-').unwrap();
+            if caves.1 != "start" {
+                map.entry(caves.0.to_string())
+                    .or_insert_with(Vec::new)
+                    .push(caves.1.to_string());
+            }
+            if caves.0 != "start" {
+                map.entry(caves.1.to_string())
+                    .or_insert_with(Vec::new)
+                    .push(caves.0.to_string());
+            }
+        }
+        Self { map }
+    }
+    fn part1(&self) -> Self::Answer1 {
+        self.backtrack(
+            String::from("start"),
+            &mut vec![String::from("start")],
+            false,
+        )
+    }
+    fn part2(&self) -> Self::Answer2 {
+        self.backtrack(
+            String::from("start"),
+            &mut vec![String::from("start")],
+            true,
+        )
+    }
+}
+
 fn main() {
-    let solution = Solution::new(
-        &BufReader::new(std::io::stdin().lock())
-            .lines()
-            .filter_map(Result::ok)
-            .collect::<Vec<_>>(),
-    );
-    println!("{}", solution.part_1());
-    println!("{}", solution.part_2());
+    let solution = Solution::new(std::io::stdin().lock());
+    println!("Part 1: {}", solution.part1());
+    println!("Part 2: {}", solution.part2());
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn example_inputs() -> Vec<Vec<String>> {
+    fn example_inputs() -> Vec<&'static [u8]> {
         vec![
             r"
 start-A
@@ -86,9 +88,7 @@ A-b
 b-d
 A-end
 b-end"[1..]
-                .split('\n')
-                .map(String::from)
-                .collect(),
+                .as_bytes(),
             r"
 dc-end
 HN-start
@@ -100,9 +100,7 @@ HN-end
 kj-sa
 kj-HN
 kj-dc"[1..]
-                .split('\n')
-                .map(String::from)
-                .collect(),
+                .as_bytes(),
             r"
 fs-end
 he-DX
@@ -122,23 +120,21 @@ he-WI
 zg-he
 pj-fs
 start-RW"[1..]
-                .split('\n')
-                .map(String::from)
-                .collect(),
+                .as_bytes(),
         ]
     }
 
     #[test]
-    fn example_1() {
-        for (inputs, expected) in example_inputs().iter().zip(vec![10, 19, 226]) {
-            assert_eq!(expected, Solution::new(inputs).part_1());
+    fn example1() {
+        for (&input, expected) in example_inputs().iter().zip(vec![10, 19, 226]) {
+            assert_eq!(expected, Solution::new(input).part1());
         }
     }
 
     #[test]
-    fn example_2() {
-        for (inputs, expected) in example_inputs().iter().zip(vec![36, 103, 3509]) {
-            assert_eq!(expected, Solution::new(inputs).part_2());
+    fn example2() {
+        for (&input, expected) in example_inputs().iter().zip(vec![36, 103, 3509]) {
+            assert_eq!(expected, Solution::new(input).part2());
         }
     }
 }

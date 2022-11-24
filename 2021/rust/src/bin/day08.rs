@@ -1,15 +1,20 @@
-use std::io::{BufRead, BufReader};
+use aoc2021::Solve;
+use std::io::{BufRead, BufReader, Read};
 
 struct Solution {
     entries: Vec<(Vec<u8>, Vec<u8>)>,
 }
 
-impl Solution {
-    fn new(inputs: &[String]) -> Self {
-        let s2u8 = |s: &str| s.bytes().fold(0_u8, |acc, u| acc | 1 << (u - b'a'));
+impl Solve for Solution {
+    type Answer1 = usize;
+    type Answer2 = u32;
+
+    fn new(r: impl Read) -> Self {
+        let s2u8 = |s: &str| s.bytes().fold(0, |acc, u| acc | 1 << (u - b'a'));
         Self {
-            entries: inputs
-                .iter()
+            entries: BufReader::new(r)
+                .lines()
+                .filter_map(Result::ok)
                 .map(|s| {
                     let (patterns, output) = s.split_once(" | ").unwrap();
                     (
@@ -20,7 +25,7 @@ impl Solution {
                 .collect(),
         }
     }
-    fn part_1(&self) -> usize {
+    fn part1(&self) -> Self::Answer1 {
         self.entries
             .iter()
             .map(|(_, o)| {
@@ -30,7 +35,7 @@ impl Solution {
             })
             .sum()
     }
-    fn part_2(&self) -> u32 {
+    fn part2(&self) -> Self::Answer2 {
         let get_output = |entry: &(Vec<u8>, Vec<u8>)| {
             let mut map = [0; 10];
             for &u in &entry.0 {
@@ -68,21 +73,16 @@ impl Solution {
 }
 
 fn main() {
-    let solution = Solution::new(
-        &BufReader::new(std::io::stdin().lock())
-            .lines()
-            .filter_map(Result::ok)
-            .collect::<Vec<_>>(),
-    );
-    println!("{}", solution.part_1());
-    println!("{}", solution.part_2());
+    let solution = Solution::new(std::io::stdin().lock());
+    println!("Part 1: {}", solution.part1());
+    println!("Part 2: {}", solution.part2());
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn example_inputs() -> Vec<String> {
+    fn example_input() -> &'static [u8] {
         r"
 be cfbegad cbdgef fgaecd cgeb fdcge agebfd fecdb fabcd edb | fdgacbe cefdb cefbgd gcbe
 edbfga begcd cbg gc gcadebf fbgde acbgfd abcde gfcbed gfec | fcgedb cgb dgebacf gc
@@ -94,18 +94,16 @@ dbcfg fgd bdegcaf fgec aegbdf ecdfab fbedc dacgb gdcebf gf | cefg dcbef fcge gbc
 bdfegc cbegaf gecbf dfcage bdacg ed bedf ced adcbefg gebcd | ed bcgafe cdgba cbgef
 egadfb cdbfeg cegd fecab cgb gbdefca cg fgcdab egfdb bfceg | gbdfcae bgc cg cgb
 gcafb gcf dcaebfg ecagb gf abcdeg gaef cafbge fdbac fegbdc | fgae cfgab fg bagce"[1..]
-            .split('\n')
-            .map(String::from)
-            .collect()
+            .as_bytes()
     }
 
     #[test]
-    fn example_1() {
-        assert_eq!(26, Solution::new(&example_inputs()).part_1());
+    fn example1() {
+        assert_eq!(26, Solution::new(example_input()).part1());
     }
 
     #[test]
-    fn example_2() {
-        assert_eq!(61229, Solution::new(&example_inputs()).part_2());
+    fn example2() {
+        assert_eq!(61229, Solution::new(example_input()).part2());
     }
 }

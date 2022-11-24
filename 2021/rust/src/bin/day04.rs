@@ -1,4 +1,4 @@
-use aoc2022::Solve;
+use aoc2021::Solve;
 use std::io::{BufRead, BufReader, Read};
 
 struct Solution {

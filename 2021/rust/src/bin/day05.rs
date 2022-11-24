@@ -1,36 +1,13 @@
+use aoc2021::Solve;
 use itertools::Itertools;
 use std::collections::HashMap;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 
 struct Solution {
     lines: Vec<((i32, i32), (i32, i32))>,
 }
 
 impl Solution {
-    fn new(inputs: &[String]) -> Self {
-        Self {
-            lines: inputs
-                .iter()
-                .map(|line| {
-                    line.split(" -> ")
-                        .map(|s| {
-                            s.split(',')
-                                .map(|s| s.parse().unwrap())
-                                .collect_tuple()
-                                .unwrap()
-                        })
-                        .collect_tuple()
-                        .unwrap()
-                })
-                .collect(),
-        }
-    }
-    fn part_1(&self) -> usize {
-        self.count_overlapping(false)
-    }
-    fn part_2(&self) -> usize {
-        self.count_overlapping(true)
-    }
     fn count_overlapping(&self, diagonal: bool) -> usize {
         let mut points = HashMap::new();
         for &((x1, y1), (x2, y2)) in &self.lines {
@@ -49,22 +26,48 @@ impl Solution {
     }
 }
 
+impl Solve for Solution {
+    type Answer1 = usize;
+    type Answer2 = usize;
+
+    fn new(r: impl Read) -> Self {
+        Self {
+            lines: BufReader::new(r)
+                .lines()
+                .filter_map(Result::ok)
+                .map(|line| {
+                    line.split(" -> ")
+                        .map(|s| {
+                            s.split(',')
+                                .map(|s| s.parse().unwrap())
+                                .collect_tuple()
+                                .unwrap()
+                        })
+                        .collect_tuple()
+                        .unwrap()
+                })
+                .collect(),
+        }
+    }
+    fn part1(&self) -> Self::Answer1 {
+        self.count_overlapping(false)
+    }
+    fn part2(&self) -> Self::Answer2 {
+        self.count_overlapping(true)
+    }
+}
+
 fn main() {
-    let solution = Solution::new(
-        &BufReader::new(std::io::stdin().lock())
-            .lines()
-            .filter_map(Result::ok)
-            .collect::<Vec<_>>(),
-    );
-    println!("{}", solution.part_1());
-    println!("{}", solution.part_2());
+    let solution = Solution::new(std::io::stdin().lock());
+    println!("Part 1: {}", solution.part1());
+    println!("Part 2: {}", solution.part2());
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn example_inputs() -> Vec<String> {
+    fn example_input() -> &'static [u8] {
         r"
 0,9 -> 5,9
 8,0 -> 0,8
@@ -76,18 +79,16 @@ mod tests {
 3,4 -> 1,4
 0,0 -> 8,8
 5,5 -> 8,2"[1..]
-            .split('\n')
-            .map(String::from)
-            .collect()
+            .as_bytes()
     }
 
     #[test]
-    fn example_1() {
-        assert_eq!(5, Solution::new(&example_inputs()).part_1());
+    fn example1() {
+        assert_eq!(5, Solution::new(example_input()).part1());
     }
 
     #[test]
-    fn example_2() {
-        assert_eq!(12, Solution::new(&example_inputs()).part_2());
+    fn example2() {
+        assert_eq!(12, Solution::new(example_input()).part2());
     }
 }

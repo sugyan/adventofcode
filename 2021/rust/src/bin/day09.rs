@@ -1,15 +1,20 @@
+use aoc2021::Solve;
 use std::collections::VecDeque;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 
 struct Solution {
     heightmap: Vec<Vec<u8>>,
     low_points: Vec<(usize, usize)>,
 }
 
-impl Solution {
-    fn new(inputs: &[String]) -> Self {
-        let heightmap = inputs
-            .iter()
+impl Solve for Solution {
+    type Answer1 = u32;
+    type Answer2 = u32;
+
+    fn new(r: impl Read) -> Self {
+        let heightmap = BufReader::new(r)
+            .lines()
+            .filter_map(Result::ok)
             .map(|line| line.bytes().map(|u| u - b'0').collect::<Vec<_>>())
             .collect::<Vec<_>>();
         let (r, c) = (heightmap.len(), heightmap[0].len());
@@ -30,13 +35,13 @@ impl Solution {
             low_points,
         }
     }
-    fn part_1(&self) -> u32 {
+    fn part1(&self) -> Self::Answer1 {
         self.low_points
             .iter()
             .map(|&(i, j)| self.heightmap[i][j] as u32 + 1)
             .sum()
     }
-    fn part_2(&self) -> u32 {
+    fn part2(&self) -> Self::Answer2 {
         let (r, c) = (self.heightmap.len(), self.heightmap[0].len());
         let mut seen = vec![vec![false; self.heightmap[0].len()]; self.heightmap.len()];
         let mut sizes = self
@@ -70,39 +75,32 @@ impl Solution {
 }
 
 fn main() {
-    let solution = Solution::new(
-        &BufReader::new(std::io::stdin().lock())
-            .lines()
-            .filter_map(Result::ok)
-            .collect::<Vec<_>>(),
-    );
-    println!("{}", solution.part_1());
-    println!("{}", solution.part_2());
+    let solution = Solution::new(std::io::stdin().lock());
+    println!("Part 1: {}", solution.part1());
+    println!("Part 2: {}", solution.part2());
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn example_inputs() -> Vec<String> {
+    fn example_input() -> &'static [u8] {
         r"
 2199943210
 3987894921
 9856789892
 8767896789
 9899965678"[1..]
-            .split('\n')
-            .map(String::from)
-            .collect()
+            .as_bytes()
     }
 
     #[test]
-    fn example_1() {
-        assert_eq!(15, Solution::new(&example_inputs()).part_1());
+    fn example1() {
+        assert_eq!(15, Solution::new(example_input()).part1());
     }
 
     #[test]
-    fn example_2() {
-        assert_eq!(1134, Solution::new(&example_inputs()).part_2());
+    fn example2() {
+        assert_eq!(1134, Solution::new(example_input()).part2());
     }
 }

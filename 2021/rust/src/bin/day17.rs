@@ -1,14 +1,18 @@
+use aoc2021::Solve;
 use itertools::Itertools;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 
 struct Solution {
     target_area: ((i32, i32), (i32, i32)),
 }
 
-impl Solution {
-    fn new(inputs: &[String]) -> Self {
+impl Solve for Solution {
+    type Answer1 = i32;
+    type Answer2 = usize;
+
+    fn new(r: impl Read) -> Self {
         Self {
-            target_area: inputs[0][13..]
+            target_area: BufReader::new(r).lines().find_map(Result::ok).unwrap()[13..]
                 .split(", ")
                 .map(|s| {
                     s[2..]
@@ -21,11 +25,11 @@ impl Solution {
                 .unwrap(),
         }
     }
-    fn part_1(&self) -> i32 {
+    fn part1(&self) -> Self::Answer1 {
         let y = -self.target_area.1 .0 - 1;
         y * (y + 1) / 2
     }
-    fn part_2(&self) -> usize {
+    fn part2(&self) -> Self::Answer2 {
         let tmax = 2 * (-self.target_area.1 .0 - 1) as usize + 1;
         let mut ys = vec![Vec::new(); tmax + 1];
         for ivy in self.target_area.1 .0..-self.target_area.1 .0 {
@@ -60,33 +64,26 @@ impl Solution {
 }
 
 fn main() {
-    let solution = Solution::new(
-        &BufReader::new(std::io::stdin().lock())
-            .lines()
-            .filter_map(Result::ok)
-            .collect::<Vec<_>>(),
-    );
-    println!("{}", solution.part_1());
-    println!("{}", solution.part_2());
+    let solution = Solution::new(std::io::stdin().lock());
+    println!("Part 1: {}", solution.part1());
+    println!("Part 2: {}", solution.part2());
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn example_1() {
-        assert_eq!(
-            45,
-            Solution::new(&[String::from("target area: x=20..30, y=-10..-5")]).part_1()
-        );
+    fn example_input() -> &'static [u8] {
+        "target area: x=20..30, y=-10..-5".as_bytes()
     }
 
     #[test]
-    fn example_2() {
-        assert_eq!(
-            112,
-            Solution::new(&[String::from("target area: x=20..30, y=-10..-5")]).part_2()
-        );
+    fn example1() {
+        assert_eq!(45, Solution::new(example_input()).part1());
+    }
+
+    #[test]
+    fn example2() {
+        assert_eq!(112, Solution::new(example_input()).part2());
     }
 }

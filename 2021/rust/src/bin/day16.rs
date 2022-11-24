@@ -1,5 +1,6 @@
+use aoc2021::Solve;
 use itertools::Itertools;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 
 enum Value {
     Literal(u64),
@@ -46,26 +47,10 @@ impl Packet {
 }
 
 struct Solution {
-    bits: String,
+    packet: Packet,
 }
 
 impl Solution {
-    fn new(inputs: &[String]) -> Self {
-        Self {
-            bits: inputs[0]
-                .chars()
-                .map(|c| format!("{:04b}", u8::from_str_radix(&c.to_string(), 16).unwrap()))
-                .join(""),
-        }
-    }
-    fn part_1(&self) -> u32 {
-        let (packet, _) = Self::parse(&self.bits);
-        packet.total_version_numbers()
-    }
-    fn part_2(&self) -> u64 {
-        let (packet, _) = Self::parse(&self.bits);
-        packet.calculate_value()
-    }
     fn parse(s: &str) -> (Packet, &str) {
         let (version, s) = Self::get_value(s, 3);
         let (type_id, s) = Self::get_value(s, 3);
@@ -129,15 +114,34 @@ impl Solution {
     }
 }
 
+impl Solve for Solution {
+    type Answer1 = u32;
+    type Answer2 = u64;
+
+    fn new(r: impl Read) -> Self {
+        let (packet, _) = Self::parse(
+            &BufReader::new(r)
+                .lines()
+                .find_map(Result::ok)
+                .unwrap()
+                .chars()
+                .map(|c| format!("{:04b}", u8::from_str_radix(&c.to_string(), 16).unwrap()))
+                .join(""),
+        );
+        Self { packet }
+    }
+    fn part1(&self) -> Self::Answer1 {
+        self.packet.total_version_numbers()
+    }
+    fn part2(&self) -> Self::Answer2 {
+        self.packet.calculate_value()
+    }
+}
+
 fn main() {
-    let solution = Solution::new(
-        &BufReader::new(std::io::stdin().lock())
-            .lines()
-            .filter_map(Result::ok)
-            .collect::<Vec<_>>(),
-    );
-    println!("{}", solution.part_1());
-    println!("{}", solution.part_2());
+    let solution = Solution::new(std::io::stdin().lock());
+    println!("Part 1: {}", solution.part1());
+    println!("Part 2: {}", solution.part2());
 }
 
 #[cfg(test)]
@@ -145,37 +149,34 @@ mod tests {
     use super::*;
 
     #[test]
-    fn example_1() {
-        assert_eq!(
-            16,
-            Solution::new(&[String::from("8A004A801A8002F478")]).part_1()
-        );
+    fn example1() {
+        assert_eq!(16, Solution::new("8A004A801A8002F478".as_bytes()).part1());
         assert_eq!(
             12,
-            Solution::new(&[String::from("620080001611562C8802118E34")]).part_1()
+            Solution::new("620080001611562C8802118E34".as_bytes()).part1()
         );
         assert_eq!(
             23,
-            Solution::new(&[String::from("C0015000016115A2E0802F182340")]).part_1()
+            Solution::new("C0015000016115A2E0802F182340".as_bytes()).part1()
         );
         assert_eq!(
             31,
-            Solution::new(&[String::from("A0016C880162017C3686B18A3D4780")]).part_1()
+            Solution::new("A0016C880162017C3686B18A3D4780".as_bytes()).part1()
         );
     }
 
     #[test]
-    fn example_2() {
-        assert_eq!(3, Solution::new(&[String::from("C200B40A82")]).part_2());
-        assert_eq!(54, Solution::new(&[String::from("04005AC33890")]).part_2());
-        assert_eq!(7, Solution::new(&[String::from("880086C3E88112")]).part_2());
-        assert_eq!(9, Solution::new(&[String::from("CE00C43D881120")]).part_2());
-        assert_eq!(1, Solution::new(&[String::from("D8005AC2A8F0")]).part_2());
-        assert_eq!(0, Solution::new(&[String::from("F600BC2D8F")]).part_2());
-        assert_eq!(0, Solution::new(&[String::from("9C005AC2F8F0")]).part_2());
+    fn example2() {
+        assert_eq!(3, Solution::new("C200B40A82".as_bytes()).part2());
+        assert_eq!(54, Solution::new("04005AC33890".as_bytes()).part2());
+        assert_eq!(7, Solution::new("880086C3E88112".as_bytes()).part2());
+        assert_eq!(9, Solution::new("CE00C43D881120".as_bytes()).part2());
+        assert_eq!(1, Solution::new("D8005AC2A8F0".as_bytes()).part2());
+        assert_eq!(0, Solution::new("F600BC2D8F".as_bytes()).part2());
+        assert_eq!(0, Solution::new("9C005AC2F8F0".as_bytes()).part2());
         assert_eq!(
             1,
-            Solution::new(&[String::from("9C0141080250320F1802104A08")]).part_2()
+            Solution::new("9C0141080250320F1802104A08".as_bytes()).part2()
         );
     }
 }
