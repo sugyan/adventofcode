@@ -1,6 +1,7 @@
+use aoc2021::Solve;
 use itertools::Itertools;
 use std::collections::HashMap;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 
 type Step = (bool, ((i64, i64), (i64, i64), (i64, i64)));
 
@@ -9,51 +10,6 @@ struct Solution {
 }
 
 impl Solution {
-    fn new(inputs: &[String]) -> Self {
-        Self {
-            steps: inputs
-                .iter()
-                .map(|input| {
-                    let (turn, ranges) = input.split_once(' ').unwrap();
-                    (
-                        match turn {
-                            "on" => true,
-                            "off" => false,
-                            _ => unreachable!(),
-                        },
-                        ranges
-                            .split(',')
-                            .map(|s| {
-                                s[2..]
-                                    .split("..")
-                                    .map(|s| s.parse().unwrap())
-                                    .collect_tuple()
-                                    .unwrap()
-                            })
-                            .collect_tuple()
-                            .unwrap(),
-                    )
-                })
-                .collect(),
-        }
-    }
-    fn part_1(&self) -> i64 {
-        self.count_cubes(
-            &self
-                .steps
-                .iter()
-                .cloned()
-                .filter(|&(_, (x, y, z))| {
-                    [x.0, x.1, y.0, y.1, z.0, z.1]
-                        .iter()
-                        .all(|v| (-50..=50).contains(v))
-                })
-                .collect::<Vec<_>>(),
-        )
-    }
-    fn part_2(&self) -> i64 {
-        self.count_cubes(&self.steps)
-    }
     fn count_cubes(&self, steps: &[Step]) -> i64 {
         let mut vs = vec![Vec::new(); 3];
         for (_, (x, y, z)) in steps {
@@ -112,15 +68,62 @@ impl Solution {
     }
 }
 
+impl Solve for Solution {
+    type Answer1 = i64;
+    type Answer2 = i64;
+
+    fn new(r: impl Read) -> Self {
+        Self {
+            steps: BufReader::new(r)
+                .lines()
+                .filter_map(Result::ok)
+                .map(|input| {
+                    let (turn, ranges) = input.split_once(' ').unwrap();
+                    (
+                        match turn {
+                            "on" => true,
+                            "off" => false,
+                            _ => unreachable!(),
+                        },
+                        ranges
+                            .split(',')
+                            .map(|s| {
+                                s[2..]
+                                    .split("..")
+                                    .map(|s| s.parse().unwrap())
+                                    .collect_tuple()
+                                    .unwrap()
+                            })
+                            .collect_tuple()
+                            .unwrap(),
+                    )
+                })
+                .collect(),
+        }
+    }
+    fn part1(&self) -> Self::Answer1 {
+        self.count_cubes(
+            &self
+                .steps
+                .iter()
+                .cloned()
+                .filter(|&(_, (x, y, z))| {
+                    [x.0, x.1, y.0, y.1, z.0, z.1]
+                        .iter()
+                        .all(|v| (-50..=50).contains(v))
+                })
+                .collect::<Vec<_>>(),
+        )
+    }
+    fn part2(&self) -> Self::Answer2 {
+        self.count_cubes(&self.steps)
+    }
+}
+
 fn main() {
-    let solution = Solution::new(
-        &BufReader::new(std::io::stdin().lock())
-            .lines()
-            .filter_map(Result::ok)
-            .collect::<Vec<_>>(),
-    );
-    println!("{}", solution.part_1());
-    println!("{}", solution.part_2());
+    let solution = Solution::new(std::io::stdin().lock());
+    println!("Part 1: {}", solution.part1());
+    println!("Part 2: {}", solution.part2());
 }
 
 #[cfg(test)]
@@ -128,11 +131,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn example_1() {
+    fn example1() {
         assert_eq!(
             590_784,
             Solution::new(
-                &r"
+                r"
 on x=-20..26,y=-36..17,z=-47..7
 on x=-20..33,y=-21..23,z=-26..28
 on x=-22..28,y=-29..23,z=-38..16
@@ -155,20 +158,18 @@ off x=18..30,y=-20..-8,z=-3..13
 on x=-41..9,y=-7..43,z=-33..15
 on x=-54112..-39298,y=-85059..-49293,z=-27449..7877
 on x=967..23432,y=45373..81175,z=27513..53682"[1..]
-                    .split('\n')
-                    .map(String::from)
-                    .collect::<Vec<_>>()
+                    .as_bytes()
             )
-            .part_1()
+            .part1()
         );
     }
 
     #[test]
-    fn example_2() {
+    fn example2() {
         assert_eq!(
             2_758_514_936_282_235,
             Solution::new(
-                &r"
+                r"
 on x=-5..47,y=-31..22,z=-19..33
 on x=-44..5,y=-27..21,z=-14..35
 on x=-49..-1,y=-11..42,z=-10..38
@@ -229,11 +230,9 @@ off x=-27365..46395,y=31009..98017,z=15428..76570
 off x=-70369..-16548,y=22648..78696,z=-1892..86821
 on x=-53470..21291,y=-120233..-33476,z=-44150..38147
 off x=-93533..-4276,y=-16170..68771,z=-104985..-24507"[1..]
-                    .split('\n')
-                    .map(String::from)
-                    .collect::<Vec<_>>()
+                    .as_bytes()
             )
-            .part_2()
+            .part2()
         );
     }
 }
