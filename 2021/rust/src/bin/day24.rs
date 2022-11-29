@@ -128,13 +128,18 @@ impl Solution {
                 }
             })
             .collect::<Vec<_>>();
-        let mut inputs = Vec::new();
+        let mut inputs = Vec::with_capacity(14);
         let candidates = if rev {
             (1..=9).rev().collect::<Vec<_>>()
         } else {
             (1..=9).collect::<Vec<_>>()
         };
-        Self::backtrack(&mut inputs, &mut Vec::new(), &conditions, &candidates);
+        Self::backtrack(
+            &mut inputs,
+            &mut Vec::with_capacity(7),
+            &conditions,
+            &candidates,
+        );
         assert!(self.is_valid_input(&inputs));
         inputs.iter().fold(0, |acc, x| acc * 10 + x)
     }
@@ -144,10 +149,11 @@ impl Solution {
         conditions: &[(i64, i64)],
         candidates: &[i64],
     ) -> bool {
-        if inputs.len() == 14 {
+        let len = inputs.len();
+        if len == 14 {
             return true;
         }
-        let (n, _) = conditions[inputs.len()];
+        let (n, _) = conditions[len];
         if n < 10 {
             if let Some(&index) = stack.last() {
                 let i = inputs[index] + conditions[index].1 + n;
@@ -164,7 +170,7 @@ impl Solution {
             }
         } else {
             for &i in candidates {
-                stack.push(inputs.len());
+                stack.push(len);
                 inputs.push(i);
                 if Self::backtrack(inputs, stack, conditions, candidates) {
                     return true;
