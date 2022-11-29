@@ -22,47 +22,45 @@ impl Solve for Solution {
         let mut map = self.map.clone();
         let (r, c) = (map.len(), map[0].len());
         for i in 1.. {
-            let mut global_moved = false;
-            #[allow(clippy::needless_range_loop)]
+            let mut moved = false;
+            // east
+            let mut next = vec![vec!['.'; c]; r];
             for i in 0..r {
-                let c0 = map[i][0];
-                let mut moved = false;
-                for j in 0..c - 1 {
-                    if !moved && map[i][j] == '>' && map[i][j + 1] == '.' {
-                        map[i][j] = '.';
-                        map[i][j + 1] = '>';
-                        moved = true;
-                    } else {
-                        moved = false;
+                for j in 0..c {
+                    if map[i][j] == '>' {
+                        if map[i][(j + 1) % c] == '.' {
+                            next[i][(j + 1) % c] = '>';
+                            moved = true;
+                        } else {
+                            next[i][j] = '>';
+                        }
                     }
-                    global_moved |= moved;
-                }
-                if !moved && map[i][c - 1] == '>' && c0 == '.' {
-                    map[i][c - 1] = '.';
-                    map[i][0] = '>';
-                    global_moved = true;
+                    if map[i][j] == 'v' {
+                        next[i][j] = 'v';
+                    }
                 }
             }
+            map = next;
+            // south
+            let mut next = vec![vec!['.'; c]; r];
             for j in 0..c {
-                let c0 = map[0][j];
-                let mut moved = false;
-                for i in 0..r - 1 {
-                    if !moved && map[i][j] == 'v' && map[i + 1][j] == '.' {
-                        map[i][j] = '.';
-                        map[i + 1][j] = 'v';
-                        moved = true;
-                    } else {
-                        moved = false;
+                for i in 0..r {
+                    if map[i][j] == '>' {
+                        next[i][j] = '>';
                     }
-                    global_moved |= moved;
-                }
-                if !moved && map[r - 1][j] == 'v' && c0 == '.' {
-                    map[r - 1][j] = '.';
-                    map[0][j] = 'v';
-                    global_moved = true;
+                    if map[i][j] == 'v' {
+                        if map[(i + 1) % r][j] == '.' {
+                            next[(i + 1) % r][j] = 'v';
+                            moved = true;
+                        } else {
+                            next[i][j] = 'v';
+                        }
+                    }
                 }
             }
-            if !global_moved {
+            map = next;
+
+            if !moved {
                 return i;
             }
         }
