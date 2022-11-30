@@ -1,66 +1,125 @@
 use aoc2021::Solve;
-use std::array;
 use std::cmp::Reverse;
-use std::collections::{BinaryHeap, HashSet, VecDeque};
+use std::collections::{BinaryHeap, HashSet};
 use std::io::{BufRead, BufReader, Read};
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-struct Situation {
-    positions: [Vec<(usize, usize)>; 4],
+const MAP: [[u32; 11]; 16] = {
+    let mut map = [[0; 11]; 16];
+    let mut room = 0;
+    while room < 16 {
+        let src = (room / 4, room % 4 * 2 + 2);
+        let mut hallway = 0;
+        while hallway < 11 {
+            let (mut i, mut j) = src;
+            while i > 0 {
+                i -= 1;
+                map[room][hallway] |= 1 << (i * 4 + j / 2 - 1)
+            }
+            while j > hallway {
+                map[room][hallway] |= 1 << (j + 16);
+                j -= 1;
+            }
+            while j < hallway {
+                map[room][hallway] |= 1 << (j + 16);
+                j += 1;
+            }
+            hallway += 1;
+        }
+        room += 1;
+    }
+    map
+};
+const MASKS: [[u32; 16]; 2] = [
+    [
+        0x0000_0010,
+        0x0000_0020,
+        0x0000_0040,
+        0x0000_0080,
+        0xffff_ffff,
+        0xffff_ffff,
+        0xffff_ffff,
+        0xffff_ffff,
+        0x0000_0000,
+        0x0000_0000,
+        0x0000_0000,
+        0x0000_0000,
+        0x0000_0000,
+        0x0000_0000,
+        0x0000_0000,
+        0x0000_0000,
+    ],
+    [
+        0x0000_1110,
+        0x0000_2220,
+        0x0000_4440,
+        0x0000_8880,
+        0x0000_1100,
+        0x0000_2200,
+        0x0000_4400,
+        0x0000_8800,
+        0x0000_1000,
+        0x0000_2000,
+        0x0000_4000,
+        0x0000_8000,
+        0xffff_ffff,
+        0xffff_ffff,
+        0xffff_ffff,
+        0xffff_ffff,
+    ],
+];
+
+// (room)
+// lower bits: ........ ........ fedcba98 76543210
+// #############
+// #...........#
+// ###0#1#2#3###
+//   #4#5#6#7#
+//   #8#9#a#b#
+//   #c#d#e#f#
+//   #########
+//
+// (hallway)
+// upper bits: .....a98 76543210 ........ ........
+// #############
+// #0123456789a#
+// ###.#.#.#.###
+//   #.#.#.#.#
+//   #.#.#.#.#
+//   #.#.#.#.#
+//   #########
+struct Solution {
+    positions: [u32; 4],
 }
 
-impl Situation {
-    #[rustfmt::skip]
-    const EMPTY_DIAGRAMS: [[[char; 13]; 7]; 2] = [
-        [
-            ['#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#'],
-            ['#', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '#'],
-            ['#', '#', '#', '.', '#', '.', '#', '.', '#', '.', '#', '#', '#'],
-            ['#', '#', '#', '.', '#', '.', '#', '.', '#', '.', '#', '#', '#'],
-            ['#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#'],
-            ['#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#'],
-            ['#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#'],
-        ],
-        [
-            ['#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#'],
-            ['#', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '#'],
-            ['#', '#', '#', '.', '#', '.', '#', '.', '#', '.', '#', '#', '#'],
-            ['#', '#', '#', '.', '#', '.', '#', '.', '#', '.', '#', '#', '#'],
-            ['#', '#', '#', '.', '#', '.', '#', '.', '#', '.', '#', '#', '#'],
-            ['#', '#', '#', '.', '#', '.', '#', '.', '#', '.', '#', '#', '#'],
-            ['#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#'],
-        ],
-    ];
-    fn candidates(&self, diagram_index: usize) -> Vec<(Situation, u32)> {
+impl Solution {
+    const ENERGY_PER_STEPS: [u32; 4] = [1, 10, 100, 1000];
+    fn candidate_positions(&self, positions: &[u32; 4], mask: usize) -> Vec<([u32; 4], u32)> {
+        let occupied = positions.iter().fold(0, |acc, &v| acc | v);
         let mut ret = Vec::new();
-        let mut diagram = Self::EMPTY_DIAGRAMS[diagram_index];
-        for (i, v) in self.positions.iter().enumerate() {
-            for &(r, c) in v {
-                diagram[r][c] = (i as u8 + b'A') as char;
-            }
-        }
-        for (i, v) in self.positions.iter().enumerate() {
-            for (j, &src) in v.iter().enumerate() {
-                if src.0 > 1 && src.1 == i * 2 + 3 {
-                    let c = diagram[src.0 + 1][src.1];
-                    if c == diagram[src.0][src.1] || c == '#' {
-                        continue;
+        for (i, u) in positions.iter().enumerate() {
+            #[allow(clippy::needless_range_loop)]
+            // room -> hallway
+            for room in 0..16 {
+                if u & (1 << room) != 0 && (room % 4 != i || MASKS[mask][room] & u == 0) {
+                    for hallway in (0..11).filter(|h| !matches!(h, 2 | 4 | 6 | 8)) {
+                        let path = MAP[room][hallway] | (1 << (16 + hallway));
+                        if path & occupied == 0 {
+                            let mut next = *positions;
+                            next[i] = u & !(1 << room) | 1 << (16 + hallway);
+                            ret.push((next, path.count_ones() * Self::ENERGY_PER_STEPS[i]));
+                        }
                     }
                 }
-                let mut visited = [[false; 13]; 7];
-                let mut vd = VecDeque::from([(src, 1)]);
-                while let Some((p, e)) = vd.pop_back() {
-                    for d in [(!0, 0), (0, !0), (0, 1), (1, 0)] {
-                        let dst = (p.0.wrapping_add(d.0), p.1.wrapping_add(d.1));
-                        if diagram[dst.0][dst.1] != '.' || visited[dst.0][dst.1] {
-                            continue;
-                        }
-                        visited[dst.0][dst.1] = true;
-                        vd.push_back((dst, e + 1));
-                        if Self::can_move(src, dst, &diagram) {
-                            let mut positions = self.positions.clone();
-                            positions[i][j] = dst;
-                            ret.push((Situation { positions }, e * [1, 10, 100, 1000][i]));
+            }
+            // hallway -> room
+            for hallway in 0..11 {
+                if u & (1 << (16 + hallway)) != 0 {
+                    for room in (0..4).map(|j| j * 4 + i) {
+                        let path = MAP[room][hallway] | (1 << room);
+                        if path & occupied == 0 && MASKS[mask][room] & u != 0 {
+                            let mut next = *positions;
+                            next[i] = u & !(1 << (16 + hallway)) | 1 << room;
+                            ret.push((next, path.count_ones() * Self::ENERGY_PER_STEPS[i]));
                         }
                     }
                 }
@@ -68,51 +127,30 @@ impl Situation {
         }
         ret
     }
-    fn can_move(src: (usize, usize), dst: (usize, usize), diagram: &[[char; 13]; 7]) -> bool {
-        if [(1, 3), (1, 5), (1, 7), (1, 9)].contains(&dst) {
-            return false;
-        }
-        if src.0 == 1 && dst.0 == 1 {
-            return false;
-        }
-        if dst.0 > 1 {
-            let c_src = diagram[src.0][src.1];
-            if dst.1 != (c_src as u8 - b'A') as usize * 2 + 3 {
-                return false;
-            }
-            let c = diagram[dst.0 + 1][dst.1];
-            if c != c_src && c != '#' {
-                return false;
+    fn least_total_energy(&self, mut positions: [u32; 4], unfold: bool) -> u32 {
+        if unfold {
+            // finish.iter_mut().for_each(|u| *u |= *u << 8);
+            let inserts = [0x0480, 0x0240, 0x0820, 0x0110];
+            for (i, u) in positions.iter_mut().enumerate() {
+                *u = (*u & 0xf0) << 8 | *u & 0x0f | inserts[i];
             }
         }
-        true
-    }
-    fn is_finished(&self) -> bool {
-        self.positions
-            .iter()
-            .enumerate()
-            .all(|(i, v)| v.iter().all(|p| p.0 > 1 && p.1 == i * 2 + 3))
-    }
-}
-
-struct Solution {
-    situation: Situation,
-}
-
-impl Solution {
-    fn find_minimum(&self, situation: Situation, n: usize) -> u32 {
+        let finish: [u32; 4] = [
+            [0x0011, 0x0022, 0x0044, 0x0088],
+            [0x1111, 0x2222, 0x4444, 0x8888],
+        ][unfold as usize];
         let mut hs = HashSet::new();
-        let mut bh = BinaryHeap::from([(Reverse(0), situation)]);
+        let mut bh = BinaryHeap::from([(Reverse(0), positions)]);
         while let Some((Reverse(total), min)) = bh.pop() {
-            if min.is_finished() {
-                return total;
-            }
             if hs.contains(&min) {
                 continue;
             }
-            hs.insert(min.clone());
-            for (situation, energy) in min.candidates(n) {
-                bh.push((Reverse(total + energy), situation));
+            hs.insert(min);
+            if min == finish {
+                return total;
+            }
+            for (p, e) in self.candidate_positions(&min, unfold.into()) {
+                bh.push((Reverse(total + e), p));
             }
         }
         unreachable!()
@@ -129,39 +167,21 @@ impl Solve for Solution {
             .filter_map(Result::ok)
             .map(|s| s.bytes().collect::<Vec<_>>())
             .collect::<Vec<_>>();
-        let mut positions = array::from_fn(|_| Vec::new());
+        let mut positions = [0; 4];
         for (i, row) in diagram.iter().enumerate() {
             for (j, col) in row.iter().enumerate() {
                 if matches!(col, b'A'..=b'D') {
-                    positions[(*col - b'A') as usize].push((i, j));
+                    positions[(*col - b'A') as usize] |= 1_u32 << ((i - 2) * 4 + j / 2 - 1);
                 }
             }
         }
-        Self {
-            situation: Situation { positions },
-        }
+        Self { positions }
     }
     fn part1(&self) -> Self::Answer1 {
-        self.find_minimum(self.situation.clone(), 0)
+        self.least_total_energy(self.positions, false)
     }
     fn part2(&self) -> Self::Answer2 {
-        let mut situation = self.situation.clone();
-        situation.positions.iter_mut().for_each(|v| {
-            v.iter_mut().for_each(|p| {
-                if p.0 > 2 {
-                    p.0 += 2;
-                }
-            })
-        });
-        situation.positions[0].push((3, 9));
-        situation.positions[0].push((4, 7));
-        situation.positions[1].push((3, 7));
-        situation.positions[1].push((4, 5));
-        situation.positions[2].push((3, 5));
-        situation.positions[2].push((4, 9));
-        situation.positions[3].push((3, 3));
-        situation.positions[3].push((4, 3));
-        self.find_minimum(situation, 1)
+        self.least_total_energy(self.positions, true)
     }
 }
 
