@@ -1,13 +1,13 @@
 use aoc2022::Solve;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 
 struct Solution {
-    total_calories: Vec<u32>,
+    sorted_calories: Vec<u32>,
 }
 
 impl Solution {
     fn top_sum(&self, n: usize) -> u32 {
-        self.total_calories.iter().rev().take(n).sum()
+        self.sorted_calories.iter().rev().take(n).sum()
     }
 }
 
@@ -15,8 +15,8 @@ impl Solve for Solution {
     type Answer1 = u32;
     type Answer2 = u32;
 
-    fn new(r: impl std::io::Read) -> Self {
-        let mut total_calories = BufReader::new(r)
+    fn new(r: impl Read) -> Self {
+        let mut calories = BufReader::new(r)
             .lines()
             .filter_map(Result::ok)
             .collect::<Vec<_>>()
@@ -28,8 +28,10 @@ impl Solve for Solution {
                     .sum()
             })
             .collect::<Vec<_>>();
-        total_calories.sort_unstable();
-        Self { total_calories }
+        calories.sort_unstable();
+        Self {
+            sorted_calories: calories,
+        }
     }
     fn part1(&self) -> Self::Answer1 {
         self.top_sum(1)
