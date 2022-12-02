@@ -4,11 +4,11 @@ on:
   push:
     branches: [main]
     paths:
-      - '2020/rust/**'
+      - "2020/rust/**"
   pull_request:
     branches: [main]
     paths:
-      - '2020/rust/**'
+      - "2020/rust/**"
 
 defaults:
   run:

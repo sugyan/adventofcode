@@ -1,18 +1,18 @@
-name: Rust 2021
+name: Rust 2022
 
 on:
   push:
     branches: [main]
     paths:
-      - "2021/rust/**"
+      - '2022/rust/**'
   pull_request:
     branches: [main]
     paths:
-      - "2021/rust/**"
+      - '2022/rust/**'
 
 defaults:
   run:
-    working-directory: ./2021/rust
+    working-directory: ./2022/rust
 
 env:
   CARGO_TERM_COLOR: always
@@ -35,4 +35,4 @@ jobs:
       - uses: actions-rs/clippy-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-features --manifest-path ./2021/rust/Cargo.toml
+          args: --all-features --manifest-path ./2022/rust/Cargo.toml
