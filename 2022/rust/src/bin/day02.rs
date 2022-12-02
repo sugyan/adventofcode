@@ -1,7 +1,7 @@
 use aoc2022::Solve;
 use std::io::{BufRead, BufReader, Read};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 enum Hand {
     Rock,
     Paper,
@@ -16,7 +16,7 @@ impl Hand {
             Self::Scissors => 3,
         }
     }
-    fn outcome(&self, opponent: Self) -> Outcome {
+    fn do_round(&self, opponent: Self) -> Outcome {
         match (self, opponent) {
             (Self::Rock, Self::Scissors)
             | (Self::Paper, Self::Rock)
@@ -32,9 +32,51 @@ impl Hand {
 impl From<&str> for Hand {
     fn from(s: &str) -> Self {
         match s {
-            "A" | "X" => Self::Rock,
-            "B" | "Y" => Self::Paper,
-            "C" | "Z" => Self::Scissors,
+            "A" => Self::Rock,
+            "B" => Self::Paper,
+            "C" => Self::Scissors,
+            _ => unreachable!(),
+        }
+    }
+}
+
+enum Choose {
+    X,
+    Y,
+    Z,
+}
+
+impl Choose {
+    fn hand(&self, strategy: Strategy, opponent: &Hand) -> Hand {
+        match strategy {
+            Strategy::Part1 => match self {
+                Self::X => Hand::Rock,
+                Self::Y => Hand::Paper,
+                Self::Z => Hand::Scissors,
+            },
+            Strategy::Part2 => match self {
+                Self::X => match opponent {
+                    Hand::Rock => Hand::Scissors,
+                    Hand::Paper => Hand::Rock,
+                    Hand::Scissors => Hand::Paper,
+                },
+                Self::Y => *opponent,
+                Self::Z => match opponent {
+                    Hand::Rock => Hand::Paper,
+                    Hand::Paper => Hand::Scissors,
+                    Hand::Scissors => Hand::Rock,
+                },
+            },
+        }
+    }
+}
+
+impl From<&str> for Choose {
+    fn from(s: &str) -> Self {
+        match s {
+            "X" => Self::X,
+            "Y" => Self::Y,
+            "Z" => Self::Z,
             _ => unreachable!(),
         }
     }
@@ -56,8 +98,26 @@ impl Outcome {
     }
 }
 
+#[derive(Clone, Copy)]
+enum Strategy {
+    Part1,
+    Part2,
+}
+
 struct Solution {
-    hands: Vec<(Hand, Hand)>,
+    strategy_guide: Vec<(Hand, Choose)>,
+}
+
+impl Solution {
+    fn total_score(&self, strategy: Strategy) -> u32 {
+        self.strategy_guide
+            .iter()
+            .map(|(opponent, choose)| {
+                let hand = choose.hand(strategy, opponent);
+                hand.do_round(*opponent).score() + hand.shape_score()
+            })
+            .sum()
+    }
 }
 
 impl Solve for Solution {
@@ -66,7 +126,7 @@ impl Solve for Solution {
 
     fn new(r: impl Read) -> Self {
         Self {
-            hands: BufReader::new(r)
+            strategy_guide: BufReader::new(r)
                 .lines()
                 .filter_map(Result::ok)
                 .map(|s| {
@@ -77,13 +137,10 @@ impl Solve for Solution {
         }
     }
     fn part1(&self) -> Self::Answer1 {
-        self.hands
-            .iter()
-            .map(|(opponent, hand)| hand.outcome(*opponent).score() + hand.shape_score())
-            .sum()
+        self.total_score(Strategy::Part1)
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        self.total_score(Strategy::Part2)
     }
 }
 
@@ -108,5 +165,10 @@ C Z"[1..]
     #[test]
     fn example1() {
         assert_eq!(15, Solution::new(example_input()).part1());
+    }
+
+    #[test]
+    fn example2() {
+        assert_eq!(12, Solution::new(example_input()).part2());
     }
 }
