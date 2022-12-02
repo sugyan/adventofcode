@@ -114,7 +114,8 @@ mod tests {
 9,0
 
 fold along y=7
-fold along x=5"[1..]
+fold along x=5
+"[1..]
             .as_bytes()
     }
 

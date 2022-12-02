@@ -93,7 +93,8 @@ BN -> B
 BB -> N
 BC -> B
 CC -> N
-CN -> C"[1..]
+CN -> C
+"[1..]
             .as_bytes()
     }
 

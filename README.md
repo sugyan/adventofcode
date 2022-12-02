@@ -3,6 +3,14 @@
 My solutions to [Advent of Code](https://adventofcode.com/)
 
 
+### 2022
+
+- Rust
+  - [![Rust 2022](https://github.com/sugyan/adventofcode/actions/workflows/rust_2022.yml/badge.svg?branch=main)](https://github.com/sugyan/adventofcode/actions/workflows/rust_2022.yml)
+- Python
+  - [![Python 2022](https://github.com/sugyan/adventofcode/actions/workflows/python_2022.yml/badge.svg?branch=main)](https://github.com/sugyan/adventofcode/actions/workflows/python_2022.yml)
+
+
 ### 2021
 
 - Rust
@@ -14,7 +22,7 @@ My solutions to [Advent of Code](https://adventofcode.com/)
 - Rust
   - [![Rust 2020](https://github.com/sugyan/adventofcode/actions/workflows/rust_2020.yml/badge.svg?branch=main)](https://github.com/sugyan/adventofcode/actions/workflows/rust_2020.yml)
 - Python
-  - [![Python](https://github.com/sugyan/adventofcode/actions/workflows/python.yml/badge.svg?branch=main)](https://github.com/sugyan/adventofcode/actions/workflows/python.yml)
+  - [![Python 2020](https://github.com/sugyan/adventofcode/actions/workflows/python_2020.yml/badge.svg?branch=main)](https://github.com/sugyan/adventofcode/actions/workflows/python_2020.yml)
 
 
 ### 2019

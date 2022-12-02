@@ -74,7 +74,10 @@ mod tests {
     use super::*;
 
     fn example_input() -> &'static [u8] {
-        "target area: x=20..30, y=-10..-5".as_bytes()
+        r"
+target area: x=20..30, y=-10..-5
+"[1..]
+            .as_bytes()
     }
 
     #[test]

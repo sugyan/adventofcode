@@ -89,7 +89,8 @@ mod tests {
     fn example_input() -> &'static [u8] {
         r"
 Player 1 starting position: 4
-Player 2 starting position: 8"[1..]
+Player 2 starting position: 8
+"[1..]
             .as_bytes()
     }
 
