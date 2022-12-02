@@ -1,9 +1,10 @@
 from io import StringIO
+from typing import TextIO
 
 from aoc2022.day01 import Solution
 
 
-def example_input() -> StringIO:
+def example_input() -> TextIO:
     return StringIO(
         """\
 1000
@@ -19,7 +20,8 @@ def example_input() -> StringIO:
 8000
 9000
 
-10000"""
+10000
+"""
     )
 
 

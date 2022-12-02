@@ -6,7 +6,7 @@ struct Solution {
 }
 
 impl Solution {
-    fn top_sum(&self, n: usize) -> u32 {
+    fn sum_top_n(&self, n: usize) -> u32 {
         self.sorted_calories.iter().rev().take(n).sum()
     }
 }
@@ -34,10 +34,10 @@ impl Solve for Solution {
         }
     }
     fn part1(&self) -> Self::Answer1 {
-        self.top_sum(1)
+        self.sum_top_n(1)
     }
     fn part2(&self) -> Self::Answer2 {
-        self.top_sum(3)
+        self.sum_top_n(3)
     }
 }
 
@@ -66,7 +66,8 @@ mod tests {
 8000
 9000
 
-10000"[1..]
+10000
+"[1..]
             .as_bytes()
     }
 

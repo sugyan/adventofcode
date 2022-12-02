@@ -11,16 +11,16 @@ class Solution(Solver):
         )
 
     def part1(self) -> int:
-        return self.top_sum(1)
+        return self.sum_top_n(1)
 
     def part2(self) -> int:
-        return self.top_sum(3)
+        return self.sum_top_n(3)
 
-    def top_sum(self, n: int) -> int:
+    def sum_top_n(self, n: int) -> int:
         return sum(self.sorted_calories[-n:])
 
 
 if __name__ == "__main__":
     solution = Solution(sys.stdin)
-    print(solution.part1())
-    print(solution.part2())
+    print(f"Part 1: {solution.part1()}")
+    print(f"Part 2: {solution.part2()}")
