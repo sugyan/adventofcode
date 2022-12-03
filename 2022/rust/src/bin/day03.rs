@@ -1,9 +1,8 @@
 use aoc2022::Solve;
-use std::collections::HashSet;
 use std::io::{BufRead, BufReader};
 
 struct Solution {
-    items: Vec<String>,
+    items: Vec<(u64, u64)>,
 }
 
 impl Solve for Solution {
@@ -11,29 +10,37 @@ impl Solve for Solution {
     type Answer2 = u32;
 
     fn new(r: impl std::io::Read) -> Self {
+        let b2i = |b| b - 38 - 58 * u8::from(b > 96);
         Self {
-            items: BufReader::new(r).lines().filter_map(Result::ok).collect(),
+            items: BufReader::new(r)
+                .lines()
+                .filter_map(Result::ok)
+                .map(|s| {
+                    let (s1, s2) = s.split_at(s.len() / 2);
+                    (
+                        s1.bytes().fold(0, |acc, x| acc | 1 << b2i(x)),
+                        s2.bytes().fold(0, |acc, x| acc | 1 << b2i(x)),
+                    )
+                })
+                .collect(),
         }
     }
     fn part1(&self) -> Self::Answer1 {
-        let mut answer = 0;
-        for item in &self.items {
-            let v = item.chars().collect::<Vec<_>>();
-            let (v1, v2) = v.split_at(v.len() / 2);
-            let hs1 = v1.iter().collect::<HashSet<_>>();
-            let hs2 = v2.iter().collect::<HashSet<_>>();
-            if let Some(&c) = hs1.intersection(&hs2).next() {
-                answer += if c.is_lowercase() {
-                    *c as u32 - 'a' as u32 + 1
-                } else {
-                    *c as u32 - 'A' as u32 + 27
-                };
-            }
-        }
-        answer
+        self.items
+            .iter()
+            .map(|(i1, i2)| (i1 & i2).trailing_zeros())
+            .sum()
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        self.items
+            .chunks(3)
+            .map(|group| {
+                group
+                    .iter()
+                    .fold(!0, |acc, x| acc & (x.0 | x.1))
+                    .trailing_zeros()
+            })
+            .sum()
     }
 }
 
@@ -62,5 +69,10 @@ CrZsJsPPZsGzwwsLwLmpwMDw
     #[test]
     fn example1() {
         assert_eq!(157, Solution::new(example_input()).part1());
+    }
+
+    #[test]
+    fn example2() {
+        assert_eq!(70, Solution::new(example_input()).part2());
     }
 }
