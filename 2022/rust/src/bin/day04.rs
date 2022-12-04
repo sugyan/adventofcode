@@ -1,7 +1,6 @@
-use std::io::{BufRead, BufReader};
-
 use aoc2022::Solve;
 use itertools::Itertools;
+use std::io::{BufRead, BufReader};
 
 struct Solution {
     assignments: Vec<Vec<(u32, u32)>>,
@@ -31,7 +30,10 @@ impl Solve for Solution {
             .count()
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        self.assignments
+            .iter()
+            .filter(|a| a[0].0.max(a[1].0) <= a[0].1.min(a[1].1))
+            .count()
     }
 }
 
@@ -60,5 +62,10 @@ mod tests {
     #[test]
     fn example1() {
         assert_eq!(2, Solution::new(example_input()).part1());
+    }
+
+    #[test]
+    fn example2() {
+        assert_eq!(4, Solution::new(example_input()).part2());
     }
 }
