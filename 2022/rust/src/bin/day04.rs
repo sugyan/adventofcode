@@ -3,7 +3,7 @@ use itertools::Itertools;
 use std::io::{BufRead, BufReader};
 
 struct Solution {
-    assignments: Vec<Vec<(u32, u32)>>,
+    pairs: Vec<((u32, u32), (u32, u32))>,
 }
 
 impl Solve for Solution {
@@ -12,27 +12,27 @@ impl Solve for Solution {
 
     fn new(r: impl std::io::Read) -> Self {
         Self {
-            assignments: BufReader::new(r)
+            pairs: BufReader::new(r)
                 .lines()
                 .filter_map(Result::ok)
-                .map(|s| {
+                .filter_map(|s| {
                     s.split(',')
                         .filter_map(|s| s.split('-').filter_map(|s| s.parse().ok()).collect_tuple())
-                        .collect()
+                        .collect_tuple()
                 })
                 .collect(),
         }
     }
     fn part1(&self) -> Self::Answer1 {
-        self.assignments
+        self.pairs
             .iter()
-            .filter(|a| a.contains(&(a[0].0.max(a[1].0), a[0].1.min(a[1].1))))
+            .filter(|(a0, a1)| (a0.0 <= a1.0 && a1.1 <= a0.1) || (a1.0 <= a0.0 && a0.1 <= a1.1))
             .count()
     }
     fn part2(&self) -> Self::Answer2 {
-        self.assignments
+        self.pairs
             .iter()
-            .filter(|a| a[0].0.max(a[1].0) <= a[0].1.min(a[1].1))
+            .filter(|(a0, a1)| a0.0.max(a1.0) <= a0.1.min(a1.1))
             .count()
     }
 }
