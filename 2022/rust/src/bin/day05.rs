@@ -7,6 +7,25 @@ struct Solution {
     procedure: Vec<(usize, usize, usize)>,
 }
 
+impl Solution {
+    fn move_crates(&self, stacks: &mut [Vec<char>], multiple_at_once: bool) {
+        for &(count, from, to) in &self.procedure {
+            let mut v = Vec::new();
+            for _ in 0..count {
+                if let Some(last) = stacks[from - 1].pop() {
+                    v.push(last);
+                }
+            }
+            if !multiple_at_once {
+                v.reverse();
+            }
+            while let Some(last) = v.pop() {
+                stacks[to - 1].push(last);
+            }
+        }
+    }
+}
+
 impl Solve for Solution {
     type Answer1 = String;
     type Answer2 = String;
@@ -41,17 +60,13 @@ impl Solve for Solution {
     }
     fn part1(&self) -> Self::Answer1 {
         let mut stacks = self.stacks.clone();
-        for &(count, from, to) in &self.procedure {
-            for _ in 0..count {
-                if let Some(l) = stacks[from - 1].pop() {
-                    stacks[to - 1].push(l);
-                }
-            }
-        }
+        self.move_crates(&mut stacks, false);
         stacks.iter().filter_map(|s| s.last()).collect()
     }
     fn part2(&self) -> Self::Answer2 {
-        unimplemented!()
+        let mut stacks = self.stacks.clone();
+        self.move_crates(&mut stacks, true);
+        stacks.iter().filter_map(|s| s.last()).collect()
     }
 }
 
@@ -83,5 +98,10 @@ move 1 from 1 to 2
     #[test]
     fn example1() {
         assert_eq!("CMZ", Solution::new(example_input()).part1());
+    }
+
+    #[test]
+    fn example2() {
+        assert_eq!("MCD", Solution::new(example_input()).part2());
     }
 }
