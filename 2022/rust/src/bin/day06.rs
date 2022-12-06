@@ -2,12 +2,12 @@ use aoc2022::Solve;
 use std::io::{BufReader, Read};
 
 struct Solution {
-    datastream: Vec<u8>,
+    data: Vec<u8>,
 }
 
 impl Solution {
     fn marker_detected_position(&self, window_size: usize) -> usize {
-        self.datastream
+        self.data
             .windows(window_size)
             .position(|w| {
                 w.iter().fold(0_u128, |acc, x| acc | 1 << x).count_ones() as usize == window_size
@@ -22,9 +22,9 @@ impl Solve for Solution {
     type Answer2 = usize;
 
     fn new(r: impl Read) -> Self {
-        let mut datastream = Vec::new();
-        BufReader::new(r).read_to_end(&mut datastream).unwrap();
-        Self { datastream }
+        let mut data = Vec::new();
+        BufReader::new(r).read_to_end(&mut data).unwrap();
+        Self { data }
     }
     fn part1(&self) -> Self::Answer1 {
         self.marker_detected_position(4)
