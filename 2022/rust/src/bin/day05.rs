@@ -1,5 +1,6 @@
 use aoc2022::Solve;
 use itertools::Itertools;
+use std::collections::VecDeque;
 use std::io::{BufRead, BufReader};
 
 struct Solution {
@@ -8,21 +9,17 @@ struct Solution {
 }
 
 impl Solution {
-    fn move_crates(&self, stacks: &mut [Vec<char>], multiple_at_once: bool) {
+    fn top_crates(&self, f: impl Fn(&mut VecDeque<char>) -> Option<char>) -> String {
+        let mut stacks = self.stacks.clone();
         for &(count, from, to) in &self.procedure {
-            let mut v = Vec::new();
-            for _ in 0..count {
-                if let Some(last) = stacks[from - 1].pop() {
-                    v.push(last);
-                }
-            }
-            if !multiple_at_once {
-                v.reverse();
-            }
-            while let Some(last) = v.pop() {
-                stacks[to - 1].push(last);
+            let mut vd = (0..count)
+                .filter_map(|_| stacks[from - 1].pop())
+                .collect::<VecDeque<_>>();
+            while let Some(c) = f(&mut vd) {
+                stacks[to - 1].push(c);
             }
         }
+        stacks.iter().filter_map(|s| s.last()).collect()
     }
 }
 
@@ -36,10 +33,10 @@ impl Solve for Solution {
             .filter_map(Result::ok)
             .collect::<Vec<_>>();
         let parts = lines.split(String::is_empty).collect::<Vec<_>>();
-        let mut stacks = vec![Vec::new(); (parts[0][parts[0].len() - 1].len() + 1) / 4];
+        let mut stacks = vec![Vec::new(); (parts[0][0].len() + 1) / 4];
         for line in parts[0].iter().rev().skip(1) {
             for (i, c) in line.chars().skip(1).step_by(4).enumerate() {
-                if c != ' ' {
+                if c.is_ascii_uppercase() {
                     stacks[i].push(c);
                 }
             }
@@ -59,14 +56,10 @@ impl Solve for Solution {
         }
     }
     fn part1(&self) -> Self::Answer1 {
-        let mut stacks = self.stacks.clone();
-        self.move_crates(&mut stacks, false);
-        stacks.iter().filter_map(|s| s.last()).collect()
+        self.top_crates(VecDeque::pop_front)
     }
     fn part2(&self) -> Self::Answer2 {
-        let mut stacks = self.stacks.clone();
-        self.move_crates(&mut stacks, true);
-        stacks.iter().filter_map(|s| s.last()).collect()
+        self.top_crates(VecDeque::pop_back)
     }
 }
 
