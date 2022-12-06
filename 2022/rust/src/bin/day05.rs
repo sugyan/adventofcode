@@ -1,7 +1,7 @@
 use aoc2022::Solve;
 use itertools::Itertools;
 use std::collections::VecDeque;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 
 struct Solution {
     stacks: Vec<Vec<char>>,
@@ -27,7 +27,7 @@ impl Solve for Solution {
     type Answer1 = String;
     type Answer2 = String;
 
-    fn new(r: impl std::io::Read) -> Self {
+    fn new(r: impl Read) -> Self {
         let lines = BufReader::new(r)
             .lines()
             .filter_map(Result::ok)

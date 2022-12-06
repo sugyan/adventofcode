@@ -1,6 +1,6 @@
 use aoc2022::Solve;
 use itertools::Itertools;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 
 struct Solution {
     pairs: Vec<((u32, u32), (u32, u32))>,
@@ -10,7 +10,7 @@ impl Solve for Solution {
     type Answer1 = usize;
     type Answer2 = usize;
 
-    fn new(r: impl std::io::Read) -> Self {
+    fn new(r: impl Read) -> Self {
         Self {
             pairs: BufReader::new(r)
                 .lines()

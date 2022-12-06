@@ -1,5 +1,5 @@
 use aoc2022::Solve;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 
 struct Solution {
     items: Vec<(u64, u64)>,
@@ -9,7 +9,7 @@ impl Solve for Solution {
     type Answer1 = u32;
     type Answer2 = u32;
 
-    fn new(r: impl std::io::Read) -> Self {
+    fn new(r: impl Read) -> Self {
         let b2i = |b| b - 38 - 58 * u8::from(b > 96);
         Self {
             items: BufReader::new(r)
