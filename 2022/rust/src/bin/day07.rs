@@ -20,12 +20,12 @@ impl Solution {
     fn browse_around(curr: &mut Vec<Entry>, lines: &mut impl Iterator<Item = String>) {
         while let Some(line) = lines.next() {
             let parts = line.split_ascii_whitespace().collect::<Vec<_>>();
-            match parts[0] {
+            match *parts.first().unwrap() {
                 "$" => {
                     if parts[1] == "cd" {
-                        match parts[2] {
+                        match *parts.get(2).unwrap() {
                             ".." => return,
-                            "/" => continue,
+                            "/" => {}
                             _ => {
                                 let mut dir = Vec::new();
                                 Self::browse_around(&mut dir, lines);
@@ -34,9 +34,10 @@ impl Solution {
                         }
                     }
                 }
-                "dir" => {}
-                size => {
-                    curr.push(Entry::File(size.parse().unwrap()));
+                s => {
+                    if let Ok(size) = s.parse() {
+                        curr.push(Entry::File(size));
+                    }
                 }
             }
         }
@@ -75,10 +76,15 @@ impl Solve for Solution {
     fn part1(&self) -> Self::Answer1 {
         let mut v = Vec::new();
         Self::traverse(&self.filesystem.root, &mut v);
-        v.iter().filter(|&&x| x <= 100000).sum()
+        v.iter().filter(|&&x| x <= 100_000).sum()
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        let mut v = Vec::new();
+        Self::traverse(&self.filesystem.root, &mut v);
+        *v.iter()
+            .filter(|&&x| v[v.len() - 1] - x < 40_000_000)
+            .min()
+            .unwrap()
     }
 }
 
@@ -124,5 +130,10 @@ $ ls
     #[test]
     fn example1() {
         assert_eq!(95437, Solution::new(example_input()).part1());
+    }
+
+    #[test]
+    fn example2() {
+        assert_eq!(24_933_642, Solution::new(example_input()).part2());
     }
 }
