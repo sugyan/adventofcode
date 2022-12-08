@@ -3,6 +3,7 @@ use std::io::{BufRead, BufReader, Read};
 
 struct Solution {
     grid: Vec<Vec<u8>>,
+    distances: Vec<Vec<[usize; 4]>>,
 }
 
 impl Solve for Solution {
@@ -10,13 +11,34 @@ impl Solve for Solution {
     type Answer2 = usize;
 
     fn new(r: impl Read) -> Self {
-        Self {
-            grid: BufReader::new(r)
-                .lines()
-                .filter_map(Result::ok)
-                .map(|line| line.bytes().map(|b| b - b'0').collect())
-                .collect(),
-        }
+        let grid = BufReader::new(r)
+            .lines()
+            .filter_map(Result::ok)
+            .map(|line| line.bytes().map(|b| b - b'0').collect::<Vec<_>>())
+            .collect::<Vec<_>>();
+        let (rows, cols) = (grid.len(), grid[0].len());
+        let distance = |(i, j): (usize, usize), d: (usize, usize)| {
+            let (mut ii, mut jj) = (i, j);
+            let mut ret = 0;
+            while {
+                (ii, jj) = (ii.wrapping_add(d.0), jj.wrapping_add(d.1));
+                (0..rows).contains(&ii) && (0..cols).contains(&jj)
+            } {
+                ret += 1;
+                if grid[ii][jj] >= grid[i][j] {
+                    break;
+                }
+            }
+            ret
+        };
+        let distances = (0..rows)
+            .map(|i| {
+                (0..cols)
+                    .map(|j| [(!0, 0), (1, 0), (0, !0), (0, 1)].map(|d| distance((i, j), d)))
+                    .collect()
+            })
+            .collect();
+        Self { grid, distances }
     }
     fn part1(&self) -> Self::Answer1 {
         let (rows, cols) = (self.grid.len(), self.grid[0].len());
@@ -47,7 +69,12 @@ impl Solve for Solution {
             .sum()
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        self.distances
+            .iter()
+            .flatten()
+            .map(|d| d.iter().product())
+            .max()
+            .unwrap()
     }
 }
 
@@ -75,5 +102,10 @@ mod tests {
     #[test]
     fn part1() {
         assert_eq!(21, Solution::new(example_input()).part1());
+    }
+
+    #[test]
+    fn part2() {
+        assert_eq!(8, Solution::new(example_input()).part2());
     }
 }
