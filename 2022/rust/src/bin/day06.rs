@@ -45,7 +45,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn example1() {
+    fn part1() {
         assert_eq!(
             7,
             Solution::new("mjqjpqmgbljsphdztnvjfqwrcgsmlb".as_bytes()).part1()
@@ -69,7 +69,7 @@ mod tests {
     }
 
     #[test]
-    fn example2() {
+    fn part2() {
         assert_eq!(
             19,
             Solution::new("mjqjpqmgbljsphdztnvjfqwrcgsmlb".as_bytes()).part2()

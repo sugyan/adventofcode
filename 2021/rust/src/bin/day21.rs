@@ -95,12 +95,12 @@ Player 2 starting position: 8
     }
 
     #[test]
-    fn example1() {
+    fn part1() {
         assert_eq!(739_785, Solution::new(example_input()).part1());
     }
 
     #[test]
-    fn example2() {
+    fn part2() {
         assert_eq!(444_356_092_776_315, Solution::new(example_input()).part2());
     }
 }

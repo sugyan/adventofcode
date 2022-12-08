@@ -81,12 +81,12 @@ target area: x=20..30, y=-10..-5
     }
 
     #[test]
-    fn example1() {
+    fn part1() {
         assert_eq!(45, Solution::new(example_input()).part1());
     }
 
     #[test]
-    fn example2() {
+    fn part2() {
         assert_eq!(112, Solution::new(example_input()).part2());
     }
 }

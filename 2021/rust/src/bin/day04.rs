@@ -103,17 +103,17 @@ mod tests {
 18  8 23 26 20
 22 11 13  6  5
  2  0 12  3  7
- "[1..]
+"[1..]
             .as_bytes()
     }
 
     #[test]
-    fn example1() {
+    fn part1() {
         assert_eq!(4512, Solution::new(example_input()).part1());
     }
 
     #[test]
-    fn example2() {
+    fn part2() {
         assert_eq!(1924, Solution::new(example_input()).part2());
     }
 }

@@ -89,12 +89,12 @@ move 1 from 1 to 2
     }
 
     #[test]
-    fn example1() {
+    fn part1() {
         assert_eq!("CMZ", Solution::new(example_input()).part1());
     }
 
     #[test]
-    fn example2() {
+    fn part2() {
         assert_eq!("MCD", Solution::new(example_input()).part2());
     }
 }

@@ -99,12 +99,12 @@ CN -> C
     }
 
     #[test]
-    fn example1() {
+    fn part1() {
         assert_eq!(1588, Solution::new(example_input()).part1());
     }
 
     #[test]
-    fn example2() {
+    fn part2() {
         assert_eq!(2_188_189_693_529, Solution::new(example_input()).part2());
     }
 }

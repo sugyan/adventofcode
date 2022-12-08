@@ -96,12 +96,12 @@ mod tests {
     }
 
     #[test]
-    fn example1() {
+    fn part1() {
         assert_eq!(15, Solution::new(example_input()).part1());
     }
 
     #[test]
-    fn example2() {
+    fn part2() {
         assert_eq!(1134, Solution::new(example_input()).part2());
     }
 }

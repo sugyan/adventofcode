@@ -96,7 +96,7 @@ v.v..>>v.v
     }
 
     #[test]
-    fn example1() {
+    fn part1() {
         assert_eq!(58, Solution::new(example_input()).part1());
     }
 }

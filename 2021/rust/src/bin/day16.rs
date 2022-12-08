@@ -149,7 +149,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn example1() {
+    fn part1() {
         assert_eq!(16, Solution::new("8A004A801A8002F478".as_bytes()).part1());
         assert_eq!(
             12,
@@ -166,7 +166,7 @@ mod tests {
     }
 
     #[test]
-    fn example2() {
+    fn part2() {
         assert_eq!(3, Solution::new("C200B40A82".as_bytes()).part2());
         assert_eq!(54, Solution::new("04005AC33890".as_bytes()).part2());
         assert_eq!(7, Solution::new("880086C3E88112".as_bytes()).part2());

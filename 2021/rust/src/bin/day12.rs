@@ -126,14 +126,14 @@ start-RW
     }
 
     #[test]
-    fn example1() {
+    fn part1() {
         for (&input, expected) in example_inputs().iter().zip(vec![10, 19, 226]) {
             assert_eq!(expected, Solution::new(input).part1());
         }
     }
 
     #[test]
-    fn example2() {
+    fn part2() {
         for (&input, expected) in example_inputs().iter().zip(vec![36, 103, 3509]) {
             assert_eq!(expected, Solution::new(input).part2());
         }

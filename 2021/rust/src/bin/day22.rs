@@ -131,7 +131,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn example1() {
+    fn part1() {
         assert_eq!(
             590_784,
             Solution::new(
@@ -165,7 +165,7 @@ on x=967..23432,y=45373..81175,z=27513..53682"[1..]
     }
 
     #[test]
-    fn example2() {
+    fn part2() {
         assert_eq!(
             2_758_514_936_282_235,
             Solution::new(

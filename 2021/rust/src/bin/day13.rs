@@ -120,7 +120,7 @@ fold along x=5
     }
 
     #[test]
-    fn example1() {
+    fn part1() {
         assert_eq!(17, Solution::new(example_input()).part1());
     }
 }

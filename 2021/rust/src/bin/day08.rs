@@ -99,12 +99,12 @@ gcafb gcf dcaebfg ecagb gf abcdeg gaef cafbge fdbac fegbdc | fgae cfgab fg bagce
     }
 
     #[test]
-    fn example1() {
+    fn part1() {
         assert_eq!(26, Solution::new(example_input()).part1());
     }
 
     #[test]
-    fn example2() {
+    fn part2() {
         assert_eq!(61229, Solution::new(example_input()).part2());
     }
 }
