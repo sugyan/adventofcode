@@ -1,10 +1,10 @@
 import sys
 from typing import TextIO
 
-from aoc2022 import Solver
+from aoc2022 import Solve, run
 
 
-class Solution(Solver):
+class Solution(Solve):
     def __init__(self, io: TextIO) -> None:
         parts = [s.splitlines() for s in io.read().split("\n\n")]
         self.stacks: list[list[str]] = [[] for _ in range((len(parts[0][0]) + 1) // 4)]
@@ -31,6 +31,4 @@ class Solution(Solver):
 
 
 if __name__ == "__main__":
-    solution = Solution(sys.stdin)
-    print(f"Part 1: {solution.part1()}")
-    print(f"Part 2: {solution.part2()}")
+    run(Solution(sys.stdin))

@@ -1,10 +1,10 @@
 import sys
 from typing import TextIO
 
-from aoc2022 import Solver
+from aoc2022 import Solve, run
 
 
-class Solution(Solver):
+class Solution(Solve):
     def __init__(self, io: TextIO) -> None:
         self.data = io.read().strip()
 
@@ -22,6 +22,4 @@ class Solution(Solver):
 
 
 if __name__ == "__main__":
-    solution = Solution(sys.stdin)
-    print(f"Part 1: {solution.part1()}")
-    print(f"Part 2: {solution.part2()}")
+    run(Solution(sys.stdin))

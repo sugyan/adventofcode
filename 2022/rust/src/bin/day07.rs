@@ -13,22 +13,27 @@ impl Solve for Solution {
         let mut stack = Vec::new();
         let mut total_sizes = Vec::new();
         for line in BufReader::new(r).lines().filter_map(Result::ok) {
-            let parts = line.split_ascii_whitespace().collect::<Vec<_>>();
-            if parts[1] == "cd" {
-                if parts[2] == ".." {
-                    if let Some(total) = stack.pop() {
-                        total_sizes.push(total);
+            match line.rsplit_once(char::is_whitespace) {
+                Some(("$ cd", d)) => {
+                    if d == ".." {
+                        if let Some(total) = stack.pop() {
+                            total_sizes.push(total);
+                            if let Some(last) = stack.last_mut() {
+                                *last += total;
+                            }
+                        }
+                    } else {
+                        stack.push(0);
+                    }
+                }
+                Some((s, _)) => {
+                    if let Ok(size) = s.parse::<u32>() {
                         if let Some(last) = stack.last_mut() {
-                            *last += total;
+                            *last += size;
                         }
                     }
-                } else {
-                    stack.push(0);
                 }
-            } else if let Ok(size) = parts[0].parse::<u32>() {
-                if let Some(last) = stack.last_mut() {
-                    *last += size;
-                }
+                _ => unreachable!(),
             }
         }
         while let Some(total) = stack.pop() {
