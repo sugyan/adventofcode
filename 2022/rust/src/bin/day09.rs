@@ -2,50 +2,23 @@ use aoc2022::Solve;
 use std::collections::HashSet;
 use std::io::{BufRead, BufReader, Read};
 
-#[derive(Debug)]
-enum Motion {
-    R(u32),
-    U(u32),
-    L(u32),
-    D(u32),
-}
-
-impl From<String> for Motion {
-    fn from(s: String) -> Self {
-        let n = s[2..].parse().unwrap();
-        match &s[..1] {
-            "R" => Self::R(n),
-            "U" => Self::U(n),
-            "L" => Self::L(n),
-            "D" => Self::D(n),
-            _ => unreachable!(),
-        }
-    }
-}
-
 struct Solution {
-    motions: Vec<Motion>,
+    motions: Vec<((i32, i32), u32)>,
 }
 
 impl Solution {
     fn tail_visited(&self, knots_count: usize) -> usize {
-        let mut knots = vec![(0_i32, 0_i32); knots_count];
+        let mut knots = vec![(0, 0); knots_count];
         let mut hs = HashSet::new();
-        for motion in &self.motions {
-            let (d, n) = match motion {
-                Motion::R(n) => ((1, 0), n),
-                Motion::U(n) => ((0, 1), n),
-                Motion::L(n) => ((-1, 0), n),
-                Motion::D(n) => ((0, -1), n),
-            };
-            for _ in 0..*n {
+        for &(d, n) in &self.motions {
+            for _ in 0..n {
                 knots[0].0 += d.0;
                 knots[0].1 += d.1;
-                for i in 0..knots_count - 1 {
-                    let diff = (knots[i].0 - knots[i + 1].0, knots[i].1 - knots[i + 1].1);
+                for i in 1..knots_count {
+                    let diff = (knots[i - 1].0 - knots[i].0, knots[i - 1].1 - knots[i].1);
                     if diff.0.abs() > 1 || diff.1.abs() > 1 {
-                        knots[i + 1].0 += diff.0.signum();
-                        knots[i + 1].1 += diff.1.signum();
+                        knots[i].0 += diff.0.signum();
+                        knots[i].1 += diff.1.signum();
                     }
                 }
                 hs.insert(knots[knots_count - 1]);
@@ -64,7 +37,18 @@ impl Solve for Solution {
             motions: BufReader::new(r)
                 .lines()
                 .filter_map(Result::ok)
-                .map(Motion::from)
+                .map(|s| {
+                    (
+                        match &s[..1] {
+                            "R" => (1, 0),
+                            "U" => (0, 1),
+                            "L" => (-1, 0),
+                            "D" => (0, -1),
+                            _ => unreachable!(),
+                        },
+                        s[2..].parse().unwrap(),
+                    )
+                })
                 .collect(),
         }
     }

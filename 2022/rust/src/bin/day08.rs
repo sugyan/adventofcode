@@ -1,9 +1,9 @@
 use aoc2022::Solve;
+use itertools::Itertools;
 use std::io::{BufRead, BufReader, Read};
 
 struct Solution {
-    grid: Vec<Vec<u8>>,
-    distances: Vec<Vec<[usize; 4]>>,
+    trees: Vec<(bool, usize)>,
 }
 
 impl Solve for Solution {
@@ -17,64 +17,33 @@ impl Solve for Solution {
             .map(|line| line.bytes().map(|b| b - b'0').collect::<Vec<_>>())
             .collect::<Vec<_>>();
         let (rows, cols) = (grid.len(), grid[0].len());
-        let distance = |(i, j): (usize, usize), d: (usize, usize)| {
-            let (mut ii, mut jj) = (i, j);
-            let mut ret = 0;
-            while {
-                (ii, jj) = (ii.wrapping_add(d.0), jj.wrapping_add(d.1));
-                (0..rows).contains(&ii) && (0..cols).contains(&jj)
-            } {
-                ret += 1;
-                if grid[ii][jj] >= grid[i][j] {
-                    break;
-                }
-            }
-            ret
-        };
-        let distances = (0..rows)
-            .map(|i| {
-                (0..cols)
-                    .map(|j| [(!0, 0), (1, 0), (0, !0), (0, 1)].map(|d| distance((i, j), d)))
-                    .collect()
-            })
-            .collect();
-        Self { grid, distances }
+        Self {
+            trees: (0..rows)
+                .cartesian_product(0..cols)
+                .map(|(i, j)| {
+                    let h = grid[i][j];
+                    [
+                        (0..i).rev().map(|ii| grid[ii][j]).collect::<Vec<_>>(),
+                        (0..j).rev().map(|jj| grid[i][jj]).collect::<Vec<_>>(),
+                        (i + 1..rows).map(|ii| grid[ii][j]).collect::<Vec<_>>(),
+                        (j + 1..cols).map(|jj| grid[i][jj]).collect::<Vec<_>>(),
+                    ]
+                    .iter()
+                    .fold((false, 1), |acc, x| {
+                        (
+                            acc.0 | x.iter().all(|&e| e < h),
+                            acc.1 * x.iter().position(|&e| e >= h).map_or(x.len(), |p| p + 1),
+                        )
+                    })
+                })
+                .collect(),
+        }
     }
     fn part1(&self) -> Self::Answer1 {
-        let (rows, cols) = (self.grid.len(), self.grid[0].len());
-        let mut grid = vec![vec![false; cols]; rows];
-        #[allow(clippy::needless_range_loop)]
-        for i in 0..rows {
-            (0..cols).fold(0, |max, j| {
-                grid[i][j] |= j == 0 || self.grid[i][j] > max;
-                max.max(self.grid[i][j])
-            });
-            (0..cols).rev().fold(0, |max, j| {
-                grid[i][j] |= j == cols - 1 || self.grid[i][j] > max;
-                max.max(self.grid[i][j])
-            });
-        }
-        for j in 0..cols {
-            (0..rows).fold(0, |max, i| {
-                grid[i][j] |= i == 0 || self.grid[i][j] > max;
-                max.max(self.grid[i][j])
-            });
-            (0..rows).rev().fold(0, |max, i| {
-                grid[i][j] |= i == rows - 1 || self.grid[i][j] > max;
-                max.max(self.grid[i][j])
-            });
-        }
-        grid.iter()
-            .map(|row| row.iter().filter(|&b| *b).count())
-            .sum()
+        self.trees.iter().filter(|(visible, _)| *visible).count()
     }
     fn part2(&self) -> Self::Answer2 {
-        self.distances
-            .iter()
-            .flatten()
-            .map(|d| d.iter().product())
-            .max()
-            .unwrap()
+        self.trees.iter().map(|(_, score)| *score).max().unwrap()
     }
 }
 
