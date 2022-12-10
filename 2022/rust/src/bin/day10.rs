@@ -1,56 +1,53 @@
 use aoc2022::Solve;
+use itertools::Itertools;
 use std::io::{BufRead, BufReader, Read};
 
-#[derive(Debug)]
-enum Instruction {
-    Noop,
-    Addx(i32),
+struct Solution {
+    values: [i32; 240],
 }
 
-struct Solution {
-    program: Vec<Instruction>,
-}
+impl Solution {}
 
 impl Solve for Solution {
     type Answer1 = i32;
-    type Answer2 = i32;
+    type Answer2 = String;
 
     fn new(r: impl Read) -> Self {
-        Self {
-            program: BufReader::new(r)
-                .lines()
-                .filter_map(Result::ok)
-                .map(|line| match &line[..4] {
-                    "noop" => Instruction::Noop,
-                    "addx" => Instruction::Addx(line[5..].parse().unwrap()),
-                    _ => unreachable!(),
-                })
-                .collect(),
-        }
-    }
-    fn part1(&self) -> Self::Answer1 {
-        let mut iter = self.program.iter();
+        let mut iter = BufReader::new(r).lines().filter_map(Result::ok);
+        let mut values = [0; 240];
         let (mut x, mut adding) = (1, None);
-        let mut sum = 0;
-        for i in 1.. {
-            if matches!(i, 20 | 60 | 100 | 140 | 180 | 220) {
-                sum += i * x;
-            }
+        for v in values.iter_mut() {
+            *v = x;
             adding = if let Some(n) = adding {
                 x += n;
                 None
             } else {
-                match iter.next() {
-                    Some(Instruction::Noop) => None,
-                    Some(Instruction::Addx(n)) => Some(n),
-                    None => break,
+                match iter.next().unwrap().as_str() {
+                    "noop" => None,
+                    s => Some(s[5..].parse::<i32>().unwrap()),
                 }
             };
         }
-        sum
+        Self { values }
+    }
+    fn part1(&self) -> Self::Answer1 {
+        [20, 60, 100, 140, 180, 220]
+            .iter()
+            .map(|&i| i as i32 * self.values[i - 1])
+            .sum()
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        String::from("\n")
+            + &self
+                .values
+                .chunks(40)
+                .map(|row| {
+                    row.iter()
+                        .enumerate()
+                        .map(|(i, &x)| if (i as i32 - x).abs() < 2 { '#' } else { '.' })
+                        .collect::<String>()
+                })
+                .join("\n")
     }
 }
 
@@ -219,5 +216,19 @@ noop
     #[test]
     fn part1() {
         assert_eq!(13140, Solution::new(example_input()).part1());
+    }
+
+    #[test]
+    fn part2() {
+        assert_eq!(
+            r"
+##..##..##..##..##..##..##..##..##..##..
+###...###...###...###...###...###...###.
+####....####....####....####....####....
+#####.....#####.....#####.....#####.....
+######......######......######......####
+#######.......#######.......#######.....",
+            Solution::new(example_input()).part2()
+        );
     }
 }
