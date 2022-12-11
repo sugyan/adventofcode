@@ -4,8 +4,8 @@ use std::io::{BufRead, BufReader, Read};
 
 #[derive(Debug, Clone)]
 enum Operation {
-    Add(u32),
-    Mul(u32),
+    Add(u64),
+    Mul(u64),
     Square,
 }
 
@@ -22,9 +22,9 @@ impl From<&str> for Operation {
 
 #[derive(Debug, Clone)]
 struct Monkey {
-    items: VecDeque<u32>,
+    items: VecDeque<u64>,
     operation: Operation,
-    test: (u32, [usize; 2]),
+    test: (u64, [usize; 2]),
 }
 
 impl From<&[String]> for Monkey {
@@ -50,9 +50,35 @@ struct Solution {
     monkeys: Vec<Monkey>,
 }
 
+impl Solution {
+    fn monkey_business(&self, round: usize, divide3: bool) -> u64 {
+        let mut monkeys = self.monkeys.clone();
+        let mut inspected = vec![0; monkeys.len()];
+        let div = monkeys.iter().map(|m| m.test.0).product::<u64>();
+        for _ in 0..round {
+            for i in 0..monkeys.len() {
+                while let Some(item) = monkeys[i].items.pop_front() {
+                    let level = match monkeys[i].operation {
+                        Operation::Add(n) => item + n,
+                        Operation::Mul(n) => item * n,
+                        Operation::Square => item * item,
+                    } / if divide3 { 3 } else { 1 }
+                        % div;
+                    let throw =
+                        monkeys[i].test.1[if level % monkeys[i].test.0 == 0 { 0 } else { 1 }];
+                    monkeys[throw].items.push_back(level);
+                    inspected[i] += 1;
+                }
+            }
+        }
+        inspected.sort_unstable();
+        inspected.iter().rev().take(2).product()
+    }
+}
+
 impl Solve for Solution {
-    type Answer1 = u32;
-    type Answer2 = u32;
+    type Answer1 = u64;
+    type Answer2 = u64;
 
     fn new(r: impl Read) -> Self {
         Self {
@@ -66,27 +92,10 @@ impl Solve for Solution {
         }
     }
     fn part1(&self) -> Self::Answer1 {
-        let mut monkeys = self.monkeys.clone();
-        let mut inspected = vec![0; monkeys.len()];
-        for _ in 0..20 {
-            for i in 0..monkeys.len() {
-                while let Some(item) = monkeys[i].items.pop_front() {
-                    let level = match monkeys[i].operation {
-                        Operation::Add(n) => item + n,
-                        Operation::Mul(n) => item * n,
-                        Operation::Square => item * item,
-                    } / 3;
-                    let throw = monkeys[i].test.1[usize::from(level % monkeys[i].test.0 != 0)];
-                    monkeys[throw].items.push_back(level);
-                    inspected[i] += 1;
-                }
-            }
-        }
-        inspected.sort_unstable();
-        inspected.iter().rev().take(2).product()
+        self.monkey_business(20, true)
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        self.monkey_business(10000, false)
     }
 }
 
@@ -136,5 +145,10 @@ Monkey 3:
     #[test]
     fn test_part1() {
         assert_eq!(10605, Solution::new(example_input()).part1());
+    }
+
+    #[test]
+    fn test_part2() {
+        assert_eq!(2_713_310_158, Solution::new(example_input()).part2());
     }
 }
