@@ -1,28 +1,16 @@
 use aoc2022::Solve;
-use std::collections::VecDeque;
 use std::io::{BufRead, BufReader, Read};
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 enum Operation {
     Add(u64),
     Mul(u64),
     Square,
 }
 
-impl From<&str> for Operation {
-    fn from(s: &str) -> Self {
-        match (&s[23..24], &s[25..]) {
-            ("*", "old") => Self::Square,
-            ("*", s) => Self::Mul(s.parse().unwrap()),
-            ("+", s) => Self::Add(s.parse().unwrap()),
-            _ => unreachable!(),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 struct Monkey {
-    items: VecDeque<u64>,
+    items: Vec<u64>,
     operation: Operation,
     test: (u64, [usize; 2]),
 }
@@ -34,12 +22,17 @@ impl From<&[String]> for Monkey {
                 .split(", ")
                 .filter_map(|s| s.parse().ok())
                 .collect(),
-            operation: lines[2].as_str().into(),
+            operation: match (&lines[2][23..24], &lines[2][25..]) {
+                ("*", "old") => Operation::Square,
+                ("*", s) => Operation::Mul(s.parse().unwrap()),
+                ("+", s) => Operation::Add(s.parse().unwrap()),
+                _ => unreachable!(),
+            },
             test: (
                 lines[3][21..].parse().unwrap(),
                 [
-                    lines[4][29..].parse().unwrap(),
                     lines[5][30..].parse().unwrap(),
+                    lines[4][29..].parse().unwrap(),
                 ],
             ),
         }
@@ -57,16 +50,15 @@ impl Solution {
         let div = monkeys.iter().map(|m| m.test.0).product::<u64>();
         for _ in 0..round {
             for i in 0..monkeys.len() {
-                while let Some(item) = monkeys[i].items.pop_front() {
+                while let Some(item) = monkeys[i].items.pop() {
                     let level = match monkeys[i].operation {
                         Operation::Add(n) => item + n,
                         Operation::Mul(n) => item * n,
                         Operation::Square => item * item,
                     } / if divide3 { 3 } else { 1 }
                         % div;
-                    let throw =
-                        monkeys[i].test.1[if level % monkeys[i].test.0 == 0 { 0 } else { 1 }];
-                    monkeys[throw].items.push_back(level);
+                    let to = monkeys[i].test.1[usize::from(level % monkeys[i].test.0 == 0)];
+                    monkeys[to].items.push(level);
                     inspected[i] += 1;
                 }
             }
