@@ -4,7 +4,8 @@ use std::collections::BinaryHeap;
 use std::io::{BufRead, BufReader, Read};
 
 struct Solution {
-    heightmap: Vec<Vec<u8>>,
+    start: (usize, usize),
+    min_steps: Vec<Vec<Option<(u32, u8)>>>,
 }
 
 impl Solve for Solution {
@@ -12,30 +13,28 @@ impl Solve for Solution {
     type Answer2 = u32;
 
     fn new(r: impl Read) -> Self {
-        Self {
-            heightmap: BufReader::new(r)
-                .lines()
-                .filter_map(Result::ok)
-                .map(|s| s.bytes().collect())
-                .collect(),
-        }
-    }
-    fn part1(&self) -> Self::Answer1 {
-        let (rows, cols) = (self.heightmap.len(), self.heightmap[0].len());
-        let mut heightmap = self.heightmap.clone();
-        let mut mins = vec![vec![None; cols]; rows];
+        let mut heightmap = BufReader::new(r)
+            .lines()
+            .filter_map(Result::ok)
+            .map(|s| s.bytes().collect::<Vec<_>>())
+            .collect::<Vec<_>>();
+        let (rows, cols) = (heightmap.len(), heightmap[0].len());
+        let mut min_steps = vec![vec![None; cols]; rows];
         let mut bh = BinaryHeap::new();
-        let mut e = (0, 0);
+        let mut start = (0, 0);
         for (i, row) in heightmap.iter_mut().enumerate() {
             for (j, h) in row.iter_mut().enumerate() {
-                if *h == b'S' {
-                    *h = b'a';
-                    mins[i][j] = Some(0);
-                    bh.push((Reverse(0), (i, j)));
-                }
-                if *h == b'E' {
-                    *h = b'z';
-                    e = (i, j);
+                match *h {
+                    b'E' => {
+                        *h = b'z';
+                        min_steps[i][j] = Some((0, b'z'));
+                        bh.push((Reverse(0), (i, j)));
+                    }
+                    b'S' => {
+                        *h = b'a';
+                        start = (i, j);
+                    }
+                    _ => {}
                 }
             }
         }
@@ -45,24 +44,36 @@ impl Solve for Solution {
                 let jj = j.wrapping_add(d[1]);
                 if (0..rows).contains(&ii)
                     && (0..cols).contains(&jj)
-                    && heightmap[ii][jj] <= heightmap[i][j] + 1
-                    && mins[ii][jj].is_none()
+                    && heightmap[ii][jj] + 1 >= heightmap[i][j]
+                    && min_steps[ii][jj].is_none()
                 {
-                    mins[ii][jj] = Some(steps + 1);
+                    min_steps[ii][jj] = Some((steps + 1, heightmap[ii][jj]));
                     bh.push((Reverse(steps + 1), (ii, jj)));
                 }
             }
         }
-        mins[e.0][e.1].unwrap()
+        Self { start, min_steps }
+    }
+    fn part1(&self) -> Self::Answer1 {
+        self.min_steps[self.start.0][self.start.1].unwrap().0
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        self.min_steps
+            .iter()
+            .flatten()
+            .filter_map(|x| match x {
+                Some((steps, h)) if *h == b'a' => Some(*steps),
+                _ => None,
+            })
+            .min()
+            .unwrap()
     }
 }
 
 fn main() {
     let solution = Solution::new(std::io::stdin().lock());
     println!("Part 1: {}", solution.part1());
+    println!("Part 2: {}", solution.part2());
 }
 
 #[cfg(test)]
@@ -83,5 +94,10 @@ abdefghi
     #[test]
     fn test_part1() {
         assert_eq!(31, Solution::new(example_input()).part1());
+    }
+
+    #[test]
+    fn test_part2() {
+        assert_eq!(29, Solution::new(example_input()).part2());
     }
 }
