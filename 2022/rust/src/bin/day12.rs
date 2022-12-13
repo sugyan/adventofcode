@@ -1,11 +1,9 @@
 use aoc2022::Solve;
-use std::cmp::Reverse;
-use std::collections::BinaryHeap;
+use std::collections::VecDeque;
 use std::io::{BufRead, BufReader, Read};
 
 struct Solution {
-    start: (usize, usize),
-    min_steps: Vec<Vec<Option<(u32, u8)>>>,
+    min_steps: Vec<Vec<Option<(u32, char)>>>,
 }
 
 impl Solve for Solution {
@@ -13,56 +11,60 @@ impl Solve for Solution {
     type Answer2 = u32;
 
     fn new(r: impl Read) -> Self {
-        let mut heightmap = BufReader::new(r)
+        let heightmap = BufReader::new(r)
             .lines()
             .filter_map(Result::ok)
             .map(|s| s.bytes().collect::<Vec<_>>())
             .collect::<Vec<_>>();
         let (rows, cols) = (heightmap.len(), heightmap[0].len());
-        let mut min_steps = vec![vec![None; cols]; rows];
-        let mut bh = BinaryHeap::new();
-        let mut start = (0, 0);
-        for (i, row) in heightmap.iter_mut().enumerate() {
-            for (j, h) in row.iter_mut().enumerate() {
-                match *h {
-                    b'E' => {
-                        *h = b'z';
-                        min_steps[i][j] = Some((0, b'z'));
-                        bh.push((Reverse(0), (i, j)));
-                    }
-                    b'S' => {
-                        *h = b'a';
-                        start = (i, j);
-                    }
-                    _ => {}
+        let mut vd = VecDeque::new();
+        for (i, row) in heightmap.iter().enumerate() {
+            for (j, col) in row.iter().enumerate() {
+                if *col == b'E' {
+                    vd.push_back((0, (i, j)));
                 }
             }
         }
-        while let Some((Reverse(steps), (i, j))) = bh.pop() {
+        let mut min_steps = vec![vec![None; cols]; rows];
+        while let Some((steps, (i, j))) = vd.pop_front() {
+            if min_steps[i][j].is_some() {
+                continue;
+            }
+            min_steps[i][j] = Some((steps, heightmap[i][j] as char));
+            let height = match heightmap[i][j] {
+                b'E' => b'z',
+                h => h,
+            };
             for d in [0, 1, 0, !0, 0].windows(2) {
                 let ii = i.wrapping_add(d[0]);
                 let jj = j.wrapping_add(d[1]);
                 if (0..rows).contains(&ii)
                     && (0..cols).contains(&jj)
-                    && heightmap[ii][jj] + 1 >= heightmap[i][j]
-                    && min_steps[ii][jj].is_none()
+                    && (heightmap[ii][jj] + 1 >= height
+                        || (heightmap[ii][jj] == b'S' && height <= b'b'))
                 {
-                    min_steps[ii][jj] = Some((steps + 1, heightmap[ii][jj]));
-                    bh.push((Reverse(steps + 1), (ii, jj)));
+                    vd.push_back((steps + 1, (ii, jj)));
                 }
             }
         }
-        Self { start, min_steps }
+        Self { min_steps }
     }
     fn part1(&self) -> Self::Answer1 {
-        self.min_steps[self.start.0][self.start.1].unwrap().0
+        self.min_steps
+            .iter()
+            .flatten()
+            .find_map(|o| match o {
+                Some((steps, 'S')) => Some(*steps),
+                _ => None,
+            })
+            .unwrap()
     }
     fn part2(&self) -> Self::Answer2 {
         self.min_steps
             .iter()
             .flatten()
-            .filter_map(|x| match x {
-                Some((steps, h)) if *h == b'a' => Some(*steps),
+            .filter_map(|o| match o {
+                Some((steps, 'a' | 'S')) => Some(*steps),
                 _ => None,
             })
             .min()
