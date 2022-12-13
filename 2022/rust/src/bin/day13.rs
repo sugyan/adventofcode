@@ -3,7 +3,7 @@ use itertools::Itertools;
 use std::cmp::Ordering;
 use std::io::{BufRead, BufReader, Read};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 enum Value {
     Integer(u8),
     List(Vec<Value>),
@@ -12,7 +12,7 @@ enum Value {
 impl PartialOrd for Value {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (self, other) {
-            (Value::Integer(lhs), Value::Integer(rhs)) => Some(lhs.cmp(&rhs)),
+            (Value::Integer(lhs), Value::Integer(rhs)) => Some(lhs.cmp(rhs)),
             (Value::List(lhs), Value::List(rhs)) => {
                 let (mut l, mut r) = (lhs.iter(), rhs.iter());
                 loop {
@@ -33,7 +33,7 @@ impl PartialOrd for Value {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Packet(Vec<Value>);
 
 impl From<&String> for Packet {
@@ -69,7 +69,7 @@ struct Solution {
 
 impl Solve for Solution {
     type Answer1 = usize;
-    type Answer2 = u32;
+    type Answer2 = usize;
 
     fn new(r: impl Read) -> Self {
         Self {
@@ -98,13 +98,33 @@ impl Solve for Solution {
             .sum()
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        let divider_packets = [
+            Packet(vec![Value::List(vec![Value::List(vec![Value::Integer(
+                2,
+            )])])]),
+            Packet(vec![Value::List(vec![Value::List(vec![Value::Integer(
+                6,
+            )])])]),
+        ];
+        let mut packets = self
+            .pairs
+            .iter()
+            .flat_map(|pair| vec![pair.0.clone(), pair.1.clone()])
+            .chain(divider_packets.iter().cloned())
+            .collect::<Vec<_>>();
+        packets.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+        divider_packets
+            .iter()
+            .filter_map(|packet| packets.iter().position(|p| p.0 == packet.0))
+            .map(|i| i + 1)
+            .product()
     }
 }
 
 fn main() {
     let solution = Solution::new(std::io::stdin().lock());
     println!("Part 1: {}", solution.part1());
+    println!("Part 2: {}", solution.part2());
 }
 
 #[cfg(test)]
@@ -143,5 +163,10 @@ mod tests {
     #[test]
     fn test_part1() {
         assert_eq!(13, Solution::new(example_input()).part1());
+    }
+
+    #[test]
+    fn test_part2() {
+        assert_eq!(140, Solution::new(example_input()).part2());
     }
 }
