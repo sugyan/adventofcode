@@ -135,12 +135,12 @@ Monkey 3:
     }
 
     #[test]
-    fn test_part1() {
+    fn part1() {
         assert_eq!(10605, Solution::new(example_input()).part1());
     }
 
     #[test]
-    fn test_part2() {
+    fn part2() {
         assert_eq!(2_713_310_158, Solution::new(example_input()).part2());
     }
 }
