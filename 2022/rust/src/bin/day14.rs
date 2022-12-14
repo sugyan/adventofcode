@@ -1,10 +1,35 @@
 use aoc2022::Solve;
 use itertools::Itertools;
-use std::collections::BTreeSet;
+use std::collections::HashSet;
 use std::io::{BufRead, BufReader};
 
 struct Solution {
-    paths: Vec<Vec<(i32, i32)>>,
+    rocks: HashSet<(i32, i32)>,
+    ymax: i32,
+}
+
+impl Solution {
+    fn count_units(&self, floor: bool) -> u32 {
+        let mut hs = self.rocks.clone();
+        for u in 0.. {
+            let mut sand = (500, 0);
+            while sand.1 < self.ymax + 1 {
+                if let Some(x) = [0, -1, 1]
+                    .iter()
+                    .find(|&dx| !hs.contains(&(sand.0 + dx, sand.1 + 1)))
+                {
+                    sand = (sand.0 + x, sand.1 + 1);
+                } else {
+                    break;
+                }
+            }
+            if (!floor && sand.1 > self.ymax) || hs.contains(&(500, 0)) {
+                return u;
+            }
+            hs.insert(sand);
+        }
+        unreachable!();
+    }
 }
 
 impl Solve for Solution {
@@ -12,97 +37,29 @@ impl Solve for Solution {
     type Answer2 = u32;
 
     fn new(r: impl std::io::Read) -> Self {
-        Self {
-            paths: BufReader::new(r)
-                .lines()
-                .filter_map(Result::ok)
-                .map(|line| {
-                    line.split(" -> ")
-                        .filter_map(|xy| {
-                            xy.split(',').filter_map(|s| s.parse().ok()).collect_tuple()
-                        })
-                        .collect()
+        let mut rocks = HashSet::new();
+        for line in BufReader::new(r).lines().filter_map(Result::ok) {
+            for (p0, p1) in line
+                .split(" -> ")
+                .filter_map(|xy| {
+                    xy.split(',')
+                        .filter_map(|s| s.parse().ok())
+                        .collect_tuple::<(i32, i32)>()
                 })
-                .collect(),
+                .tuple_windows()
+            {
+                rocks.extend((p0.0.min(p1.0)..=p0.0.max(p1.0)).map(|x| (x, p0.1)));
+                rocks.extend((p0.1.min(p1.1)..=p0.1.max(p1.1)).map(|y| (p0.0, y)));
+            }
         }
+        let ymax = *rocks.iter().map(|(_, y)| y).max().unwrap();
+        Self { rocks, ymax }
     }
     fn part1(&self) -> Self::Answer1 {
-        let mut bts = BTreeSet::new();
-        for path in &self.paths {
-            for w in path.windows(2) {
-                if w[0].0 == w[1].0 {
-                    for y in w[0].1.min(w[1].1)..=w[0].1.max(w[1].1) {
-                        bts.insert((y, w[0].0));
-                    }
-                }
-                if w[0].1 == w[1].1 {
-                    for x in w[0].0.min(w[1].0)..=w[0].0.max(w[1].0) {
-                        bts.insert((w[0].1, x));
-                    }
-                }
-            }
-        }
-        let ymax = bts.iter().last().unwrap().0;
-        for i in 0.. {
-            let mut sand = (500, 0);
-            loop {
-                if !bts.contains(&(sand.1 + 1, sand.0)) {
-                    sand.1 += 1;
-                } else if !bts.contains(&(sand.1 + 1, sand.0 - 1)) {
-                    sand.1 += 1;
-                    sand.0 -= 1;
-                } else if !bts.contains(&(sand.1 + 1, sand.0 + 1)) {
-                    sand.1 += 1;
-                    sand.0 += 1;
-                } else {
-                    break;
-                }
-                if sand.1 > ymax {
-                    return i;
-                }
-            }
-            bts.insert((sand.1, sand.0));
-        }
-        unreachable!();
+        self.count_units(false)
     }
     fn part2(&self) -> Self::Answer2 {
-        let mut bts = BTreeSet::new();
-        for path in &self.paths {
-            for w in path.windows(2) {
-                if w[0].0 == w[1].0 {
-                    for y in w[0].1.min(w[1].1)..=w[0].1.max(w[1].1) {
-                        bts.insert((y, w[0].0));
-                    }
-                }
-                if w[0].1 == w[1].1 {
-                    for x in w[0].0.min(w[1].0)..=w[0].0.max(w[1].0) {
-                        bts.insert((w[0].1, x));
-                    }
-                }
-            }
-        }
-        let ymax = bts.iter().last().unwrap().0;
-        for i in 0.. {
-            let mut sand = (500, 0);
-            if bts.contains(&(sand.1, sand.0)) {
-                return i;
-            }
-            while sand.1 < ymax + 1 {
-                if !bts.contains(&(sand.1 + 1, sand.0)) {
-                    sand.1 += 1;
-                } else if !bts.contains(&(sand.1 + 1, sand.0 - 1)) {
-                    sand.1 += 1;
-                    sand.0 -= 1;
-                } else if !bts.contains(&(sand.1 + 1, sand.0 + 1)) {
-                    sand.1 += 1;
-                    sand.0 += 1;
-                } else {
-                    break;
-                }
-            }
-            bts.insert((sand.1, sand.0));
-        }
-        unreachable!();
+        self.count_units(true)
     }
 }
 
