@@ -2,64 +2,60 @@ use aoc2022::Solve;
 use itertools::Itertools;
 use std::cmp::Ordering;
 use std::io::{BufRead, BufReader, Read};
+use std::str::FromStr;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(PartialEq, Eq)]
 enum Value {
-    Integer(u8),
     List(Vec<Value>),
+    Integer(u8),
 }
 
-impl PartialOrd for Value {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match (self, other) {
-            (Value::Integer(lhs), Value::Integer(rhs)) => Some(lhs.cmp(rhs)),
-            (Value::List(lhs), Value::List(rhs)) => {
-                let (mut l, mut r) = (lhs.iter(), rhs.iter());
-                loop {
-                    match (l.next(), r.next()) {
-                        (Some(lhs), Some(rhs)) => match lhs.partial_cmp(rhs) {
-                            Some(Ordering::Equal) => continue,
-                            o => break o,
-                        },
-                        (Some(_), None) => break Some(Ordering::Greater),
-                        (None, Some(_)) => break Some(Ordering::Less),
-                        (None, None) => break Some(Ordering::Equal),
-                    }
-                }
-            }
-            (Value::Integer(n), _) => Value::List(vec![Value::Integer(*n)]).partial_cmp(other),
-            (_, Value::Integer(n)) => self.partial_cmp(&Value::List(vec![Value::Integer(*n)])),
+impl Value {
+    fn as_slice(&self) -> &[Value] {
+        if let Self::List(v) = self {
+            v.as_slice()
+        } else {
+            std::slice::from_ref(self)
         }
     }
 }
 
-#[derive(Debug, Clone)]
-struct Packet(Vec<Value>);
+impl PartialOrd for Value {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
 
-impl From<&String> for Packet {
-    fn from(s: &String) -> Self {
-        fn parse(iter: &mut impl Iterator<Item = u8>) -> Vec<Value> {
+impl Ord for Value {
+    fn cmp(&self, other: &Self) -> Ordering {
+        if let (Self::Integer(lhs), Self::Integer(rhs)) = (self, other) {
+            lhs.cmp(rhs)
+        } else {
+            self.as_slice().cmp(other.as_slice())
+        }
+    }
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+struct Packet(Value);
+
+impl FromStr for Packet {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        fn parse_list(iter: &mut impl Iterator<Item = u8>) -> Value {
             let mut v = Vec::new();
-            let mut n = None;
             while let Some(u) = iter.next() {
                 match u {
-                    b'[' => v.push(Value::List(parse(iter))),
+                    b'[' => v.push(parse_list(iter)),
                     b']' => break,
-                    b'0'..=b'9' => n = Some(n.map_or(u - b'0', |n| n * 10 + u - b'0')),
-                    _ => {
-                        if let Some(n) = n {
-                            v.push(Value::Integer(n));
-                        }
-                        n = None;
-                    }
+                    b'0'..=b':' => v.push(Value::Integer(u - b'0')),
+                    _ => {}
                 }
             }
-            if let Some(n) = n {
-                v.push(Value::Integer(n));
-            }
-            v
+            Value::List(v)
         }
-        Self(parse(&mut s.bytes()))
+        Ok(Self(parse_list(&mut s.replace("10", ":").bytes())))
     }
 }
 
@@ -78,7 +74,7 @@ impl Solve for Solution {
                 .filter_map(Result::ok)
                 .collect::<Vec<_>>()
                 .split(String::is_empty)
-                .filter_map(|lines| lines.iter().map(Packet::from).collect_tuple())
+                .filter_map(|lines| lines.iter().filter_map(|s| s.parse().ok()).collect_tuple())
                 .collect(),
         }
     }
@@ -88,7 +84,7 @@ impl Solve for Solution {
             .enumerate()
             .filter_map(
                 |(i, (left, right))| {
-                    if left.0 < right.0 {
+                    if left < right {
                         Some(i + 1)
                     } else {
                         None
@@ -98,24 +94,20 @@ impl Solve for Solution {
             .sum()
     }
     fn part2(&self) -> Self::Answer2 {
-        let divider_packets = [
-            Packet(vec![Value::List(vec![Value::List(vec![Value::Integer(
-                2,
-            )])])]),
-            Packet(vec![Value::List(vec![Value::List(vec![Value::Integer(
-                6,
-            )])])]),
-        ];
+        let divider_packets = ["[[2]]", "[[6]]"]
+            .iter()
+            .filter_map(|s| s.parse().ok())
+            .collect::<Vec<_>>();
         let mut packets = self
             .pairs
             .iter()
-            .flat_map(|pair| vec![pair.0.clone(), pair.1.clone()])
-            .chain(divider_packets.iter().cloned())
+            .flat_map(|pair| [&pair.0, &pair.1])
+            .chain(&divider_packets)
             .collect::<Vec<_>>();
-        packets.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+        packets.sort();
         divider_packets
             .iter()
-            .filter_map(|packet| packets.iter().position(|p| p.0 == packet.0))
+            .filter_map(|packet| packets.binary_search(&packet).ok())
             .map(|i| i + 1)
             .product()
     }
