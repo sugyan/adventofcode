@@ -12,6 +12,12 @@ struct Coordinate {
     y: i32,
 }
 
+impl Coordinate {
+    fn distance(self, rhs: Self) -> i32 {
+        (self.x - rhs.x).abs() + (self.y - rhs.y).abs()
+    }
+}
+
 impl FromStr for Coordinate {
     type Err = ();
 
@@ -44,7 +50,7 @@ struct Solution {
 
 impl Solve for Solution {
     type Answer1 = i32;
-    type Answer2 = i32;
+    type Answer2 = i64;
 
     fn new(r: impl Read) -> Self {
         Self {
@@ -64,46 +70,120 @@ impl Solve for Solution {
     }
     fn part1(&self) -> Self::Answer1 {
         let target_row = if cfg!(test) { 10 } else { 2_000_000 };
-        let beacon_xs = self
+        let xs = self
             .reports
             .iter()
             .filter_map(|(_, b)| if b.y == target_row { Some(b.x) } else { None })
             .collect::<HashSet<_>>();
-        let mut v = Vec::new();
-        for &(s, b) in &self.reports {
-            let d = s - b;
-            let r = d.x.abs() + d.y.abs() - (target_row - s.y).abs();
-            if r > 0 {
-                v.push((s.x - r, s.x + r));
-            }
-        }
-        v.sort_by(|a, b| match a.0.cmp(&b.0) {
-            Ordering::Equal => b.1.cmp(&a.1),
+        let mut v = self
+            .reports
+            .iter()
+            .filter_map(|&(s, b)| match s.distance(b) - (target_row - s.y).abs() {
+                i32::MIN..=0 => None,
+                r => Some((s.x - r, s.x + r)),
+            })
+            .collect::<Vec<_>>();
+        v.sort_by(|a, b| match b.0.cmp(&a.0) {
+            Ordering::Equal => a.1.cmp(&b.1),
             o => o,
         });
         let mut ret = 0;
-        let (mut min, mut max) = v[0];
-        for &range in v.iter().skip(1) {
-            if range.0 > max {
-                ret += max - min + 1;
-                ret -= beacon_xs.iter().filter(|x| (min..=max).contains(x)).count() as i32;
-                (min, max) = range;
-            } else {
-                max = max.max(range.1);
+        while let Some((min, max)) = v.pop() {
+            if let Some(last) = v.last_mut() {
+                if last.0 <= max {
+                    *last = (min.min(last.0), max.max(last.1));
+                    continue;
+                }
             }
+            ret += max - min + 1 - xs.iter().filter(|x| (min..=max).contains(x)).count() as i32;
         }
-        ret += max - min + 1;
-        ret -= beacon_xs.iter().filter(|x| (min..=max).contains(x)).count() as i32;
         ret
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        let mut v = Vec::new();
+        for c in self.reports.iter().combinations(2) {
+            let c0 = c[0];
+            let c1 = c[1];
+            if c0.0.distance(c1.0) == c0.0.distance(c0.1) + c1.0.distance(c1.1) + 2 {
+                let edges = (
+                    (
+                        c0.0.x + (c0.0.distance(c0.1) + 1) * (c1.0.x - c0.0.x).signum(),
+                        c0.0.y,
+                    ),
+                    (
+                        c0.0.x,
+                        c0.0.y + (c0.0.distance(c0.1) + 1) * (c1.0.y - c0.0.y).signum(),
+                    ),
+                    (
+                        c1.0.x + (c1.0.distance(c1.1) + 1) * (c0.0.x - c1.0.x).signum(),
+                        c1.0.y,
+                    ),
+                    (
+                        c1.0.x,
+                        c1.0.y + (c1.0.distance(c1.1) + 1) * (c0.0.y - c1.0.y).signum(),
+                    ),
+                );
+                v.push(if c0.0.x.cmp(&c1.0.x) == c0.0.y.cmp(&c1.0.y) {
+                    (
+                        (
+                            edges.0 .0.min(edges.1 .0).max(edges.2 .0.min(edges.3 .0)),
+                            edges.0 .1.max(edges.1 .1).min(edges.2 .1.max(edges.3 .1)),
+                        ),
+                        (
+                            edges.0 .0.max(edges.1 .0).min(edges.2 .0.max(edges.3 .0)),
+                            edges.0 .1.min(edges.1 .1).max(edges.2 .1.min(edges.3 .1)),
+                        ),
+                    )
+                } else {
+                    (
+                        (
+                            edges.0 .0.min(edges.1 .0).max(edges.2 .0.min(edges.3 .0)),
+                            edges.0 .1.min(edges.1 .1).max(edges.2 .1.min(edges.3 .1)),
+                        ),
+                        (
+                            edges.0 .0.max(edges.1 .0).min(edges.2 .0.max(edges.3 .0)),
+                            edges.0 .1.max(edges.1 .1).min(edges.2 .1.max(edges.3 .1)),
+                        ),
+                    )
+                });
+            }
+        }
+        let position = v
+            .iter()
+            .combinations(2)
+            .filter_map(|c| {
+                if c[0].0 .1.cmp(&c[0].1 .1) == c[1].0 .1.cmp(&c[1].1 .1) {
+                    return None;
+                }
+                let b1 = if c[0].0 .1 < c[0].1 .1 {
+                    c[0].0 .1 - c[0].0 .0
+                } else {
+                    c[1].0 .1 - c[1].0 .0
+                };
+                let b2 = if c[1].0 .1 > c[1].1 .1 {
+                    c[1].0 .1 + c[1].0 .0
+                } else {
+                    c[0].0 .1 + c[0].0 .0
+                };
+                Some(Coordinate {
+                    x: (b2 - b1) / 2,
+                    y: (b2 + b1) / 2,
+                })
+            })
+            .find(|&p| {
+                self.reports
+                    .iter()
+                    .all(|&(s, b)| s.distance(p) > s.distance(b))
+            })
+            .unwrap();
+        position.x as i64 * 4_000_000 + position.y as i64
     }
 }
 
 fn main() {
     let solution = Solution::new(std::io::stdin().lock());
     println!("Part 1: {}", solution.part1());
+    println!("Part 2: {}", solution.part2());
 }
 
 #[cfg(test)]
@@ -133,5 +213,10 @@ Sensor at x=20, y=1: closest beacon is at x=15, y=3
     #[test]
     fn part1() {
         assert_eq!(26, Solution::new(example_input()).part1());
+    }
+
+    #[test]
+    fn part2() {
+        assert_eq!(56_000_011, Solution::new(example_input()).part2());
     }
 }
