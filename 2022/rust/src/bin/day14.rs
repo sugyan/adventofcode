@@ -12,13 +12,13 @@ impl Solution {
     fn count_units(&self, floor: bool) -> usize {
         let mut hs = self.rocks.clone();
         let mut stack = vec![(500, 0)];
-        while let Some(last) = stack.last() {
-            if let Some(x) = [0, -1, 1]
+        while let Some(&(x, y)) = stack.last() {
+            if let Some(&next) = [(x, y + 1), (x - 1, y + 1), (x + 1, y + 1)]
                 .iter()
-                .find(|&dx| !hs.contains(&(last.0 + dx, last.1 + 1)))
+                .find(|p| !hs.contains(p))
             {
-                if last.1 < self.ymax + 1 {
-                    stack.push((last.0 + x, last.1 + 1));
+                if y < self.ymax + 1 {
+                    stack.push(next);
                     continue;
                 } else if !floor {
                     break;

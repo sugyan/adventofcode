@@ -33,7 +33,7 @@ impl Solve for Solution {
     fn part1(&self) -> Self::Answer1 {
         [20, 60, 100, 140, 180, 220]
             .iter()
-            .map(|&i| i as i32 * self.values[i - 1])
+            .map(|&i| i * self.values[i as usize - 1])
             .sum()
     }
     fn part2(&self) -> Self::Answer2 {
@@ -42,9 +42,9 @@ impl Solve for Solution {
                 .values
                 .chunks(40)
                 .map(|row| {
-                    row.iter()
-                        .enumerate()
-                        .map(|(i, &x)| if (i as i32 - x).abs() < 2 { '#' } else { '.' })
+                    (0..)
+                        .zip(row)
+                        .map(|(i, &x)| if (i - x).abs() < 2 { '#' } else { '.' })
                         .collect::<String>()
                 })
                 .join("\n")
