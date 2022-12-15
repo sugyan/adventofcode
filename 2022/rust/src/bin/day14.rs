@@ -9,32 +9,30 @@ struct Solution {
 }
 
 impl Solution {
-    fn count_units(&self, floor: bool) -> u32 {
+    fn count_units(&self, floor: bool) -> usize {
         let mut hs = self.rocks.clone();
-        for u in 0.. {
-            let mut sand = (500, 0);
-            while sand.1 < self.ymax + 1 {
-                if let Some(x) = [0, -1, 1]
-                    .iter()
-                    .find(|&dx| !hs.contains(&(sand.0 + dx, sand.1 + 1)))
-                {
-                    sand = (sand.0 + x, sand.1 + 1);
-                } else {
+        let mut stack = vec![(500, 0)];
+        while let Some(last) = stack.last() {
+            if let Some(x) = [0, -1, 1]
+                .iter()
+                .find(|&dx| !hs.contains(&(last.0 + dx, last.1 + 1)))
+            {
+                if last.1 < self.ymax + 1 {
+                    stack.push((last.0 + x, last.1 + 1));
+                    continue;
+                } else if !floor {
                     break;
                 }
             }
-            if (!floor && sand.1 > self.ymax) || hs.contains(&(500, 0)) {
-                return u;
-            }
-            hs.insert(sand);
+            hs.insert(stack.pop().unwrap());
         }
-        unreachable!();
+        hs.len() - self.rocks.len()
     }
 }
 
 impl Solve for Solution {
-    type Answer1 = u32;
-    type Answer2 = u32;
+    type Answer1 = usize;
+    type Answer2 = usize;
 
     fn new(r: impl std::io::Read) -> Self {
         let mut rocks = HashSet::new();
