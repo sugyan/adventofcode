@@ -23,7 +23,7 @@ impl Solve for Solution {
 
     fn new(r: impl Read) -> Self {
         let mut data = Vec::new();
-        BufReader::new(r).read_to_end(&mut data).unwrap();
+        BufReader::new(r).read_to_end(&mut data).ok();
         Self { data }
     }
     fn part1(&self) -> Self::Answer1 {
