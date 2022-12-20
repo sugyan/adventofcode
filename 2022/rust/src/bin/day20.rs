@@ -68,7 +68,7 @@ impl Solve for Solution {
         let numbers = self
             .numbers
             .iter()
-            .map(|n| n * 811589153)
+            .map(|n| n * 811_589_153)
             .collect::<Vec<_>>();
         Self::grove_coordinates(&numbers, &Self::mixed_indices(&numbers, 10))
     }
