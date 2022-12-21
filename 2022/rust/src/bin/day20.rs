@@ -6,44 +6,22 @@ struct Solution {
 }
 
 impl Solution {
-    fn mixed_indices(numbers: &[i64], times: usize) -> Vec<(usize, usize)> {
-        let mut indices = (0..numbers.len())
-            .map(|i| {
-                (
-                    (i + numbers.len() - 1) % numbers.len(),
-                    (i + 1) % numbers.len(),
-                )
-            })
-            .collect::<Vec<_>>();
-        for _ in 0..times {
-            for i in 0..numbers.len() {
-                let mut j = i;
-                match numbers[i].rem_euclid(numbers.len() as i64 - 1) {
-                    0 => continue,
-                    num => (0..num).for_each(|_| j = indices[j].1),
+    fn grove_coordinates(numbers: &[i64], mix_times: usize) -> i64 {
+        let mut indices = (0..numbers.len()).collect::<Vec<_>>();
+        for _ in 0..mix_times {
+            for (i, number) in numbers.iter().enumerate() {
+                if let Some(j) = indices.iter().position(|&j| j == i) {
+                    indices.remove(j);
+                    let moves = number.rem_euclid(indices.len().try_into().unwrap()) as usize;
+                    indices.insert((j + moves) % indices.len(), i);
                 }
-                let (p, n) = indices[i];
-                indices[p].1 = n;
-                indices[n].0 = p;
-                let k = indices[j].1;
-                indices[j].1 = i;
-                indices[k].0 = i;
-                indices[i].0 = j;
-                indices[i].1 = k;
             }
         }
-        indices
-    }
-    fn grove_coordinates(numbers: &[i64], indices: &[(usize, usize)]) -> i64 {
-        let mut i = 0;
-        while numbers[i] != 0 {
-            i = indices[i].1;
-        }
-        (0..3)
-            .map(|_| {
-                (0..1000).for_each(|_| i = indices[i].1);
-                numbers[i]
-            })
+        let pos0 = numbers.iter().position(|&n| n == 0).unwrap();
+        let i = indices.iter().position(|&i| i == pos0).unwrap();
+        [1000, 2000, 3000]
+            .iter()
+            .map(|j| numbers[indices[(i + j) % numbers.len()]])
             .sum()
     }
 }
@@ -62,15 +40,17 @@ impl Solve for Solution {
         }
     }
     fn part1(&self) -> Self::Answer1 {
-        Self::grove_coordinates(&self.numbers, &Self::mixed_indices(&self.numbers, 1))
+        Self::grove_coordinates(&self.numbers, 1)
     }
     fn part2(&self) -> Self::Answer2 {
-        let numbers = self
-            .numbers
-            .iter()
-            .map(|n| n * 811_589_153)
-            .collect::<Vec<_>>();
-        Self::grove_coordinates(&numbers, &Self::mixed_indices(&numbers, 10))
+        Self::grove_coordinates(
+            &self
+                .numbers
+                .iter()
+                .map(|n| n * 811_589_153)
+                .collect::<Vec<_>>(),
+            10,
+        )
     }
 }
 
