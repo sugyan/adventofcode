@@ -1,65 +1,79 @@
 use aoc2022::Solve;
+use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
 use std::io::{BufRead, BufReader, Read};
 
-struct Solution {
-    elves: HashSet<(isize, isize)>,
+const ADJACENTS: [(i32, i32); 8] = [
+    (-1, -1),
+    (-1, 0),
+    (-1, 1),
+    (0, -1),
+    (0, 1),
+    (1, -1),
+    (1, 0),
+    (1, 1),
+];
+const DIRECTIONS: [[(i32, i32); 3]; 4] = [
+    [(-1, -1), (-1, 0), (-1, 1)],
+    [(1, -1), (1, 0), (1, 1)],
+    [(-1, -1), (0, -1), (1, -1)],
+    [(-1, 1), (0, 1), (1, 1)],
+];
+
+#[derive(Debug, Clone)]
+struct Diffusion {
+    elves: HashSet<(i32, i32)>,
+    round: usize,
 }
 
-impl Solution {
-    fn diffuse_elves(&self, stop_10: bool) -> (usize, HashSet<(isize, isize)>) {
-        let mut elves = self.elves.clone();
-        let adjacents = [
-            (-1, -1),
-            (-1, 0),
-            (-1, 1),
-            (0, -1),
-            (0, 1),
-            (1, -1),
-            (1, 0),
-            (1, 1),
-        ];
-        let directions = [
-            [(-1, -1), (-1, 0), (-1, 1)],
-            [(1, -1), (1, 0), (1, 1)],
-            [(-1, -1), (0, -1), (1, -1)],
-            [(-1, 1), (0, 1), (1, 1)],
-        ];
-        for round in 1.. {
-            let mut hm = HashMap::new();
-            for &(i, j) in &elves {
-                if adjacents
-                    .iter()
-                    .any(|&(di, dj)| elves.contains(&(i + di, j + dj)))
-                {
-                    if let Some([_, (di, dj), _]) = directions
-                        .iter()
-                        .cycle()
-                        .skip((round - 1) % 4)
-                        .take(4)
-                        .find(|ds| ds.iter().all(|(di, dj)| !elves.contains(&(i + di, j + dj))))
-                    {
-                        hm.entry((i + di, j + dj))
-                            .or_insert_with(Vec::new)
-                            .push((i, j));
-                        continue;
-                    }
-                }
-                hm.insert((i, j), vec![(i, j)]);
-            }
-            if hm.iter().all(|(k, v)| [*k] == v.as_slice()) {
-                return (round, elves);
-            }
-            elves = hm
-                .iter()
-                .flat_map(|(k, v)| if v.len() == 1 { vec![*k] } else { v.clone() })
-                .collect();
-            if stop_10 && round == 10 {
-                return (round, elves);
-            }
-        }
-        unreachable!()
+impl Diffusion {
+    fn new(elves: HashSet<(i32, i32)>) -> Self {
+        Self { elves, round: 0 }
     }
+}
+
+impl Iterator for Diffusion {
+    type Item = HashSet<(i32, i32)>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut hm = HashMap::new();
+        for &(i, j) in &self.elves {
+            if ADJACENTS
+                .iter()
+                .any(|&(di, dj)| self.elves.contains(&(i + di, j + dj)))
+            {
+                if let Some([_, (di, dj), _]) = DIRECTIONS
+                    .iter()
+                    .cycle()
+                    .skip(self.round % 4)
+                    .take(4)
+                    .find(|ds| {
+                        ds.iter()
+                            .all(|(di, dj)| !self.elves.contains(&(i + di, j + dj)))
+                    })
+                {
+                    hm.entry((i + di, j + dj))
+                        .or_insert_with(Vec::new)
+                        .push((i, j));
+                    continue;
+                }
+            }
+            hm.insert((i, j), vec![(i, j)]);
+        }
+        if hm.iter().all(|(k, v)| [*k] == v.as_slice()) {
+            return None;
+        }
+        self.elves = hm
+            .iter()
+            .flat_map(|(k, v)| if v.len() == 1 { vec![*k] } else { v.clone() })
+            .collect();
+        self.round += 1;
+        Some(self.elves.clone())
+    }
+}
+
+struct Solution {
+    elves: HashSet<(i32, i32)>,
 }
 
 impl Solve for Solution {
@@ -68,15 +82,13 @@ impl Solve for Solution {
 
     fn new(r: impl Read) -> Self {
         Self {
-            elves: BufReader::new(r)
-                .lines()
-                .filter_map(Result::ok)
-                .enumerate()
+            elves: (0..)
+                .zip(BufReader::new(r).lines().filter_map(Result::ok))
                 .flat_map(|(i, s)| {
-                    s.chars()
-                        .enumerate()
+                    (0..)
+                        .zip(s.chars())
                         .filter_map(|(j, c)| match c {
-                            '#' => Some((i as isize, j as isize)),
+                            '#' => Some((i, j)),
                             _ => None,
                         })
                         .collect::<Vec<_>>()
@@ -85,15 +97,13 @@ impl Solve for Solution {
         }
     }
     fn part1(&self) -> Self::Answer1 {
-        let elves = self.diffuse_elves(true).1;
-        let imin = *elves.iter().map(|(i, _)| i).min().unwrap();
-        let imax = *elves.iter().map(|(i, _)| i).max().unwrap();
-        let jmin = *elves.iter().map(|(_, j)| j).min().unwrap();
-        let jmax = *elves.iter().map(|(_, j)| j).max().unwrap();
+        let elves = Diffusion::new(self.elves.clone()).take(10).last().unwrap();
+        let (imin, imax) = elves.iter().map(|(i, _)| i).minmax().into_option().unwrap();
+        let (jmin, jmax) = elves.iter().map(|(_, j)| j).minmax().into_option().unwrap();
         ((imax - imin + 1) * (jmax - jmin + 1)) as usize - elves.len()
     }
     fn part2(&self) -> Self::Answer2 {
-        self.diffuse_elves(false).0
+        Diffusion::new(self.elves.clone()).count() + 1
     }
 }
 
