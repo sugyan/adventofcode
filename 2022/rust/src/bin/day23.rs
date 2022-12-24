@@ -1,5 +1,4 @@
 use aoc2022::Solve;
-use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
 use std::io::{BufRead, BufReader, Read};
 
@@ -20,20 +19,13 @@ const DIRECTIONS: [[(i32, i32); 3]; 4] = [
     [(-1, 1), (0, 1), (1, 1)],
 ];
 
-#[derive(Debug, Clone)]
-struct Diffusion {
+struct DiffusionIter {
     elves: HashSet<(i32, i32)>,
     round: usize,
 }
 
-impl Diffusion {
-    fn new(elves: HashSet<(i32, i32)>) -> Self {
-        Self { elves, round: 0 }
-    }
-}
-
-impl Iterator for Diffusion {
-    type Item = HashSet<(i32, i32)>;
+impl Iterator for DiffusionIter {
+    type Item = usize;
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut hm = HashMap::new();
@@ -42,12 +34,8 @@ impl Iterator for Diffusion {
                 .iter()
                 .any(|&(di, dj)| self.elves.contains(&(i + di, j + dj)))
             {
-                if let Some([_, (di, dj), _]) = DIRECTIONS
-                    .iter()
-                    .cycle()
-                    .skip(self.round % 4)
-                    .take(4)
-                    .find(|ds| {
+                if let Some([_, (di, dj), _]) =
+                    (0..4).map(|k| DIRECTIONS[(self.round + k) % 4]).find(|ds| {
                         ds.iter()
                             .all(|(di, dj)| !self.elves.contains(&(i + di, j + dj)))
                     })
@@ -68,12 +56,32 @@ impl Iterator for Diffusion {
             .flat_map(|(k, v)| if v.len() == 1 { vec![*k] } else { v.clone() })
             .collect();
         self.round += 1;
-        Some(self.elves.clone())
+        let (mut imin, mut imax, mut jmin, mut jmax) = (i32::MAX, i32::MIN, i32::MAX, i32::MIN);
+        for &(i, j) in &self.elves {
+            imin = imin.min(i);
+            imax = imax.max(i);
+            jmin = jmin.min(j);
+            jmax = jmax.max(j);
+        }
+        Some(((imax - imin + 1) * (jmax - jmin + 1)) as usize - self.elves.len())
     }
 }
 
+#[derive(Clone)]
 struct Solution {
     elves: HashSet<(i32, i32)>,
+}
+
+impl IntoIterator for Solution {
+    type Item = usize;
+    type IntoIter = DiffusionIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        DiffusionIter {
+            elves: self.elves,
+            round: 0,
+        }
+    }
 }
 
 impl Solve for Solution {
@@ -97,13 +105,10 @@ impl Solve for Solution {
         }
     }
     fn part1(&self) -> Self::Answer1 {
-        let elves = Diffusion::new(self.elves.clone()).take(10).last().unwrap();
-        let (imin, imax) = elves.iter().map(|(i, _)| i).minmax().into_option().unwrap();
-        let (jmin, jmax) = elves.iter().map(|(_, j)| j).minmax().into_option().unwrap();
-        ((imax - imin + 1) * (jmax - jmin + 1)) as usize - elves.len()
+        self.clone().into_iter().take(10).last().unwrap()
     }
     fn part2(&self) -> Self::Answer2 {
-        Diffusion::new(self.elves.clone()).count() + 1
+        self.clone().into_iter().count() + 1
     }
 }
 
