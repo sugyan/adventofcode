@@ -1,115 +1,127 @@
 use aoc2022::Solve;
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::io::{BufRead, BufReader, Read};
+use std::str::FromStr;
+
+#[derive(Debug)]
+struct Report {
+    valve: String,
+    flow_rate: u32,
+    tunnels: Vec<String>,
+}
+
+impl FromStr for Report {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        s.split_once("; ")
+            .map(|(v, t)| Self {
+                valve: v[6..8].to_string(),
+                flow_rate: v[23..].parse().unwrap(),
+                tunnels: t
+                    .splitn(5, ' ')
+                    .nth(4)
+                    .map(|s| s.split(", ").map(String::from).collect())
+                    .unwrap_or_default(),
+            })
+            .ok_or(())
+    }
+}
 
 struct Solution {
-    network: HashMap<String, (usize, Vec<String>)>,
+    target_map: Vec<(u32, Vec<u32>)>,
 }
 
 impl Solution {
-    fn max_total(
-        v: &[(&String, usize)],
-        dists: &[Vec<usize>],
-        src: usize,
-        remaining: usize,
-        opened: &mut u32,
-        memo: &mut HashMap<(usize, usize, u32), usize>,
-    ) -> usize {
+    fn max_total(&self, src: usize, remaining: u32, target: u32) -> u32 {
         if remaining == 0 {
             return 0;
         }
-        if let Some(&max) = memo.get(&(src, remaining, *opened)) {
-            return max;
+        let (flow_rate, dsts) = &self.target_map[src];
+        if target & (1 << src) != 0 {
+            return flow_rate * (remaining - 1)
+                + self.max_total(src, remaining - 1, target & !(1 << src));
         }
-        let mut max = 0;
-        for dst in 0..v.len() - 1 {
-            if dst == src {
-                continue;
-            }
-            let dist = dists[src][dst];
-            if dist < remaining {
-                max = max.max(Self::max_total(
-                    v,
-                    dists,
-                    dst,
-                    remaining - dist,
-                    opened,
-                    memo,
-                ));
+        let mut ret = 0;
+        for (dst, &minutes) in dsts.iter().enumerate() {
+            if dst != src && target & (1 << dst) != 0 && remaining > minutes {
+                ret = ret.max(self.max_total(dst, remaining - minutes, target));
             }
         }
-        if src < v.len() - 1 && (*opened & (1 << src)) == 0 {
-            *opened |= 1 << src;
-            max = max.max(
-                v[src].1 * (remaining - 1)
-                    + Self::max_total(v, dists, src, remaining - 1, opened, memo),
-            );
-            *opened &= !(1 << src);
-        }
-        memo.insert((src, remaining, *opened), max);
-        max
+        ret
     }
 }
 
 impl Solve for Solution {
-    type Answer1 = usize;
-    type Answer2 = usize;
+    type Answer1 = u32;
+    type Answer2 = u32;
 
     fn new(r: impl Read) -> Self {
-        let mut network = HashMap::new();
-        for line in BufReader::new(r).lines().filter_map(Result::ok) {
-            if let Some((value, tunnels)) = line.split_once("; ") {
-                network.insert(
-                    value[6..8].to_string(),
-                    (
-                        value[23..].parse().unwrap(),
-                        tunnels
-                            .splitn(5, ' ')
-                            .nth(4)
-                            .map(|s| s.split(", ").map(String::from).collect())
-                            .unwrap_or_default(),
-                    ),
-                );
-            }
-        }
-        Self { network }
-    }
-    fn part1(&self) -> Self::Answer1 {
-        let mut v = self
-            .network
+        let map = BufReader::new(r)
+            .lines()
+            .filter_map(Result::ok)
+            .filter_map(|line| line.parse::<Report>().ok())
+            .map(|r| (r.valve, (r.flow_rate, r.tunnels)))
+            .collect::<HashMap<_, _>>();
+        let mut targets = map
             .iter()
-            .filter_map(|(valve, (flow_rate, _))| {
-                Some((valve, *flow_rate)).filter(|(v, f)| *v == "AA" || *f > 0)
+            .filter_map(|(valve, &(flow_rate, _))| {
+                if flow_rate > 0 {
+                    Some(valve.clone())
+                } else {
+                    None
+                }
             })
             .collect::<Vec<_>>();
-        v.sort();
-        v.reverse();
-        let mut dists = vec![vec![self.network.len(); v.len()]; v.len()];
-        for (i, &(start, _)) in v.iter().enumerate() {
-            let mut hm = HashMap::from([(start, 0)]);
-            let mut vd = VecDeque::from([(start, 0)]);
-            while let Some((valve, dist)) = vd.pop_front() {
-                for tunnel in &self.network[valve].1 {
-                    if !hm.contains_key(tunnel) {
-                        hm.insert(tunnel, dist + 1);
-                        vd.push_back((tunnel, dist + 1));
+        let target2index = targets
+            .iter()
+            .enumerate()
+            .map(|(i, valve)| (valve.clone(), i))
+            .collect::<HashMap<_, _>>();
+        targets.push(String::from("AA"));
+        Self {
+            target_map: targets
+                .iter()
+                .map(|src| {
+                    let mut distances = vec![0; targets.len() - 1];
+                    let mut visited = HashSet::new();
+                    let mut vd = VecDeque::new();
+                    vd.push_back((src.clone(), 0));
+                    while let Some((dst, d)) = vd.pop_front() {
+                        if visited.contains(&dst) {
+                            continue;
+                        }
+                        visited.insert(dst.clone());
+                        if let Some(&j) = target2index.get(&dst) {
+                            distances[j] = d;
+                        }
+                        for t in &map[&dst].1 {
+                            vd.push_back((t.clone(), d + 1));
+                        }
                     }
-                }
-            }
-            for (j, (dst, _)) in v.iter().enumerate() {
-                dists[i][j] = hm[dst];
-            }
+                    (map[src].0, distances)
+                })
+                .collect(),
         }
-        Self::max_total(&v, &dists, v.len() - 1, 30, &mut 0, &mut HashMap::new())
+    }
+    fn part1(&self) -> Self::Answer1 {
+        let start = self.target_map.len() - 1;
+        self.max_total(start, 30, (1 << start) - 1)
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        let start = self.target_map.len() - 1;
+        let all = (1 << start) - 1;
+        (0..=all)
+            .map(|i| self.max_total(start, 26, i) + self.max_total(start, 26, all - i))
+            .max()
+            .unwrap()
     }
 }
 
 fn main() {
     let solution = Solution::new(std::io::stdin().lock());
     println!("Part 1: {}", solution.part1());
+    println!("Part 2: {}", solution.part2());
 }
 
 #[cfg(test)]
@@ -135,5 +147,10 @@ Valve JJ has flow rate=21; tunnel leads to valve II
     #[test]
     fn part1() {
         assert_eq!(1651, Solution::new(example_input()).part1());
+    }
+
+    #[test]
+    fn part2() {
+        assert_eq!(1707, Solution::new(example_input()).part2());
     }
 }
