@@ -101,7 +101,15 @@ impl Solve for Solution {
     }
     fn part2(&self) -> Self::Answer2 {
         let ymax = if cfg!(test) { 20 } else { 4_000_000 };
-        (0..=ymax)
+        let (mut ps, mut ns) = (Vec::new(), Vec::new());
+        for &(s, b) in &self.reports {
+            let d = s.distance(b);
+            ps.extend([s.y - s.x + (d + 1), s.y - s.x - (d + 1)]);
+            ns.extend([s.y + s.x + (d + 1), s.y + s.x - (d + 1)]);
+        }
+        ps.iter()
+            .cartesian_product(&ns)
+            .filter_map(|b| Some((b.0 + b.1) / 2).filter(|y| (0..=ymax).contains(y)))
             .find_map(|y| {
                 let v = self.ranges(y);
                 if v.len() == 2 {
