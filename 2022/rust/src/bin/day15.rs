@@ -3,17 +3,17 @@ use itertools::Itertools;
 use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::io::{BufRead, BufReader, Read};
-use std::ops::Sub;
+use std::ops::RangeInclusive;
 use std::str::FromStr;
 
 #[derive(Debug, Clone, Copy)]
 struct Coordinate {
-    x: i32,
-    y: i32,
+    x: i64,
+    y: i64,
 }
 
 impl Coordinate {
-    fn distance(self, rhs: Self) -> i32 {
+    fn distance(self, rhs: Self) -> i64 {
         (self.x - rhs.x).abs() + (self.y - rhs.y).abs()
     }
 }
@@ -33,23 +33,40 @@ impl FromStr for Coordinate {
     }
 }
 
-impl Sub for Coordinate {
-    type Output = Self;
-
-    fn sub(self, rhs: Self) -> Self::Output {
-        Self {
-            x: self.x - rhs.x,
-            y: self.y - rhs.y,
-        }
-    }
-}
-
 struct Solution {
     reports: Vec<(Coordinate, Coordinate)>,
 }
 
+impl Solution {
+    fn ranges(&self, y: i64) -> Vec<RangeInclusive<i64>> {
+        let mut v = self
+            .reports
+            .iter()
+            .filter_map(|&(s, b)| match s.distance(b) - (y - s.y).abs() {
+                ..=0 => None,
+                r => Some((s.x - r, s.x + r)),
+            })
+            .collect::<Vec<_>>();
+        v.sort_by(|a, b| match b.0.cmp(&a.0) {
+            Ordering::Equal => a.1.cmp(&b.1),
+            o => o,
+        });
+        let mut ret = Vec::new();
+        while let Some((min, max)) = v.pop() {
+            if let Some(last) = v.last_mut() {
+                if last.0 <= max + 1 {
+                    *last = (min.min(last.0), max.max(last.1));
+                    continue;
+                }
+            }
+            ret.push(min..=max);
+        }
+        ret
+    }
+}
+
 impl Solve for Solution {
-    type Answer1 = i32;
+    type Answer1 = usize;
     type Answer2 = i64;
 
     fn new(r: impl Read) -> Self {
@@ -75,108 +92,25 @@ impl Solve for Solution {
             .iter()
             .filter_map(|(_, b)| if b.y == target_row { Some(b.x) } else { None })
             .collect::<HashSet<_>>();
-        let mut v = self
-            .reports
+        self.ranges(target_row)
             .iter()
-            .filter_map(|&(s, b)| match s.distance(b) - (target_row - s.y).abs() {
-                i32::MIN..=0 => None,
-                r => Some((s.x - r, s.x + r)),
+            .map(|r| {
+                (r.end() - r.start()) as usize + 1 - xs.iter().filter(|x| r.contains(x)).count()
             })
-            .collect::<Vec<_>>();
-        v.sort_by(|a, b| match b.0.cmp(&a.0) {
-            Ordering::Equal => a.1.cmp(&b.1),
-            o => o,
-        });
-        let mut ret = 0;
-        while let Some((min, max)) = v.pop() {
-            if let Some(last) = v.last_mut() {
-                if last.0 <= max {
-                    *last = (min.min(last.0), max.max(last.1));
-                    continue;
-                }
-            }
-            ret += max - min + 1 - xs.iter().filter(|x| (min..=max).contains(x)).count() as i32;
-        }
-        ret
+            .sum()
     }
     fn part2(&self) -> Self::Answer2 {
-        let mut v = Vec::new();
-        for c in self.reports.iter().combinations(2) {
-            let c0 = c[0];
-            let c1 = c[1];
-            if c0.0.distance(c1.0) == c0.0.distance(c0.1) + c1.0.distance(c1.1) + 2 {
-                let edges = (
-                    (
-                        c0.0.x + (c0.0.distance(c0.1) + 1) * (c1.0.x - c0.0.x).signum(),
-                        c0.0.y,
-                    ),
-                    (
-                        c0.0.x,
-                        c0.0.y + (c0.0.distance(c0.1) + 1) * (c1.0.y - c0.0.y).signum(),
-                    ),
-                    (
-                        c1.0.x + (c1.0.distance(c1.1) + 1) * (c0.0.x - c1.0.x).signum(),
-                        c1.0.y,
-                    ),
-                    (
-                        c1.0.x,
-                        c1.0.y + (c1.0.distance(c1.1) + 1) * (c0.0.y - c1.0.y).signum(),
-                    ),
-                );
-                v.push(if c0.0.x.cmp(&c1.0.x) == c0.0.y.cmp(&c1.0.y) {
-                    (
-                        (
-                            edges.0 .0.min(edges.1 .0).max(edges.2 .0.min(edges.3 .0)),
-                            edges.0 .1.max(edges.1 .1).min(edges.2 .1.max(edges.3 .1)),
-                        ),
-                        (
-                            edges.0 .0.max(edges.1 .0).min(edges.2 .0.max(edges.3 .0)),
-                            edges.0 .1.min(edges.1 .1).max(edges.2 .1.min(edges.3 .1)),
-                        ),
-                    )
+        let ymax = if cfg!(test) { 20 } else { 4_000_000 };
+        (0..=ymax)
+            .find_map(|y| {
+                let v = self.ranges(y);
+                if v.len() == 2 {
+                    Some(y + (*v[0].end() + 1) * 4_000_000)
                 } else {
-                    (
-                        (
-                            edges.0 .0.min(edges.1 .0).max(edges.2 .0.min(edges.3 .0)),
-                            edges.0 .1.min(edges.1 .1).max(edges.2 .1.min(edges.3 .1)),
-                        ),
-                        (
-                            edges.0 .0.max(edges.1 .0).min(edges.2 .0.max(edges.3 .0)),
-                            edges.0 .1.max(edges.1 .1).min(edges.2 .1.max(edges.3 .1)),
-                        ),
-                    )
-                });
-            }
-        }
-        let position = v
-            .iter()
-            .combinations(2)
-            .filter_map(|c| {
-                if c[0].0 .1.cmp(&c[0].1 .1) == c[1].0 .1.cmp(&c[1].1 .1) {
-                    return None;
+                    None
                 }
-                let b1 = if c[0].0 .1 < c[0].1 .1 {
-                    c[0].0 .1 - c[0].0 .0
-                } else {
-                    c[1].0 .1 - c[1].0 .0
-                };
-                let b2 = if c[1].0 .1 > c[1].1 .1 {
-                    c[1].0 .1 + c[1].0 .0
-                } else {
-                    c[0].0 .1 + c[0].0 .0
-                };
-                Some(Coordinate {
-                    x: (b2 - b1) / 2,
-                    y: (b2 + b1) / 2,
-                })
             })
-            .find(|&p| {
-                self.reports
-                    .iter()
-                    .all(|&(s, b)| s.distance(p) > s.distance(b))
-            })
-            .unwrap();
-        position.x as i64 * 4_000_000 + position.y as i64
+            .unwrap()
     }
 }
 
