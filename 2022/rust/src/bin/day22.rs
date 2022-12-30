@@ -1,6 +1,8 @@
 use aoc2022::Solve;
+use itertools::Itertools;
+use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Read};
-use std::str::FromStr;
+use std::ops::Not;
 
 #[derive(Debug)]
 enum Turn {
@@ -14,18 +16,48 @@ enum Instruction {
     Letter(Turn),
 }
 
-impl FromStr for Instruction {
-    type Err = ();
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum Direction {
+    Right = 0,
+    Down = 1,
+    Left = 2,
+    Up = 3,
+}
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if let Ok(n) = s.parse() {
-            Ok(Self::Number(n))
-        } else {
-            match s {
-                "R" => Ok(Self::Letter(Turn::R)),
-                "L" => Ok(Self::Letter(Turn::L)),
-                _ => Err(()),
-            }
+impl Direction {
+    const ALL: [Direction; 4] = [
+        Direction::Right,
+        Direction::Down,
+        Direction::Left,
+        Direction::Up,
+    ];
+    fn delta(&self) -> (usize, usize) {
+        match self {
+            Direction::Right => (0, 1),
+            Direction::Down => (1, 0),
+            Direction::Left => (0, !0),
+            Direction::Up => (!0, 0),
+        }
+    }
+    fn turn(&mut self, t: &Turn) {
+        *self = match (*self, t) {
+            (Direction::Up, Turn::R) | (Direction::Down, Turn::L) => Direction::Right,
+            (Direction::Right, Turn::R) | (Direction::Left, Turn::L) => Direction::Down,
+            (Direction::Down, Turn::R) | (Direction::Up, Turn::L) => Direction::Left,
+            (Direction::Left, Turn::R) | (Direction::Right, Turn::L) => Direction::Up,
+        }
+    }
+}
+
+impl Not for Direction {
+    type Output = Direction;
+
+    fn not(self) -> Self::Output {
+        match self {
+            Direction::Right => Direction::Left,
+            Direction::Down => Direction::Up,
+            Direction::Left => Direction::Right,
+            Direction::Up => Direction::Down,
         }
     }
 }
@@ -33,6 +65,32 @@ impl FromStr for Instruction {
 struct Solution {
     map: Vec<Vec<Option<bool>>>,
     path: Vec<Instruction>,
+}
+
+impl Solution {
+    fn final_password(
+        &self,
+        next: &HashMap<(usize, usize, Direction), (usize, usize, Direction)>,
+    ) -> usize {
+        let (mut i, mut j, mut d) = (
+            0,
+            self.map[0].iter().position(|&t| t == Some(true)).unwrap(),
+            Direction::Right,
+        );
+        for inst in &self.path {
+            match inst {
+                Instruction::Number(n) => {
+                    for _ in 0..*n {
+                        if let Some(n) = next.get(&(i, j, d)) {
+                            (i, j, d) = *n;
+                        }
+                    }
+                }
+                Instruction::Letter(t) => d.turn(t),
+            }
+        }
+        (i + 1) * 1000 + (j + 1) * 4 + d as usize
+    }
 }
 
 impl Solve for Solution {
@@ -66,10 +124,12 @@ impl Solve for Solution {
                 if let Ok(n) = s.parse() {
                     path.push(Instruction::Number(n));
                 }
+                path.push(Instruction::Letter(match c {
+                    'R' => Turn::R,
+                    'L' => Turn::L,
+                    _ => unreachable!(),
+                }));
                 s.clear();
-                if let Ok(inst) = String::from(c).parse() {
-                    path.push(inst);
-                }
             }
         }
         if let Ok(n) = s.parse() {
@@ -79,51 +139,41 @@ impl Solve for Solution {
     }
     fn part1(&self) -> Self::Answer1 {
         let (rows, cols) = (self.map.len(), self.map[0].len());
-        let directions = [(0, 1), (1, 0), (0, !0), (!0, 0)];
-        let (mut i, mut j) = (
-            0_usize,
-            self.map[0].iter().position(|&t| t == Some(true)).unwrap(),
-        );
-        let mut d = 0;
-        let next_pos = |(i, j): (usize, usize), d| {
-            let (di, dj) = directions[d];
-            let ii = i.wrapping_add(di);
-            let jj = j.wrapping_add(dj);
-            if (0..rows).contains(&ii) && (0..cols).contains(&jj) {
-                match self.map[ii][jj] {
-                    Some(true) => return (ii, jj),
-                    Some(false) => return (i, j),
-                    _ => {}
-                }
-            }
-            let (mut pi, mut pj) = (i, j);
-            let (di, dj) = directions[(d + 2) % 4];
-            while {
-                let ii = pi.wrapping_add(di);
-                let jj = pj.wrapping_add(dj);
-                (0..rows).contains(&ii) && (0..cols).contains(&jj) && self.map[ii][jj].is_some()
-            } {
-                pi = pi.wrapping_add(di);
-                pj = pj.wrapping_add(dj);
-            }
-            if self.map[pi][pj].unwrap() {
-                (pi, pj)
-            } else {
-                (i, j)
-            }
-        };
-        for inst in &self.path {
-            match inst {
-                Instruction::Number(n) => {
-                    for _ in 0..*n {
-                        (i, j) = next_pos((i, j), d);
+        let mut hm = HashMap::new();
+        for (i, j) in (0..rows)
+            .cartesian_product(0..cols)
+            .filter(|&(i, j)| self.map[i][j] == Some(true))
+        {
+            for d in Direction::ALL {
+                let (di, dj) = d.delta();
+                let ii = i.wrapping_add(di);
+                let jj = j.wrapping_add(dj);
+                if (0..rows).contains(&ii) && (0..cols).contains(&jj) {
+                    if let Some(b) = self.map[ii][jj] {
+                        if b {
+                            hm.insert((i, j, d), (ii, jj, d));
+                        }
+                        continue;
                     }
                 }
-                Instruction::Letter(Turn::R) => d = (d + 1) % 4,
-                Instruction::Letter(Turn::L) => d = (d + 3) % 4,
+                let (mut pi, mut pj) = (i, j);
+                let (di, dj) = (!d).delta();
+                while {
+                    let ii = pi.wrapping_add(di);
+                    let jj = pj.wrapping_add(dj);
+                    (0..rows).contains(&ii) && (0..cols).contains(&jj) && self.map[ii][jj].is_some()
+                } {
+                    pi = pi.wrapping_add(di);
+                    pj = pj.wrapping_add(dj);
+                }
+                if let Some(b) = self.map[pi][pj] {
+                    if b {
+                        hm.insert((i, j, d), (pi, pj, d));
+                    }
+                }
             }
         }
-        (i + 1) * 1000 + (j + 1) * 4 + d
+        self.final_password(&hm)
     }
     fn part2(&self) -> Self::Answer2 {
         todo!()
