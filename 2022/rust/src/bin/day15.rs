@@ -6,7 +6,7 @@ use std::io::{BufRead, BufReader, Read};
 use std::ops::RangeInclusive;
 use std::str::FromStr;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 struct Coordinate {
     x: i64,
     y: i64,

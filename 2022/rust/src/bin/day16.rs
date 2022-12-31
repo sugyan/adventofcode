@@ -3,7 +3,6 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::io::{BufRead, BufReader, Read};
 use std::str::FromStr;
 
-#[derive(Debug)]
 struct Report {
     valve: String,
     flow_rate: u32,

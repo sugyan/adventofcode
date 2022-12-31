@@ -1,22 +1,20 @@
 use aoc2022::Solve;
 use itertools::Itertools;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::{BufRead, BufReader, Read};
 use std::ops::Not;
 
-#[derive(Debug)]
 enum Turn {
     R,
     L,
 }
 
-#[derive(Debug)]
 enum Instruction {
     Number(usize),
     Letter(Turn),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 enum Direction {
     Right = 0,
     Down = 1,
@@ -68,6 +66,28 @@ struct Solution {
 }
 
 impl Solution {
+    fn common_next(&self) -> HashMap<(usize, usize, Direction), (usize, usize, Direction)> {
+        let (rows, cols) = (self.map.len(), self.map[0].len());
+        let mut hm = HashMap::new();
+        for (i, j) in (0..rows)
+            .cartesian_product(0..cols)
+            .filter(|&(i, j)| self.map[i][j] == Some(true))
+        {
+            for d in Direction::ALL {
+                let (di, dj) = d.delta();
+                let ii = i.wrapping_add(di);
+                let jj = j.wrapping_add(dj);
+                if (0..rows).contains(&ii) && (0..cols).contains(&jj) {
+                    if let Some(b) = self.map[ii][jj] {
+                        if b {
+                            hm.insert((i, j, d), (ii, jj, d));
+                        }
+                    }
+                }
+            }
+        }
+        hm
+    }
     fn final_password(
         &self,
         next: &HashMap<(usize, usize, Direction), (usize, usize, Direction)>,
@@ -139,7 +159,7 @@ impl Solve for Solution {
     }
     fn part1(&self) -> Self::Answer1 {
         let (rows, cols) = (self.map.len(), self.map[0].len());
-        let mut hm = HashMap::new();
+        let mut hm = self.common_next();
         for (i, j) in (0..rows)
             .cartesian_product(0..cols)
             .filter(|&(i, j)| self.map[i][j] == Some(true))
@@ -148,13 +168,9 @@ impl Solve for Solution {
                 let (di, dj) = d.delta();
                 let ii = i.wrapping_add(di);
                 let jj = j.wrapping_add(dj);
-                if (0..rows).contains(&ii) && (0..cols).contains(&jj) {
-                    if let Some(b) = self.map[ii][jj] {
-                        if b {
-                            hm.insert((i, j, d), (ii, jj, d));
-                        }
-                        continue;
-                    }
+                if (0..rows).contains(&ii) && (0..cols).contains(&jj) && self.map[ii][jj].is_some()
+                {
+                    continue;
                 }
                 let (mut pi, mut pj) = (i, j);
                 let (di, dj) = (!d).delta();
@@ -176,13 +192,122 @@ impl Solve for Solution {
         self.final_password(&hm)
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        let (rows, cols) = (self.map.len(), self.map[0].len());
+        //    4 --- 5
+        //   /|    /|
+        //  / |   / |
+        // 0 --- 1  |
+        // |  7 -|- 6
+        // | /   | /
+        // |/    |/
+        // 3 --- 2
+        let surfaces = [
+            [0, 1, 2, 3],
+            [1, 5, 6, 2],
+            [5, 4, 7, 6],
+            [4, 0, 3, 7],
+            [0, 4, 5, 1],
+            [3, 2, 6, 7],
+        ];
+        let s = self
+            .map
+            .iter()
+            .map(|row| row.iter().filter(|&col| col.is_some()).count())
+            .sum::<usize>();
+        let a = ((s / 6) as f32).sqrt() as usize;
+        let mut stack = Vec::new();
+        let (mut visited, mut connected) = (HashSet::new(), HashSet::new());
+        let mut verteces = HashMap::new();
+        if let Some(j) = self.map[0].iter().position(|&t| t.is_some()) {
+            stack.push((
+                [(0, j), (0, j + a - 1), (a - 1, j + a - 1), (a - 1, j)],
+                (0, 1),
+                0,
+            ));
+            visited.insert((0, j));
+        }
+        while let Some((p, e, r)) = stack.pop() {
+            if let Some(s) = surfaces
+                .iter()
+                .find(|s| (0..4).any(|i| s[i] == e.0 && s[(i + 1) % 4] == e.1))
+            {
+                if let Some(i) = (0..4).find(|&i| s[i] == e.0 && s[(i + 1) % 4] == e.1) {
+                    for j in 0..4 {
+                        verteces.insert(p[j], s[(i + j + r) % 4]);
+                    }
+                    for (d, r0, r1) in [
+                        ((0, a), 1, 1),
+                        ((a, 0), 2, 0),
+                        ((0, (!0_usize).wrapping_mul(a)), 3, 3),
+                    ] {
+                        let (ii, jj) = (p[0].0.wrapping_add(d.0), p[0].1.wrapping_add(d.1));
+                        if (0..rows).contains(&ii)
+                            && (0..cols).contains(&jj)
+                            && self.map[ii][jj].is_some()
+                            && !visited.contains(&(ii, jj))
+                        {
+                            let e = (s[(i + r + r0 + 1) % 4], s[(i + r + r0) % 4]);
+                            visited.insert((ii, jj));
+                            stack.push((
+                                [
+                                    (p[0].0.wrapping_add(d.0), p[0].1.wrapping_add(d.1)),
+                                    (p[1].0.wrapping_add(d.0), p[1].1.wrapping_add(d.1)),
+                                    (p[2].0.wrapping_add(d.0), p[2].1.wrapping_add(d.1)),
+                                    (p[3].0.wrapping_add(d.0), p[3].1.wrapping_add(d.1)),
+                                ],
+                                e,
+                                r1,
+                            ));
+                            connected.insert((e.0.min(e.1), e.0.max(e.1)));
+                        }
+                    }
+                }
+            }
+        }
+        let mut edges = HashMap::new();
+        for s in visited {
+            for (i, d) in [(0, 0), (0, a - 1), (a - 1, a - 1), (a - 1, 0), (0, 0)]
+                .windows(2)
+                .enumerate()
+            {
+                let (e0, e1) = ((s.0 + d[0].0, s.1 + d[0].1), (s.0 + d[1].0, s.1 + d[1].1));
+                let (v0, v1) = (verteces[&e0], verteces[&e1]);
+                if connected.contains(&(v0.min(v1), v0.max(v1))) {
+                    continue;
+                }
+                let (mut p, mut d) = (e0, Direction::ALL[i % 4]);
+                if v0 > v1 {
+                    (p, d) = (e1, !d);
+                }
+                let delta = d.delta();
+                let mut v = Vec::new();
+                for _ in 0..a {
+                    v.push(p);
+                    p = (p.0.wrapping_add(delta.0), p.1.wrapping_add(delta.1));
+                }
+                edges
+                    .entry((v0.min(v1), v0.max(v1)))
+                    .or_insert_with(Vec::new)
+                    .push((v, Direction::ALL[(i + 3) % 4]));
+            }
+        }
+        let mut hm = self.common_next();
+        for v in edges.values() {
+            for (p0, p1) in v[0].0.iter().zip(&v[1].0) {
+                if self.map[p0.0][p0.1] == Some(true) && self.map[p1.0][p1.1] == Some(true) {
+                    hm.insert((p0.0, p0.1, v[0].1), (p1.0, p1.1, !v[1].1));
+                    hm.insert((p1.0, p1.1, v[1].1), (p0.0, p0.1, !v[0].1));
+                }
+            }
+        }
+        self.final_password(&hm)
     }
 }
 
 fn main() {
     let solution = Solution::new(std::io::stdin().lock());
     println!("Part 1: {}", solution.part1());
+    println!("Part 2: {}", solution.part2());
 }
 
 #[cfg(test)]
@@ -212,5 +337,10 @@ mod tests {
     #[test]
     fn part1() {
         assert_eq!(6032, Solution::new(example_input()).part1());
+    }
+
+    #[test]
+    fn part2() {
+        assert_eq!(5031, Solution::new(example_input()).part2());
     }
 }

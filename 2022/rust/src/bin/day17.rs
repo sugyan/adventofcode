@@ -2,7 +2,6 @@ use aoc2022::Solve;
 use std::collections::HashMap;
 use std::io::{BufReader, Read};
 
-#[derive(Debug)]
 enum Direction {
     Left,
     Right,
