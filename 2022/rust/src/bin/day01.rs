@@ -1,4 +1,5 @@
 use aoc2022::Solve;
+use std::collections::BinaryHeap;
 use std::io::{BufRead, BufReader, Read};
 
 struct Solution {
@@ -16,21 +17,20 @@ impl Solve for Solution {
     type Answer2 = u32;
 
     fn new(r: impl Read) -> Self {
-        let mut calories = BufReader::new(r)
-            .lines()
-            .filter_map(Result::ok)
-            .collect::<Vec<_>>()
-            .split(String::is_empty)
-            .map(|lines| {
-                lines
-                    .iter()
-                    .filter_map(|line| line.parse::<u32>().ok())
-                    .sum()
-            })
-            .collect::<Vec<_>>();
-        calories.sort_unstable();
         Self {
-            sorted_calories: calories,
+            sorted_calories: BufReader::new(r)
+                .lines()
+                .filter_map(Result::ok)
+                .collect::<Vec<_>>()
+                .split(String::is_empty)
+                .map(|lines| {
+                    lines
+                        .iter()
+                        .filter_map(|line| line.parse::<u32>().ok())
+                        .sum()
+                })
+                .collect::<BinaryHeap<_>>()
+                .into_sorted_vec(),
         }
     }
     fn part1(&self) -> Self::Answer1 {
