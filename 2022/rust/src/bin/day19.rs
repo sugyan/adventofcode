@@ -1,60 +1,47 @@
 use aoc2022::Solve;
-use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Read};
 use std::str::FromStr;
 
 #[derive(Debug)]
-struct Blueprint([[u32; 3]; 4]);
+struct Blueprint {
+    costs: [[u32; 4]; 4],
+    max: [u32; 4],
+}
 
 impl Blueprint {
-    fn max_geodes(
-        &self,
-        minutes: u32,
-        resources: [u32; 4],
-        robots: [u32; 4],
-        memo: &mut HashMap<(u32, [u32; 4], [u32; 4]), u32>,
-    ) -> u32 {
-        if minutes == 0 {
-            return resources[3];
+    fn max_geodes(&self, minutes: u32) -> u32 {
+        let mut max = 0;
+        self.dfs(minutes, [[0; 4], [1, 0, 0, 0]], &mut max);
+        max
+    }
+    fn dfs(&self, minutes: u32, state: [[u32; 4]; 2], max: &mut u32) {
+        if state[0][3] + state[1][3] * minutes + (minutes + 1) * minutes / 2 < *max {
+            return;
         }
-        if let Some(max) = memo.get(&(minutes, resources, robots)) {
-            return *max;
-        }
-        let mut ret = 0;
-        for (i, costs) in self.0.iter().enumerate() {
-            if costs
-                .iter()
-                .enumerate()
-                .all(|(j, cost)| resources[j] >= *cost)
+        for (i, cost) in self.costs.iter().enumerate() {
+            if i < 3 && state[0][i] >= (self.max[i] - state[1][i]) * minutes
+                || (0..4).any(|j| cost[j] > 0 && state[1][j] == 0)
             {
-                let mut next_robots = robots;
-                next_robots[i] += 1;
-                ret = ret.max(self.max_geodes(
-                    minutes - 1,
-                    [
-                        resources[0] + robots[0] - costs[0],
-                        resources[1] + robots[1] - costs[1],
-                        resources[2] + robots[2] - costs[2],
-                        resources[3] + robots[3],
-                    ],
-                    next_robots,
-                    memo,
-                ));
+                continue;
+            }
+            let mut state = state;
+            let mut wait = 0;
+            while wait < minutes && cost.iter().enumerate().any(|(j, &c)| state[0][j] < c) {
+                (0..4).for_each(|j| state[0][j] += state[1][j]);
+                wait += 1;
+            }
+            if wait == minutes {
+                *max = state[0][3].max(*max);
+            } else {
+                let mut state = state;
+                for (j, c) in cost.iter().enumerate() {
+                    state[0][j] += state[1][j];
+                    state[0][j] -= c;
+                }
+                state[1][i] += 1;
+                self.dfs(minutes - wait - 1, state, max);
             }
         }
-        ret = ret.max(self.max_geodes(
-            minutes - 1,
-            [
-                resources[0] + robots[0],
-                resources[1] + robots[1],
-                resources[2] + robots[2],
-                resources[3] + robots[3],
-            ],
-            robots,
-            memo,
-        ));
-        memo.insert((minutes, resources, robots), ret);
-        ret
     }
 }
 
@@ -66,12 +53,14 @@ impl FromStr for Blueprint {
             .split(' ')
             .filter_map(|s| s.parse().ok())
             .collect::<Vec<_>>();
-        Ok(Blueprint([
-            [v[0], 0, 0],
-            [v[1], 0, 0],
-            [v[2], v[3], 0],
-            [v[4], 0, v[5]],
-        ]))
+        let costs = [
+            [v[0], 0, 0, 0],
+            [v[1], 0, 0, 0],
+            [v[2], v[3], 0, 0],
+            [v[4], 0, v[5], 0],
+        ];
+        let max = [v[0].max(v[1]).max(v[2]).max(v[4]), v[3], v[5], 0];
+        Ok(Blueprint { costs, max })
     }
 }
 
@@ -93,21 +82,24 @@ impl Solve for Solution {
         }
     }
     fn part1(&self) -> Self::Answer1 {
-        let mut ret = 0;
-        for (i, blurprint) in (1..).zip(&self.blueprints) {
-            let max_geodes = blurprint.max_geodes(24, [0; 4], [1, 0, 0, 0], &mut HashMap::new());
-            ret += i * max_geodes;
-        }
-        ret
+        (1..)
+            .zip(&self.blueprints)
+            .map(|(i, blurprint)| i * blurprint.max_geodes(24))
+            .sum()
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        self.blueprints
+            .iter()
+            .take(3)
+            .map(|blueprint| blueprint.max_geodes(32))
+            .product()
     }
 }
 
 fn main() {
     let solution = Solution::new(std::io::stdin().lock());
     println!("Part 1: {}", solution.part1());
+    println!("Part 2: {}", solution.part2());
 }
 
 #[cfg(test)]
@@ -122,8 +114,8 @@ Blueprint 2: Each ore robot costs 2 ore. Each clay robot costs 3 ore. Each obsid
             .as_bytes()
     }
 
-    // #[test]
-    // fn part1() {
-    //     assert_eq!(33, Solution::new(example_input()).part1());
-    // }
+    #[test]
+    fn part1() {
+        assert_eq!(33, Solution::new(example_input()).part1());
+    }
 }
