@@ -1,19 +1,30 @@
 use aoc2022::Solve;
-use std::io::{BufReader, Read};
+use std::io::{BufRead, BufReader, Read};
 
 struct Solution {
-    data: Vec<u8>,
+    data: Vec<usize>,
 }
 
 impl Solution {
     fn marker_detected_position(&self, window_size: usize) -> usize {
-        self.data
-            .windows(window_size)
-            .position(|w| {
-                w.iter().fold(0_u128, |acc, x| acc | 1 << x).count_ones() as usize == window_size
-            })
-            .unwrap()
-            + window_size
+        let mut counts = [0; 26];
+        let mut size = 0;
+        for i in 0..self.data.len() {
+            counts[self.data[i]] += 1;
+            if counts[self.data[i]] == 1 {
+                size += 1;
+            }
+            if i >= window_size {
+                counts[self.data[i - window_size]] -= 1;
+                if counts[self.data[i - window_size]] == 0 {
+                    size -= 1;
+                }
+            }
+            if size == window_size {
+                return i + 1;
+            }
+        }
+        unreachable!()
     }
 }
 
@@ -22,9 +33,13 @@ impl Solve for Solution {
     type Answer2 = usize;
 
     fn new(r: impl Read) -> Self {
-        let mut data = Vec::new();
-        BufReader::new(r).read_to_end(&mut data).ok();
-        Self { data }
+        Self {
+            data: BufReader::new(r)
+                .lines()
+                .find_map(Result::ok)
+                .map(|s| s.trim().bytes().map(|u| (u - b'a') as usize).collect())
+                .unwrap(),
+        }
     }
     fn part1(&self) -> Self::Answer1 {
         self.marker_detected_position(4)
