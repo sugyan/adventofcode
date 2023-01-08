@@ -9,7 +9,7 @@ class Solution(Solve):
     def __init__(self, io: TextIO) -> None:
         self.total_sizes: dict[tuple[str, ...], int] = defaultdict(int)
         curr: list[str] = []
-        for line in io.readlines():
+        for line in io:
             parts = line.strip().split()
             if parts[:2] == ["$", "cd"]:
                 if parts[2] == "..":

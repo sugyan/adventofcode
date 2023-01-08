@@ -14,7 +14,7 @@ class Solution(Solve):
                     self.stacks[i].append(c)
         self.procedure = []
         for line in parts[1]:
-            self.procedure.append(tuple(map(int, line.split(" ")[1::2])))
+            self.procedure.append(tuple(map(int, line.split()[1::2])))
 
     def part1(self) -> str:
         return self.top_crates(True)

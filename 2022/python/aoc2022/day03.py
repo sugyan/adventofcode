@@ -6,7 +6,7 @@ from aoc2022 import Solve, run
 
 class Solution(Solve):
     def __init__(self, io: TextIO) -> None:
-        self.items = list(map(str.strip, io.readlines()))
+        self.items = list(map(str.strip, io))
 
     def part1(self) -> int:
         def find_item(items: str) -> str:
