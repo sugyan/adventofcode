@@ -43,7 +43,7 @@ impl Solution {
             .reports
             .iter()
             .filter_map(|&(s, b)| match s.distance(b) - (y - s.y).abs() {
-                ..=0 => None,
+                i64::MIN..=0 => None,
                 r => Some((s.x - r, s.x + r)),
             })
             .collect::<Vec<_>>();

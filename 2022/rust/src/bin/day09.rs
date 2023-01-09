@@ -40,10 +40,10 @@ impl Solve for Solution {
                 .map(|s| {
                     (
                         match &s[..1] {
-                            "R" => (1, 0),
                             "U" => (0, 1),
-                            "L" => (-1, 0),
                             "D" => (0, -1),
+                            "L" => (-1, 0),
+                            "R" => (1, 0),
                             _ => unreachable!(),
                         },
                         s[2..].parse().unwrap(),

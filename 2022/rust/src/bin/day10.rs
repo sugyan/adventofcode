@@ -3,30 +3,26 @@ use itertools::Itertools;
 use std::io::{BufRead, BufReader, Read};
 
 struct Solution {
-    values: [i32; 240],
+    values: Vec<i32>,
 }
-
-impl Solution {}
 
 impl Solve for Solution {
     type Answer1 = i32;
     type Answer2 = String;
 
     fn new(r: impl Read) -> Self {
-        let mut iter = BufReader::new(r).lines().filter_map(Result::ok);
-        let mut values = [0; 240];
-        let (mut x, mut adding) = (1, None);
-        for v in values.iter_mut() {
-            *v = x;
-            adding = if let Some(n) = adding {
-                x += n;
-                None
-            } else {
-                match iter.next().unwrap().as_str() {
-                    "noop" => None,
-                    s => Some(s[5..].parse::<i32>().unwrap()),
+        let mut values = vec![1];
+        let mut x = 1;
+        for line in BufReader::new(r).lines().filter_map(Result::ok) {
+            if let Some(s) = line.strip_prefix("addx ") {
+                values.push(x);
+                if let Ok(n) = s.parse::<i32>() {
+                    x += n;
                 }
-            };
+                values.push(x);
+            } else {
+                values.push(x);
+            }
         }
         Self { values }
     }
@@ -41,6 +37,7 @@ impl Solve for Solution {
             + &self
                 .values
                 .chunks(40)
+                .take(6)
                 .map(|row| {
                     (0..)
                         .zip(row)
