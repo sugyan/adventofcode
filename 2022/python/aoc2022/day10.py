@@ -20,7 +20,7 @@ class Solution(Solve):
     def part2(self) -> str:
         rows = []
         for values in [self.values[i * 40 : (i + 1) * 40] for i in range(6)]:
-            rows.append("".join([".#"[abs(i - v) < 2] for i, v in enumerate(values)]))
+            rows.append("".join([".#"[abs(i - x) < 2] for i, x in enumerate(values)]))
         return "\n" + "\n".join(rows)
 
 
