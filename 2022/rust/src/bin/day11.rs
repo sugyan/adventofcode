@@ -1,16 +1,14 @@
 use aoc2022::Solve;
 use std::io::{BufRead, BufReader, Read};
 
-#[derive(Clone)]
 enum Operation {
     Add(u64),
     Mul(u64),
     Square,
 }
 
-#[derive(Clone)]
 struct Monkey {
-    items: Vec<u64>,
+    starting_items: Vec<u64>,
     operation: Operation,
     test: (u64, [usize; 2]),
 }
@@ -18,7 +16,7 @@ struct Monkey {
 impl From<&[String]> for Monkey {
     fn from(lines: &[String]) -> Self {
         Self {
-            items: lines[1][18..]
+            starting_items: lines[1][18..]
                 .split(", ")
                 .filter_map(|s| s.parse().ok())
                 .collect(),
@@ -44,21 +42,24 @@ struct Solution {
 }
 
 impl Solution {
-    fn monkey_business(&self, round: usize, divide3: bool) -> u64 {
-        let mut monkeys = self.monkeys.clone();
-        let mut inspected = vec![0; monkeys.len()];
-        let div = monkeys.iter().map(|m| m.test.0).product::<u64>();
+    fn monkey_business(&self, round: usize, divide: u64) -> u64 {
+        let mut items = self
+            .monkeys
+            .iter()
+            .map(|m| m.starting_items.clone())
+            .collect::<Vec<_>>();
+        let mut inspected = vec![0; self.monkeys.len()];
+        let lcm = self.monkeys.iter().map(|m| m.test.0).product::<u64>();
         for _ in 0..round {
-            for i in 0..monkeys.len() {
-                while let Some(item) = monkeys[i].items.pop() {
-                    let level = match monkeys[i].operation {
+            for (i, monkey) in self.monkeys.iter().enumerate() {
+                while let Some(item) = items[i].pop() {
+                    let level = match monkey.operation {
                         Operation::Add(n) => item + n,
                         Operation::Mul(n) => item * n,
                         Operation::Square => item * item,
-                    } / if divide3 { 3 } else { 1 }
-                        % div;
-                    let to = monkeys[i].test.1[usize::from(level % monkeys[i].test.0 == 0)];
-                    monkeys[to].items.push(level);
+                    } / divide;
+                    let to = monkey.test.1[usize::from(level % monkey.test.0 == 0)];
+                    items[to].push(level % lcm);
                     inspected[i] += 1;
                 }
             }
@@ -84,10 +85,10 @@ impl Solve for Solution {
         }
     }
     fn part1(&self) -> Self::Answer1 {
-        self.monkey_business(20, true)
+        self.monkey_business(20, 3)
     }
     fn part2(&self) -> Self::Answer2 {
-        self.monkey_business(10000, false)
+        self.monkey_business(10000, 1)
     }
 }
 
