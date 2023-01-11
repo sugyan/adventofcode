@@ -13,7 +13,7 @@ class Solution(Solve):
             half = len(items) // 2
             return next(iter(set(items[:half]) & set(items[half:])))
 
-        return sum(map(Solution.priority, map(find_item, self.items)))
+        return sum(map(self.priority, map(find_item, self.items)))
 
     def part2(self) -> int:
         def groups() -> Iterator[list[str]]:
@@ -23,7 +23,7 @@ class Solution(Solve):
         def find_item(group: list[str]) -> str:
             return next(iter(set(group[0]) & set(group[1]) & set(group[2])))
 
-        return sum(map(Solution.priority, map(find_item, groups())))
+        return sum(map(self.priority, map(find_item, groups())))
 
     @staticmethod
     def priority(c: str) -> int:
