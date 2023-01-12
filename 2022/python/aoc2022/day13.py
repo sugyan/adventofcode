@@ -28,10 +28,7 @@ class Solution(Solve):
             case int(l), int(r):
                 return l - r
             case list(l), list(r):
-                for ret in map(Solution.cmp, l, r):
-                    if ret:
-                        return ret
-                return len(l) - len(r)
+                return next((c for c in map(Solution.cmp, l, r) if c), len(l) - len(r))
             case int(l), list(r):
                 return Solution.cmp([l], r)
             case list(l), int(r):
