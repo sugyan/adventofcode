@@ -1,21 +1,21 @@
 use aoc2022::Solve;
 use itertools::Itertools;
-use std::collections::HashSet;
 use std::io::{BufRead, BufReader};
 
 struct Solution {
-    rocks: HashSet<(i32, i32)>,
-    ymax: i32,
+    cave: Vec<Vec<bool>>,
+    ymax: usize,
 }
 
 impl Solution {
-    fn count_units(&self, floor: bool) -> usize {
-        let mut hs = self.rocks.clone();
+    fn count_units(&self, floor: bool) -> u32 {
+        let mut block = self.cave.clone();
         let mut stack = vec![(500, 0)];
+        let mut units = 0;
         while let Some(&(x, y)) = stack.last() {
             if let Some(&next) = [(x, y + 1), (x - 1, y + 1), (x + 1, y + 1)]
                 .iter()
-                .find(|p| !hs.contains(p))
+                .find(|p| !block[p.0][p.1])
             {
                 if y < self.ymax + 1 {
                     stack.push(next);
@@ -24,34 +24,38 @@ impl Solution {
                     break;
                 }
             }
-            hs.insert(stack.pop().unwrap());
+            if let Some((x, y)) = stack.pop() {
+                block[x][y] = true;
+                units += 1;
+            }
         }
-        hs.len() - self.rocks.len()
+        units
     }
 }
 
 impl Solve for Solution {
-    type Answer1 = usize;
-    type Answer2 = usize;
+    type Answer1 = u32;
+    type Answer2 = u32;
 
     fn new(r: impl std::io::Read) -> Self {
-        let mut rocks = HashSet::new();
+        let mut cave = vec![vec![false; 500]; 1001];
+        let mut ymax = 0;
         for line in BufReader::new(r).lines().filter_map(Result::ok) {
             for (p0, p1) in line
                 .split(" -> ")
                 .filter_map(|xy| {
                     xy.split(',')
                         .filter_map(|s| s.parse().ok())
-                        .collect_tuple::<(i32, i32)>()
+                        .collect_tuple::<(usize, usize)>()
                 })
                 .tuple_windows()
             {
-                rocks.extend((p0.0.min(p1.0)..=p0.0.max(p1.0)).map(|x| (x, p0.1)));
-                rocks.extend((p0.1.min(p1.1)..=p0.1.max(p1.1)).map(|y| (p0.0, y)));
+                (p0.0.min(p1.0)..=p0.0.max(p1.0)).for_each(|x| cave[x][p0.1] = true);
+                (p0.1.min(p1.1)..=p0.1.max(p1.1)).for_each(|y| cave[p0.0][y] = true);
+                ymax = ymax.max(p0.1.max(p1.1));
             }
         }
-        let ymax = *rocks.iter().map(|(_, y)| y).max().unwrap();
-        Self { rocks, ymax }
+        Self { cave, ymax }
     }
     fn part1(&self) -> Self::Answer1 {
         self.count_units(false)

@@ -21,12 +21,12 @@ impl Solve for Solution {
         for (i, row) in heightmap.iter().enumerate() {
             for (j, col) in row.iter().enumerate() {
                 if *col == b'E' {
-                    vd.push_back((0, (i, j)));
+                    vd.push_back(((i, j), 0));
                 }
             }
         }
         let mut min_steps = vec![vec![None; cols]; rows];
-        while let Some((steps, (i, j))) = vd.pop_front() {
+        while let Some(((i, j), steps)) = vd.pop_front() {
             if min_steps[i][j].is_some() {
                 continue;
             }
@@ -40,10 +40,10 @@ impl Solve for Solution {
                 let jj = j.wrapping_add(d[1]);
                 if (0..rows).contains(&ii)
                     && (0..cols).contains(&jj)
-                    && (heightmap[ii][jj] + 1 >= height
+                    && (heightmap[ii][jj] >= height - 1
                         || (heightmap[ii][jj] == b'S' && height <= b'b'))
                 {
-                    vd.push_back((steps + 1, (ii, jj)));
+                    vd.push_back(((ii, jj), steps + 1));
                 }
             }
         }
