@@ -1,19 +1,16 @@
 use aoc2022::Solve;
 use itertools::Itertools;
-use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::io::{BufRead, BufReader, Read};
-use std::ops::RangeInclusive;
 use std::str::FromStr;
 
-#[derive(Clone, Copy)]
 struct Coordinate {
     x: i64,
     y: i64,
 }
 
 impl Coordinate {
-    fn distance(self, rhs: Self) -> i64 {
+    fn distance(&self, rhs: &Self) -> i64 {
         (self.x - rhs.x).abs() + (self.y - rhs.y).abs()
     }
 }
@@ -38,28 +35,29 @@ struct Solution {
 }
 
 impl Solution {
-    fn ranges(&self, y: i64) -> Vec<RangeInclusive<i64>> {
-        let mut v = self
+    fn ranges(&self, y: i64) -> Vec<(i64, i64)> {
+        let mut ret: Vec<(i64, i64)> = Vec::new();
+        for (min, max) in self
             .reports
             .iter()
-            .filter_map(|&(s, b)| match s.distance(b) - (y - s.y).abs() {
-                i64::MIN..=0 => None,
-                r => Some((s.x - r, s.x + r)),
+            .filter_map(|(s, b)| {
+                Some(s.distance(b) - (y - s.y).abs()).and_then(|r| {
+                    if r >= 0 {
+                        Some((s.x - r, s.x + r))
+                    } else {
+                        None
+                    }
+                })
             })
-            .collect::<Vec<_>>();
-        v.sort_by(|a, b| match b.0.cmp(&a.0) {
-            Ordering::Equal => a.1.cmp(&b.1),
-            o => o,
-        });
-        let mut ret = Vec::new();
-        while let Some((min, max)) = v.pop() {
-            if let Some(last) = v.last_mut() {
-                if last.0 <= max + 1 {
-                    *last = (min.min(last.0), max.max(last.1));
+            .sorted_unstable()
+        {
+            if let Some(last) = ret.last_mut() {
+                if last.1 >= min - 1 {
+                    last.1 = max.max(last.1);
                     continue;
                 }
             }
-            ret.push(min..=max);
+            ret.push((min, max));
         }
         ret
     }
@@ -95,25 +93,35 @@ impl Solve for Solution {
         self.ranges(target_row)
             .iter()
             .map(|r| {
-                (r.end() - r.start()) as usize + 1 - xs.iter().filter(|x| r.contains(x)).count()
+                (r.1 - r.0) as usize + 1 - xs.iter().filter(|x| (r.0..=r.1).contains(x)).count()
             })
             .sum()
     }
     fn part2(&self) -> Self::Answer2 {
         let ymax = if cfg!(test) { 20 } else { 4_000_000 };
-        let (mut ps, mut ns) = (Vec::new(), Vec::new());
-        for &(s, b) in &self.reports {
+        let mut ps = Vec::with_capacity(self.reports.len() * 2);
+        let mut ns = Vec::with_capacity(self.reports.len() * 2);
+        for (s, b) in &self.reports {
             let d = s.distance(b);
             ps.extend([s.y - s.x + (d + 1), s.y - s.x - (d + 1)]);
             ns.extend([s.y + s.x + (d + 1), s.y + s.x - (d + 1)]);
         }
-        ps.iter()
-            .cartesian_product(&ns)
+        let p = ps
+            .iter()
+            .sorted()
+            .dedup_with_count()
+            .filter_map(|(count, &b)| if count > 1 { Some(b) } else { None });
+        let n = ns
+            .iter()
+            .sorted()
+            .dedup_with_count()
+            .filter_map(|(count, &b)| if count > 1 { Some(b) } else { None });
+        p.cartesian_product(n)
             .filter_map(|b| Some((b.0 + b.1) / 2).filter(|y| (0..=ymax).contains(y)))
             .find_map(|y| {
                 let v = self.ranges(y);
                 if v.len() == 2 {
-                    Some(y + (*v[0].end() + 1) * 4_000_000)
+                    Some(y + (v[0].1 + 1) * 4_000_000)
                 } else {
                     None
                 }
