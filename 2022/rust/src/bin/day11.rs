@@ -1,4 +1,5 @@
 use aoc2022::Solve;
+use itertools::Itertools;
 use std::io::{BufRead, BufReader, Read};
 
 enum Operation {
@@ -47,7 +48,7 @@ impl Solution {
             .monkeys
             .iter()
             .map(|m| m.starting_items.clone())
-            .collect::<Vec<_>>();
+            .collect_vec();
         let mut inspected = vec![0; self.monkeys.len()];
         let lcm = self.monkeys.iter().map(|m| m.test.0).product::<u64>();
         for _ in 0..round {
@@ -78,7 +79,7 @@ impl Solve for Solution {
             monkeys: BufReader::new(r)
                 .lines()
                 .filter_map(Result::ok)
-                .collect::<Vec<_>>()
+                .collect_vec()
                 .split(String::is_empty)
                 .map(Monkey::from)
                 .collect(),

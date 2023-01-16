@@ -1,5 +1,5 @@
 use aoc2022::Solve;
-use std::io::{BufRead, BufReader, Read};
+use std::io::Read;
 
 struct Solution {
     data: Vec<usize>,
@@ -32,13 +32,11 @@ impl Solve for Solution {
     type Answer1 = usize;
     type Answer2 = usize;
 
-    fn new(r: impl Read) -> Self {
+    fn new(mut r: impl Read) -> Self {
+        let mut buf = String::new();
+        r.read_to_string(&mut buf).ok();
         Self {
-            data: BufReader::new(r)
-                .lines()
-                .find_map(Result::ok)
-                .map(|s| s.trim().bytes().map(|u| (u - b'a') as usize).collect())
-                .unwrap(),
+            data: buf.trim().bytes().map(|u| (u - b'a') as usize).collect(),
         }
     }
     fn part1(&self) -> Self::Answer1 {

@@ -39,10 +39,11 @@ impl Solve for Solution {
                 .chunks(40)
                 .take(6)
                 .map(|row| {
-                    (0..)
-                        .zip(row)
-                        .map(|(i, &x)| if (i - x).abs() < 2 { '#' } else { '.' })
-                        .collect::<String>()
+                    String::from_iter(
+                        (0..)
+                            .zip(row)
+                            .map(|(i, &x)| if (i - x).abs() < 2 { '#' } else { '.' }),
+                    )
                 })
                 .join("\n")
     }

@@ -12,9 +12,7 @@ impl Solution {
     fn top_crates(&self, f: impl Fn(&mut VecDeque<char>) -> Option<char>) -> String {
         let mut stacks = self.stacks.clone();
         for &(count, from, to) in &self.procedure {
-            let mut vd = (0..count)
-                .filter_map(|_| stacks[from - 1].pop())
-                .collect::<VecDeque<_>>();
+            let mut vd = (0..count).filter_map(|_| stacks[from - 1].pop()).collect();
             while let Some(c) = f(&mut vd) {
                 stacks[to - 1].push(c);
             }
@@ -31,8 +29,8 @@ impl Solve for Solution {
         let lines = BufReader::new(r)
             .lines()
             .filter_map(Result::ok)
-            .collect::<Vec<_>>();
-        let parts = lines.split(String::is_empty).collect::<Vec<_>>();
+            .collect_vec();
+        let parts = lines.split(String::is_empty).collect_vec();
         let mut stacks = vec![Vec::new(); (parts[0][0].len() + 1) / 4];
         for line in parts[0].iter().rev().skip(1) {
             for (i, c) in line.chars().skip(1).step_by(4).enumerate() {

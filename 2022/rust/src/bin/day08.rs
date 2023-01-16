@@ -14,8 +14,8 @@ impl Solve for Solution {
         let grid = BufReader::new(r)
             .lines()
             .filter_map(Result::ok)
-            .map(|line| line.bytes().map(|b| b - b'0').collect::<Vec<_>>())
-            .collect::<Vec<_>>();
+            .map(|line| line.bytes().map(|b| b - b'0').collect_vec())
+            .collect_vec();
         let (rows, cols) = (grid.len(), grid[0].len());
         Self {
             trees: (0..rows)
@@ -23,10 +23,10 @@ impl Solve for Solution {
                 .map(|(i, j)| {
                     let h = grid[i][j];
                     [
-                        (0..i).rev().map(|ii| grid[ii][j]).collect::<Vec<_>>(),
-                        (0..j).rev().map(|jj| grid[i][jj]).collect::<Vec<_>>(),
-                        (i + 1..rows).map(|ii| grid[ii][j]).collect::<Vec<_>>(),
-                        (j + 1..cols).map(|jj| grid[i][jj]).collect::<Vec<_>>(),
+                        (0..i).rev().map(|ii| grid[ii][j]).collect_vec(),
+                        (0..j).rev().map(|jj| grid[i][jj]).collect_vec(),
+                        (i + 1..rows).map(|ii| grid[ii][j]).collect_vec(),
+                        (j + 1..cols).map(|jj| grid[i][jj]).collect_vec(),
                     ]
                     .iter()
                     .fold((false, 1), |acc, x| {

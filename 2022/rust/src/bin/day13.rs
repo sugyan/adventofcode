@@ -36,7 +36,7 @@ impl Ord for Value {
     }
 }
 
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
+#[derive(PartialEq, PartialOrd)]
 struct Packet(Value);
 
 impl FromStr for Packet {
@@ -72,7 +72,7 @@ impl Solve for Solution {
             pairs: BufReader::new(r)
                 .lines()
                 .filter_map(Result::ok)
-                .collect::<Vec<_>>()
+                .collect_vec()
                 .split(String::is_empty)
                 .filter_map(|lines| lines.iter().filter_map(|s| s.parse().ok()).collect_tuple())
                 .collect(),
@@ -94,21 +94,16 @@ impl Solve for Solution {
             .sum()
     }
     fn part2(&self) -> Self::Answer2 {
-        let divider_packets = ["[[2]]", "[[6]]"]
-            .iter()
-            .filter_map(|s| s.parse().ok())
-            .collect::<Vec<_>>();
-        let mut packets = self
+        let packets = self
             .pairs
             .iter()
             .flat_map(|pair| [&pair.0, &pair.1])
-            .chain(&divider_packets)
-            .collect::<Vec<_>>();
-        packets.sort();
-        divider_packets
+            .collect_vec();
+        ["[[2]]", "[[6]]"]
             .iter()
-            .filter_map(|packet| packets.binary_search(&packet).ok())
-            .map(|i| i + 1)
+            .filter_map(|s| s.parse::<Packet>().ok())
+            .enumerate()
+            .map(|(i, packet)| packets.iter().filter(|p| p < &&&packet).count() + i + 1)
             .product()
     }
 }
