@@ -1,6 +1,5 @@
 use aoc2022::Solve;
 use itertools::Itertools;
-use std::collections::HashSet;
 use std::io::{BufRead, BufReader, Read};
 use std::str::FromStr;
 
@@ -9,29 +8,44 @@ struct Coordinate {
     y: i64,
 }
 
-impl Coordinate {
-    fn distance(&self, rhs: &Self) -> i64 {
-        (self.x - rhs.x).abs() + (self.y - rhs.y).abs()
-    }
+struct Report {
+    sensor: Coordinate,
+    beacon: Coordinate,
+    distance: i64,
 }
 
-impl FromStr for Coordinate {
+impl FromStr for Report {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        s.split_once(", ")
-            .and_then(|(x, y)| {
-                Some(Self {
-                    x: x[2..].parse().ok()?,
-                    y: y[2..].parse().ok()?,
-                })
+        s.split_once(": ")
+            .and_then(|(s, b)| {
+                [&s[10..], &b[21..]]
+                    .iter()
+                    .filter_map(|s| {
+                        s.split_once(", ").and_then(|(x, y)| {
+                            Some(Coordinate {
+                                x: x[2..].parse().ok()?,
+                                y: y[2..].parse().ok()?,
+                            })
+                        })
+                    })
+                    .collect_tuple()
+                    .map(|(sensor, beacon)| {
+                        let distance = (sensor.x - beacon.x).abs() + (sensor.y - beacon.y).abs();
+                        Report {
+                            sensor,
+                            beacon,
+                            distance,
+                        }
+                    })
             })
             .ok_or(())
     }
 }
 
 struct Solution {
-    reports: Vec<(Coordinate, Coordinate)>,
+    reports: Vec<Report>,
 }
 
 impl Solution {
@@ -40,10 +54,10 @@ impl Solution {
         for (min, max) in self
             .reports
             .iter()
-            .filter_map(|(s, b)| {
-                Some(s.distance(b) - (y - s.y).abs()).and_then(|r| {
+            .filter_map(|report| {
+                Some(report.distance - (y - report.sensor.y).abs()).and_then(|r| {
                     if r >= 0 {
-                        Some((s.x - r, s.x + r))
+                        Some((report.sensor.x - r, report.sensor.x + r))
                     } else {
                         None
                     }
@@ -64,7 +78,7 @@ impl Solution {
 }
 
 impl Solve for Solution {
-    type Answer1 = usize;
+    type Answer1 = i64;
     type Answer2 = i64;
 
     fn new(r: impl Read) -> Self {
@@ -72,56 +86,48 @@ impl Solve for Solution {
             reports: BufReader::new(r)
                 .lines()
                 .filter_map(Result::ok)
-                .filter_map(|line| {
-                    line.split_once(": ").and_then(|(s, b)| {
-                        [&s[10..], &b[21..]]
-                            .iter()
-                            .filter_map(|s| s.parse().ok())
-                            .collect_tuple()
-                    })
-                })
+                .filter_map(|line| line.parse().ok())
                 .collect(),
         }
     }
     fn part1(&self) -> Self::Answer1 {
         let target_row = if cfg!(test) { 10 } else { 2_000_000 };
-        let xs = self
+        let count = self
             .reports
             .iter()
-            .filter_map(|(_, b)| if b.y == target_row { Some(b.x) } else { None })
-            .collect::<HashSet<_>>();
+            .filter_map(|report| {
+                if report.beacon.y == target_row {
+                    Some(report.beacon.x)
+                } else {
+                    None
+                }
+            })
+            .unique()
+            .count() as i64;
         self.ranges(target_row)
             .iter()
-            .map(|r| {
-                (r.1 - r.0) as usize + 1 - xs.iter().filter(|x| (r.0..=r.1).contains(x)).count()
-            })
-            .sum()
+            .map(|r| r.1 - r.0 + 1)
+            .sum::<i64>()
+            - count
     }
     fn part2(&self) -> Self::Answer2 {
-        let ymax = if cfg!(test) { 20 } else { 4_000_000 };
-        let mut ps = Vec::with_capacity(self.reports.len() * 2);
-        let mut ns = Vec::with_capacity(self.reports.len() * 2);
-        for (s, b) in &self.reports {
-            let d = s.distance(b);
-            ps.extend([s.y - s.x + (d + 1), s.y - s.x - (d + 1)]);
-            ns.extend([s.y + s.x + (d + 1), s.y + s.x - (d + 1)]);
+        let max = if cfg!(test) { 20 } else { 4_000_000 };
+        let mut ps = vec![0];
+        let mut ns = vec![max];
+        for report in &self.reports {
+            ps.push(report.sensor.y - report.sensor.x + (report.distance + 1));
+            ps.push(report.sensor.y - report.sensor.x - (report.distance + 1));
+            ns.push(report.sensor.y + report.sensor.x + (report.distance + 1));
+            ns.push(report.sensor.y + report.sensor.x - (report.distance + 1));
         }
-        let p = ps
-            .iter()
-            .sorted()
-            .dedup_with_count()
-            .filter_map(|(count, &b)| if count > 1 { Some(b) } else { None });
-        let n = ns
-            .iter()
-            .sorted()
-            .dedup_with_count()
-            .filter_map(|(count, &b)| if count > 1 { Some(b) } else { None });
-        p.cartesian_product(n)
-            .filter_map(|b| Some((b.0 + b.1) / 2).filter(|y| (0..=ymax).contains(y)))
+        ps.iter()
+            .cartesian_product(&ns)
+            .filter_map(|b| Some((b.0 + b.1) / 2).filter(|y| (0..=max).contains(y)))
             .find_map(|y| {
                 let v = self.ranges(y);
-                if v.len() == 2 {
-                    Some(y + (v[0].1 + 1) * 4_000_000)
+                let x = v[0].1 + 1;
+                if v.len() == 2 && (0..=max).contains(&x) {
+                    Some(x * 4_000_000 + y)
                 } else {
                     None
                 }
