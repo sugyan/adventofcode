@@ -1,21 +1,24 @@
 use aoc2022::Solve;
-use std::collections::{HashMap, HashSet, VecDeque};
+use itertools::Itertools;
+use std::cmp::{Ordering, Reverse};
+use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Read};
+use std::ops::{BitAnd, Not};
 use std::str::FromStr;
 
-struct Report {
-    valve: String,
+struct Valve {
+    label: String,
     flow_rate: u32,
     tunnels: Vec<String>,
 }
 
-impl FromStr for Report {
+impl FromStr for Valve {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         s.split_once("; ")
             .map(|(v, t)| Self {
-                valve: v[6..8].to_string(),
+                label: v[6..8].to_string(),
                 flow_rate: v[23..].parse().unwrap(),
                 tunnels: t
                     .splitn(5, ' ')
@@ -27,27 +30,66 @@ impl FromStr for Report {
     }
 }
 
+#[derive(Clone, Copy)]
+struct BitSet(usize);
+
+impl Iterator for BitSet {
+    type Item = usize;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.0 != 0 {
+            let ret = self.0.trailing_zeros() as usize;
+            self.0 &= self.0 - 1;
+            Some(ret)
+        } else {
+            None
+        }
+    }
+}
+
+impl BitAnd for BitSet {
+    type Output = Self;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        Self(self.0 & rhs.0)
+    }
+}
+
+impl Not for BitSet {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
+        Self(!self.0)
+    }
+}
+
 struct Solution {
-    target_map: Vec<(u32, Vec<u32>)>,
+    valves: Vec<Valve>,
+    dists: Vec<Vec<u32>>,
+    flows: BitSet,
 }
 
 impl Solution {
-    fn max_total(&self, src: usize, remaining: u32, target: u32) -> u32 {
-        if remaining == 0 {
-            return 0;
-        }
-        let (flow_rate, dsts) = &self.target_map[src];
-        if target & (1 << src) != 0 {
-            return flow_rate * (remaining - 1)
-                + self.max_total(src, remaining - 1, target & !(1 << src));
-        }
-        let mut ret = 0;
-        for (dst, &minutes) in dsts.iter().enumerate() {
-            if dst != src && target & (1 << dst) != 0 && remaining > minutes {
-                ret = ret.max(self.max_total(dst, remaining - minutes, target));
+    fn max_totals(&self, minutes: u32) -> Vec<u32> {
+        let ones = self.flows.0.count_ones() as usize;
+        let mut totals = vec![0; 1 << ones];
+        self.search(ones, BitSet(0), minutes, 0, &mut totals);
+        totals
+    }
+    fn search(&self, i: usize, opened: BitSet, minutes: u32, total: u32, totals: &mut Vec<u32>) {
+        totals[opened.0] = totals[opened.0].max(total);
+        for j in self.flows & !opened {
+            let remain = minutes.saturating_sub(self.dists[i][j] + 1);
+            if remain > 0 {
+                self.search(
+                    j,
+                    BitSet(opened.0 | (1 << j)),
+                    remain,
+                    total + self.valves[j].flow_rate * remain,
+                    totals,
+                );
             }
         }
-        ret
     }
 }
 
@@ -56,64 +98,68 @@ impl Solve for Solution {
     type Answer2 = u32;
 
     fn new(r: impl Read) -> Self {
-        let map = BufReader::new(r)
+        let valves = BufReader::new(r)
             .lines()
             .filter_map(Result::ok)
-            .filter_map(|line| line.parse::<Report>().ok())
-            .map(|r| (r.valve, (r.flow_rate, r.tunnels)))
-            .collect::<HashMap<_, _>>();
-        let mut targets = map
-            .iter()
-            .filter_map(|(valve, &(flow_rate, _))| {
-                if flow_rate > 0 {
-                    Some(valve.clone())
-                } else {
-                    None
-                }
+            .filter_map(|line| line.parse::<Valve>().ok())
+            .sorted_unstable_by(|va, vb| match vb.flow_rate.cmp(&va.flow_rate) {
+                Ordering::Equal => va.label.cmp(&vb.label),
+                ord => ord,
             })
-            .collect::<Vec<_>>();
-        let target2index = targets
+            .collect_vec();
+        let label2index = valves
             .iter()
             .enumerate()
-            .map(|(i, valve)| (valve.clone(), i))
+            .map(|(i, valve)| (valve.label.clone(), i))
             .collect::<HashMap<_, _>>();
-        targets.push(String::from("AA"));
+        let mut dists = vec![vec![u32::MAX; valves.len()]; valves.len()];
+        for (i, valve) in valves.iter().enumerate() {
+            dists[i][i] = 0;
+            for t in &valve.tunnels {
+                if let Some(&j) = label2index.get(t) {
+                    dists[i][j] = 1;
+                }
+            }
+        }
+        for k in 0..valves.len() {
+            for i in 0..valves.len() {
+                for j in 0..valves.len() {
+                    dists[i][j] = dists[i][j].min(dists[i][k].saturating_add(dists[k][j]));
+                }
+            }
+        }
+        let flows = BitSet(valves.iter().enumerate().fold(0, |acc, (i, valve)| {
+            acc | (usize::from(valve.flow_rate > 0) << i)
+        }));
         Self {
-            target_map: targets
-                .iter()
-                .map(|src| {
-                    let mut distances = vec![0; targets.len() - 1];
-                    let mut visited = HashSet::new();
-                    let mut vd = VecDeque::new();
-                    vd.push_back((src.clone(), 0));
-                    while let Some((dst, d)) = vd.pop_front() {
-                        if visited.contains(&dst) {
-                            continue;
-                        }
-                        visited.insert(dst.clone());
-                        if let Some(&j) = target2index.get(&dst) {
-                            distances[j] = d;
-                        }
-                        for t in &map[&dst].1 {
-                            vd.push_back((t.clone(), d + 1));
-                        }
-                    }
-                    (map[src].0, distances)
-                })
-                .collect(),
+            valves,
+            dists,
+            flows,
         }
     }
     fn part1(&self) -> Self::Answer1 {
-        let start = self.target_map.len() - 1;
-        self.max_total(start, 30, (1 << start) - 1)
+        *self.max_totals(30).iter().max().unwrap()
     }
     fn part2(&self) -> Self::Answer2 {
-        let start = self.target_map.len() - 1;
-        let all = (1 << start) - 1;
-        (0..=all)
-            .map(|i| self.max_total(start, 26, i) + self.max_total(start, 26, all - i))
-            .max()
-            .unwrap()
+        let v = self
+            .max_totals(26)
+            .into_iter()
+            .enumerate()
+            .filter(|&(_, t)| t > 0)
+            .sorted_by_cached_key(|&(_, t)| Reverse(t))
+            .collect_vec();
+        let mut best = v[0].1;
+        for &(i0, t0) in &v {
+            if t0 * 2 < best {
+                break;
+            }
+            for &(i1, t1) in &v {
+                if i0 & i1 == 0 {
+                    best = best.max(t0 + t1);
+                }
+            }
+        }
+        best
     }
 }
 
