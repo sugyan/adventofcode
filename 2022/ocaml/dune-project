@@ -18,7 +18,7 @@
 (package
  (name aoc2022)
  (synopsis "Advent of Code 2022")
- (description "OCamls solutions for Advent of Code 2022")
+ (description "OCaml solutions for Advent of Code 2022")
  (depends ocaml dune)
  (tags
   (advent-of-code aoc2022)))
