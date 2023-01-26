@@ -1,0 +1,26 @@
+(lang dune 3.6)
+
+(name aoc2022)
+
+(generate_opam_files true)
+
+(source
+ (github sugyan/adventofcode))
+
+(authors "sugyan")
+
+(maintainers "sugyan")
+
+(license LICENSE)
+
+(documentation https://github.com/sugyan/adventofcode)
+
+(package
+ (name aoc2022)
+ (synopsis "Advent of Code 2022")
+ (description "OCamls solutions for Advent of Code 2022")
+ (depends ocaml dune)
+ (tags
+  (advent-of-code aoc2022)))
+
+; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project
