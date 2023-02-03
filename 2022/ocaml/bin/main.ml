@@ -24,6 +24,7 @@ let () =
   let s =
     match !day with
     | 1 -> (module Day01.Solution : Solution.Solve)
+    | 2 -> (module Day02.Solution : Solution.Solve)
     | n -> failwith (Printf.sprintf "Day %d not implemented" n)
   in
   solve s
