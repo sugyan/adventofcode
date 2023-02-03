@@ -1,0 +1,27 @@
+name: OCaml 2022
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "2022/ocaml/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "2022/ocaml/**"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./2022/ocaml
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use OCaml
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: 5.0.x
+      - run: opam install . --deps-only --with-test
+      - run: opam exec -- dune build
+      - run: opam exec -- dune runtest
