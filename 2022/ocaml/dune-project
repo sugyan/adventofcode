@@ -11,7 +11,7 @@
 
 (maintainers "sugyan")
 
-(license LICENSE)
+(license "MIT")
 
 (documentation https://github.com/sugyan/adventofcode)
 

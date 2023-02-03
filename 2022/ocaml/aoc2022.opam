@@ -4,7 +4,7 @@ synopsis: "Advent of Code 2022"
 description: "OCaml solutions for Advent of Code 2022"
 maintainer: ["sugyan"]
 authors: ["sugyan"]
-license: "LICENSE"
+license: "MIT"
 tags: ["advent-of-code" "aoc2022"]
 homepage: "https://github.com/sugyan/adventofcode"
 doc: "https://github.com/sugyan/adventofcode"
@@ -12,6 +12,8 @@ bug-reports: "https://github.com/sugyan/adventofcode/issues"
 depends: [
   "ocaml"
   "dune" {>= "3.6"}
+  "base"
+  "stdio"
   "odoc" {with-doc}
 ]
 build: [
