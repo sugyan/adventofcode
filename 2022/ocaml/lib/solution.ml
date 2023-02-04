@@ -1,5 +1,9 @@
 type answer = Integer of int
 
 module type Solve = sig
-  val solve : in_channel -> answer * answer
+  type t
+
+  val parse : in_channel -> t
+  val part1 : t -> answer
+  val part2 : t -> answer
 end

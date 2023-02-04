@@ -1,17 +1,16 @@
 open Base
 
 module Solution : Solution.Solve = struct
-  let solution input =
-    let sorted_calories =
-      Stdio.In_channel.fold_lines input ~init:(0, []) ~f:(fun (sum, l) ->
-        function "" -> (0, sum :: l) | s -> (sum + Int.of_string s, l))
-      |> (fun (sum, l) -> sum :: l)
-      |> List.sort ~compare:descending
-      |> List.take
-    in
-    fun n -> sorted_calories n |> List.fold ~init:0 ~f:( + )
+  type t = int list
 
-  let solve input =
-    let sum_top_n = solution input in
-    (Solution.Integer (sum_top_n 1), Solution.Integer (sum_top_n 3))
+  let top_n_sum t n = List.take t n |> List.sum (module Int) ~f:Fn.id
+
+  let parse input =
+    Stdio.In_channel.fold_lines input ~init:(0, []) ~f:(fun (sum, l) -> function
+      | "" -> (0, sum :: l) | s -> (sum + Int.of_string s, l))
+    |> (fun (sum, l) -> sum :: l)
+    |> List.sort ~compare:descending
+
+  let part1 t = Solution.Integer (top_n_sum t 1)
+  let part2 t = Solution.Integer (top_n_sum t 3)
 end

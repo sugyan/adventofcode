@@ -15,9 +15,11 @@ let speclist =
 let answer2string = function Solution.Integer i -> Int.to_string i
 
 let solve (module S : Solution.Solve) input =
-  let part1, part2 = S.solve input in
-  if !part <> Some "2" then Printf.printf "Part 1: %s\n" (answer2string part1);
-  if !part <> Some "1" then Printf.printf "Part 2: %s\n" (answer2string part2)
+  let s = S.parse input in
+  if !part <> Some "2" then
+    s |> S.part1 |> answer2string |> Stdio.printf "Part 1: %s\n";
+  if !part <> Some "1" then
+    s |> S.part2 |> answer2string |> Stdio.printf "Part 2: %s\n"
 
 let () =
   Caml.Arg.parse speclist (fun _ -> ()) usage_msg;
