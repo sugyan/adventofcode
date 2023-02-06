@@ -1,16 +1,21 @@
 open Base
 
 module Solution : Solution.Solve = struct
-  type t = int list
-
-  let top_n_sum t n = List.take t n |> List.sum (module Int) ~f:Fn.id
+  type t = int -> int
 
   let parse input =
-    Stdio.In_channel.fold_lines input ~init:(0, []) ~f:(fun (sum, l) -> function
-      | "" -> (0, sum :: l) | s -> (sum + Int.of_string s, l))
-    |> (fun (sum, l) -> sum :: l)
-    |> List.sort ~compare:descending
+    let rec split_by_blank_line xs =
+      let hd, tl = List.split_while xs ~f:(String.( <> ) "") in
+      match tl with [] -> [ hd ] | _ :: tl -> hd :: split_by_blank_line tl
+    in
+    let total_calories =
+      Stdio.In_channel.input_lines input
+      |> split_by_blank_line
+      |> List.map ~f:(fun l -> List.sum (module Int) l ~f:Int.of_string)
+      |> List.sort ~compare:Int.descending
+    in
+    fun n -> List.take total_calories n |> List.sum (module Int) ~f:Fn.id
 
-  let part1 t = Solution.Integer (top_n_sum t 1)
-  let part2 t = Solution.Integer (top_n_sum t 3)
+  let part1 top_n_sum = Solution.Integer (top_n_sum 1)
+  let part2 top_n_sum = Solution.Integer (top_n_sum 3)
 end
