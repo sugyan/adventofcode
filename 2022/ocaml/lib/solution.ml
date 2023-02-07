@@ -1,4 +1,4 @@
-type answer = Integer of int
+type answer = Integer of int | String of string
 
 module type Solve = sig
   type t

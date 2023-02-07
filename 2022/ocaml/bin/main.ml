@@ -12,7 +12,9 @@ let speclist =
     ("-input", Caml.Arg.Set_string infile, "Set input file (default: stdin)");
   ]
 
-let answer2string = function Solution.Integer i -> Int.to_string i
+let answer2string = function
+  | Solution.Integer i -> Int.to_string i
+  | Solution.String s -> s
 
 let solve (module S : Solution.Solve) input =
   let s = S.parse input in
@@ -29,6 +31,7 @@ let () =
     | 2 -> (module Day02.Solution : Solution.Solve)
     | 3 -> (module Day03.Solution : Solution.Solve)
     | 4 -> (module Day04.Solution : Solution.Solve)
+    | 5 -> (module Day05.Solution : Solution.Solve)
     | n -> failwith (Printf.sprintf "Day %d not implemented" n)
   in
   solve s
