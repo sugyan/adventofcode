@@ -11,7 +11,8 @@ module Solution : Solution.Solve = struct
       | _ -> failwith "invalid char"
     in
     Stdio.In_channel.input_lines input
-    |> List.map ~f:(fun line -> String.to_list line |> List.map ~f:priority)
+    |> List.map ~f:String.to_list
+    |> List.map ~f:(List.map ~f:priority)
 
   let part1 items =
     let f l =

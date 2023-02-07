@@ -18,14 +18,11 @@ module Solution : Solution.Solve = struct
       | 'Z' -> Z
       | _ -> failwith "Invalid input"
     in
-    let guide =
-      Stdio.In_channel.input_lines input
-      |> List.map ~f:(fun line ->
-             (String.get line 0 |> parse_abc, String.get line 2 |> parse_xyz))
-    in
+    let parse_line s = (s.[0] |> parse_abc, s.[2] |> parse_xyz) in
+    let guide = Stdio.In_channel.input_lines input |> List.map ~f:parse_line in
     fun f -> guide |> List.sum (module Int) ~f
 
-  let part1 = function
+  let score_part1 = function
     | A, X -> 4 (* 1 + 3 *)
     | A, Y -> 8 (* 2 + 6 *)
     | A, Z -> 3 (* 3 + 0 *)
@@ -36,7 +33,7 @@ module Solution : Solution.Solve = struct
     | C, Y -> 2 (* 2 + 0 *)
     | C, Z -> 6 (* 3 + 3 *)
 
-  let part2 = function
+  let score_part2 = function
     | A, X -> 3 (* 3 + 0 *)
     | A, Y -> 4 (* 1 + 3 *)
     | A, Z -> 8 (* 2 + 6 *)
@@ -47,6 +44,6 @@ module Solution : Solution.Solve = struct
     | C, Y -> 6 (* 3 + 3 *)
     | C, Z -> 7 (* 1 + 6 *)
 
-  let part1 total_score = Solution.Integer (total_score part1)
-  let part2 total_score = Solution.Integer (total_score part2)
+  let part1 total = Solution.Integer (total score_part1)
+  let part2 total = Solution.Integer (total score_part2)
 end

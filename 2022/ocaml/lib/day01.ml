@@ -5,13 +5,13 @@ module Solution : Solution.Solve = struct
 
   let parse input =
     let rec split_by_blank_line xs =
-      let hd, tl = List.split_while xs ~f:(String.( <> ) "") in
+      let hd, tl = List.split_while xs ~f:(String.is_empty |> Fn.non) in
       match tl with [] -> [ hd ] | _ :: tl -> hd :: split_by_blank_line tl
     in
     let total_calories =
       Stdio.In_channel.input_lines input
       |> split_by_blank_line
-      |> List.map ~f:(fun l -> List.sum (module Int) l ~f:Int.of_string)
+      |> List.map ~f:(List.sum (module Int) ~f:Int.of_string)
       |> List.sort ~compare:Int.descending
     in
     fun n -> List.take total_calories n |> List.sum (module Int) ~f:Fn.id
