@@ -19,9 +19,13 @@ let answer2string = function
 let solve (module S : Solution.Solve) input =
   let s = S.parse input in
   if !part <> Some "2" then
-    s |> S.part1 |> answer2string |> Stdio.printf "Part 1: %s\n";
+    s |> S.part1 |> answer2string
+    |> Printf.sprintf "Part 1: %s"
+    |> print_endline;
   if !part <> Some "1" then
-    s |> S.part2 |> answer2string |> Stdio.printf "Part 2: %s\n"
+    s |> S.part2 |> answer2string
+    |> Printf.sprintf "Part 2: %s"
+    |> print_endline
 
 let () =
   Caml.Arg.parse speclist (fun _ -> ()) usage_msg;
@@ -32,6 +36,7 @@ let () =
     | 3 -> (module Day03.Solution : Solution.Solve)
     | 4 -> (module Day04.Solution : Solution.Solve)
     | 5 -> (module Day05.Solution : Solution.Solve)
+    | 6 -> (module Day06.Solution : Solution.Solve)
     | n -> failwith (Printf.sprintf "Day %d not implemented" n)
   in
   solve s
