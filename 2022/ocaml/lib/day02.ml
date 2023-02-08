@@ -44,6 +44,6 @@ module Solution : Solution.Solve = struct
     | C, Y -> 6 (* 3 + 3 *)
     | C, Z -> 7 (* 1 + 6 *)
 
-  let part1 total = Solution.Integer (total score_part1)
-  let part2 total = Solution.Integer (total score_part2)
+  let part1 total = total score_part1 |> Solution.answer_of_integer
+  let part2 total = total score_part2 |> Solution.answer_of_integer
 end

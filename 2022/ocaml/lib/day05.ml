@@ -40,6 +40,6 @@ module Solution : Solution.Solve = struct
       |> Array.filter_map ~f:List.hd
       |> Array.to_list |> String.of_char_list
 
-  let part1 top_crates = Solution.String (top_crates List.rev)
-  let part2 top_crates = Solution.String (top_crates Fn.id)
+  let part1 top_crates = top_crates List.rev |> Solution.answer_of_string
+  let part2 top_crates = top_crates Fn.id |> Solution.answer_of_string
 end

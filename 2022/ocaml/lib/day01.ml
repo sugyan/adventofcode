@@ -16,6 +16,6 @@ module Solution : Solution.Solve = struct
     in
     fun n -> List.take total_calories n |> List.sum (module Int) ~f:Fn.id
 
-  let part1 top_n_sum = Solution.Integer (top_n_sum 1)
-  let part2 top_n_sum = Solution.Integer (top_n_sum 3)
+  let part1 top_n_sum = top_n_sum 1 |> Solution.answer_of_integer
+  let part2 top_n_sum = top_n_sum 3 |> Solution.answer_of_integer
 end

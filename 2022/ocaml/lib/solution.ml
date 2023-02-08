@@ -1,5 +1,8 @@
 type answer = Integer of int | String of string
 
+let answer_of_integer i = Integer i
+let answer_of_string i = String i
+
 module type Solve = sig
   type t
 

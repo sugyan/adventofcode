@@ -20,6 +20,11 @@ module Solution : Solution.Solve = struct
     in
     fun f -> List.count pairs ~f
 
-  let part1 count_pairs = Solution.Integer (count_pairs fully_contains)
-  let part2 count_pairs = Solution.Integer (count_pairs overlaps)
+  let part1 count_pairs =
+    let f = fully_contains in
+    count_pairs f |> Solution.answer_of_integer
+
+  let part2 count_pairs =
+    let f = overlaps in
+    count_pairs f |> Solution.answer_of_integer
 end

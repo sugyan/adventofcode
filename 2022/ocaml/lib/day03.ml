@@ -22,7 +22,7 @@ module Solution : Solution.Solve = struct
         (Set.of_list (module Int) second)
       |> Set.choose_exn
     in
-    Solution.Integer (items |> List.sum (module Int) ~f)
+    items |> List.sum (module Int) ~f |> Solution.answer_of_integer
 
   let part2 items =
     let f l =
@@ -30,5 +30,7 @@ module Solution : Solution.Solve = struct
       |> List.reduce_exn ~f:Set.inter
       |> Set.choose_exn
     in
-    Solution.Integer (List.chunks_of items ~length:3 |> List.sum (module Int) ~f)
+    items |> List.chunks_of ~length:3
+    |> List.sum (module Int) ~f
+    |> Solution.answer_of_integer
 end
