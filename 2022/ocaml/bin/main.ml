@@ -7,10 +7,10 @@ let infile = ref None
 
 let speclist =
   [
-    ("-day", Caml.Arg.Set_int day, "Set day number to solve");
-    ("-part", Caml.Arg.Symbol ([ "1"; "2" ], fun s -> part := Some s), " ");
+    ("-day", Arg.Set_int day, "Set day number to solve");
+    ("-part", Arg.Symbol ([ "1"; "2" ], fun s -> part := Some s), " ");
     ( "-input",
-      Caml.Arg.String (fun s -> infile := Some s),
+      Arg.String (fun s -> infile := Some s),
       "Set input file (default: stdin)" );
   ]
 
@@ -30,7 +30,7 @@ let solve (module S : Solution.Solve) input =
     |> print_endline
 
 let () =
-  Caml.Arg.parse speclist (fun _ -> ()) usage_msg;
+  Arg.parse speclist (fun _ -> ()) usage_msg;
   let s =
     match !day with
     | 1 -> (module Day01.Solution : Solution.Solve)

@@ -19,15 +19,14 @@ module Solution : Solution.Solve = struct
     in
     Array.concat_mapi grid ~f:(fun i row ->
         Array.mapi row ~f:(fun j col ->
-            [ (0, -1); (0, 1); (-1, 0); (1, 0) ]
+            [ (-1, 0); (1, 0); (0, -1); (0, 1) ]
             |> List.map ~f:(collect_trees (i, j))
-            |> List.map ~f:(List.map ~f:(Int.( > ) col))))
+            |> List.map ~f:(List.map ~f:(Fn.flip Int.( < ) col))))
     |> Array.to_list
 
   let part1 lowers =
     let visible l =
-      List.map l ~f:(List.for_all ~f:Fn.id)
-      |> List.fold ~init:false ~f:Caml.Bool.( || )
+      List.map l ~f:(List.for_all ~f:Fn.id) |> List.fold ~init:false ~f:( || )
     in
     lowers |> List.count ~f:visible |> Solution.answer_of_integer
 

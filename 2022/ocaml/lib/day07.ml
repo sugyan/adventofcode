@@ -28,7 +28,7 @@ module Solution : Solution.Solve = struct
 
   let part1 total_scores =
     total_scores
-    |> List.filter ~f:(Int.( >= ) 100_000)
+    |> List.filter ~f:(Fn.flip Int.( <= ) 100_000)
     |> List.sum (module Int) ~f:Fn.id
     |> Solution.answer_of_integer
 
