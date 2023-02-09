@@ -3,13 +3,15 @@ open Aoc2022
 let usage_msg = "main.exe -day <day number> -part <1|2> -input <input file>"
 let day = ref 0
 let part = ref None
-let infile = ref ""
+let infile = ref None
 
 let speclist =
   [
     ("-day", Caml.Arg.Set_int day, "Set day number to solve");
     ("-part", Caml.Arg.Symbol ([ "1"; "2" ], fun s -> part := Some s), " ");
-    ("-input", Caml.Arg.Set_string infile, "Set input file (default: stdin)");
+    ( "-input",
+      Caml.Arg.String (fun s -> infile := Some s),
+      "Set input file (default: stdin)" );
   ]
 
 let answer2string = function
@@ -38,7 +40,12 @@ let () =
     | 5 -> (module Day05.Solution : Solution.Solve)
     | 6 -> (module Day06.Solution : Solution.Solve)
     | 7 -> (module Day07.Solution : Solution.Solve)
+    | 8 -> (module Day08.Solution : Solution.Solve)
     | n -> failwith (Printf.sprintf "Day %d not implemented" n)
   in
-  solve s
-    (if !infile <> "" then Stdio.In_channel.create !infile else Stdio.stdin)
+  let input =
+    match !infile with
+    | Some file -> Stdio.In_channel.create file
+    | None -> Stdio.stdin
+  in
+  solve s input
