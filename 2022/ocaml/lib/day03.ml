@@ -4,10 +4,9 @@ module Solution : Solution.Solve = struct
   type t = int list list
 
   let parse input =
-    let priority c =
-      match c with
-      | 'a' .. 'z' -> Char.to_int c - 96
-      | 'A' .. 'Z' -> Char.to_int c - 38
+    let priority = function
+      | 'a' .. 'z' as c -> Char.to_int c - 96
+      | 'A' .. 'Z' as c -> Char.to_int c - 38
       | _ -> failwith "invalid char"
     in
     Stdio.In_channel.input_lines input
@@ -16,10 +15,10 @@ module Solution : Solution.Solve = struct
 
   let part1 items =
     let f l =
-      let first, second = List.split_n l (List.length l / 2) in
+      let half = List.split_n l (List.length l / 2) in
       Set.inter
-        (Set.of_list (module Int) first)
-        (Set.of_list (module Int) second)
+        (fst half |> Set.of_list (module Int))
+        (snd half |> Set.of_list (module Int))
       |> Set.choose_exn
     in
     items |> List.sum (module Int) ~f |> Solution.answer_of_integer

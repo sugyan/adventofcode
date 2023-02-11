@@ -11,7 +11,9 @@ module Solution : Solution.Solve = struct
     let stacks =
       let stack_of i =
         let extract_crate s =
-          match s.[(i * 4) + 1] with 'A' .. 'Z' as c -> Some c | _ -> None
+          String.get s ((i * 4) + 1) |> function
+          | 'A' .. 'Z' as c -> Some c
+          | _ -> None
         in
         List.filter_map hd ~f:extract_crate
       in
@@ -20,7 +22,7 @@ module Solution : Solution.Solve = struct
     in
     let procedure =
       let parse_procedure s =
-        match String.split s ~on:' ' with
+        String.split s ~on:' ' |> function
         | "move" :: num :: "from" :: from_idx :: "to" :: to_idx :: _ ->
             ( Int.of_string num,
               Int.of_string from_idx - 1,

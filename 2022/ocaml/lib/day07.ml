@@ -6,7 +6,7 @@ module Solution : Solution.Solve = struct
   let parse input =
     let table = Hashtbl.create (module String) in
     let folding_update size acc dir =
-      let id = dir ^ "/" ^ acc in
+      let id = String.concat ~sep:"/" [ dir; acc ] in
       Hashtbl.update table id ~f:(function
         | None -> size
         | Some sum -> sum + size);
@@ -15,7 +15,7 @@ module Solution : Solution.Solve = struct
     let f path = function
       | "$ cd", ".." -> List.tl_exn path
       | "$ cd", dir -> dir :: path
-      | "dir", _ | "$", "ls" -> path
+      | ("dir" | "$"), _ -> path
       | s, _ ->
           List.fold_right path ~init:"" ~f:(folding_update (Int.of_string s))
           |> ignore;

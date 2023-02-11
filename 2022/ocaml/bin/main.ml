@@ -1,17 +1,13 @@
 open Aoc2022
 
-let usage_msg = "main.exe -day <day number> -part <1|2> -input <input file>"
+let usage_msg = "main.exe -day <day number> -part <1|2>"
 let day = ref 0
 let part = ref None
-let infile = ref None
 
 let speclist =
   [
     ("-day", Arg.Set_int day, "Set day number to solve");
     ("-part", Arg.Symbol ([ "1"; "2" ], fun s -> part := Some s), " ");
-    ( "-input",
-      Arg.String (fun s -> infile := Some s),
-      "Set input file (default: stdin)" );
   ]
 
 let answer2string = function
@@ -43,9 +39,4 @@ let () =
     | 8 -> (module Day08.Solution : Solution.Solve)
     | n -> failwith (Printf.sprintf "Day %d not implemented" n)
   in
-  let input =
-    match !infile with
-    | Some file -> Stdio.In_channel.create file
-    | None -> Stdio.stdin
-  in
-  solve s input
+  solve s Stdio.stdin

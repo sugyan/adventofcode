@@ -7,8 +7,9 @@ module Solution : Solution.Solve = struct
     let buffer = Stdio.In_channel.input_line_exn input |> String.to_list in
     fun n ->
       let rec loop l i =
-        if List.take l n |> Set.of_list (module Char) |> Set.length = n then i
-        else loop (List.tl_exn l) i + 1
+        if List.take l n |> List.contains_dup ~compare:Char.compare then
+          loop (List.tl_exn l) i + 1
+        else i
       in
       loop buffer n
 

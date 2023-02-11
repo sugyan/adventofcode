@@ -8,12 +8,12 @@ module Solution : Solution.Solve = struct
 
   let parse input =
     let parse_range s =
-      let left, right = String.lsplit2_exn s ~on:'-' in
-      (Int.of_string left, Int.of_string right)
+      let l, r = String.lsplit2_exn s ~on:'-' in
+      (Int.of_string l, Int.of_string r)
     in
     let parse_assignments s =
-      let left, right = String.lsplit2_exn s ~on:',' in
-      (parse_range left, parse_range right)
+      let l, r = String.lsplit2_exn s ~on:',' in
+      (parse_range l, parse_range r)
     in
     let pairs =
       Stdio.In_channel.input_lines input |> List.map ~f:parse_assignments
