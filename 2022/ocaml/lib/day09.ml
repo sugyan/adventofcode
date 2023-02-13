@@ -19,9 +19,9 @@ module Solution : Solution.Solve = struct
               | "D" -> (0, -1)
               | "L" -> (-1, 0)
               | "R" -> (1, 0)
-              | _ -> failwith "Invalid direction"),
+              | _ -> failwith "invalid direction"),
               Int.of_string steps )
-        | _ -> failwith "Invalid line"
+        | _ -> failwith "invalid line"
       in
       Stdio.In_channel.input_lines input |> List.map ~f:parse_line
     in

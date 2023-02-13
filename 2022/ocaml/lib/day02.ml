@@ -10,13 +10,13 @@ module Solution : Solution.Solve = struct
       | 'A' -> A
       | 'B' -> B
       | 'C' -> C
-      | _ -> failwith "Invalid input"
+      | _ -> failwith "invalid input"
     in
     let parse_xyz = function
       | 'X' -> X
       | 'Y' -> Y
       | 'Z' -> Z
-      | _ -> failwith "Invalid input"
+      | _ -> failwith "invalid input"
     in
     let parse_line s = (s.[0] |> parse_abc, s.[2] |> parse_xyz) in
     let guide = Stdio.In_channel.input_lines input |> List.map ~f:parse_line in

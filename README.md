@@ -9,6 +9,8 @@ My solutions to [Advent of Code](https://adventofcode.com/)
   - [![Rust 2022](https://github.com/sugyan/adventofcode/actions/workflows/rust_2022.yml/badge.svg?branch=main)](https://github.com/sugyan/adventofcode/actions/workflows/rust_2022.yml)
 - Python
   - [![Python 2022](https://github.com/sugyan/adventofcode/actions/workflows/python_2022.yml/badge.svg?branch=main)](https://github.com/sugyan/adventofcode/actions/workflows/python_2022.yml)
+- OCaml
+  - [![OCaml 2022](https://github.com/sugyan/adventofcode/actions/workflows/ocaml_2022.yml/badge.svg?branch=main)](https://github.com/sugyan/adventofcode/actions/workflows/ocaml_2022.yml)
 
 
 ### 2021
