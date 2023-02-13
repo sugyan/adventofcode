@@ -19,7 +19,7 @@
  (name aoc2022)
  (synopsis "Advent of Code 2022")
  (description "OCaml solutions for Advent of Code 2022")
- (depends ocaml dune base stdio)
+ (depends ocaml dune base stdio ppx_jane)
  (tags
   (advent-of-code aoc2022)))
 
