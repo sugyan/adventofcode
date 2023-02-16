@@ -38,15 +38,15 @@ module Solution : Solution.Solve = struct
           let tl, knots = List.fold_map knots ~init:hd ~f:move_knot in
           ((knots, hd), tl)
         in
-        List.init steps ~f:(fun _ -> dir) |> List.fold_map ~init:acc ~f:do_move
+        List.init steps ~f:(Fn.const dir) |> List.fold_map ~init:acc ~f:do_move
       in
-      let knots = List.init (n - 1) ~f:(fun _ -> (0, 0)) in
+      let knots = List.init (n - 1) ~f:(Fn.const (0, 0)) in
       motions
       |> List.folding_map ~init:(knots, (0, 0)) ~f:do_motions
       |> List.concat
       |> Hash_set.of_list (module XY)
       |> Hash_set.length
 
-  let part1 tail_visited = tail_visited 2 |> Solution.answer_of_integer
-  let part2 tail_visited = tail_visited 10 |> Solution.answer_of_integer
+  let part1 tail_visited = tail_visited 2 |> Solution.answer_of_int
+  let part2 tail_visited = tail_visited 10 |> Solution.answer_of_int
 end

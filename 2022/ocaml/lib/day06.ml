@@ -13,6 +13,6 @@ module Solution : Solution.Solve = struct
       in
       loop buffer n
 
-  let part1 processed_count = processed_count 4 |> Solution.answer_of_integer
-  let part2 processed_count = processed_count 14 |> Solution.answer_of_integer
+  let part1 processed_count = processed_count 4 |> Solution.answer_of_int
+  let part2 processed_count = processed_count 14 |> Solution.answer_of_int
 end

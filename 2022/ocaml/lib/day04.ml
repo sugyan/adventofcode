@@ -22,9 +22,9 @@ module Solution : Solution.Solve = struct
 
   let part1 count_pairs =
     let f = fully_contains in
-    count_pairs f |> Solution.answer_of_integer
+    count_pairs f |> Solution.answer_of_int
 
   let part2 count_pairs =
     let f = overlaps in
-    count_pairs f |> Solution.answer_of_integer
+    count_pairs f |> Solution.answer_of_int
 end

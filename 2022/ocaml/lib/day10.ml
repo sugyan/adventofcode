@@ -18,7 +18,7 @@ module Solution : Solution.Solve = struct
     let strength i = i * List.nth_exn values (i - 1) in
     [ 20; 60; 100; 140; 180; 220 ]
     |> List.sum (module Int) ~f:strength
-    |> Solution.answer_of_integer
+    |> Solution.answer_of_int
 
   let part2 values =
     let row chunk =

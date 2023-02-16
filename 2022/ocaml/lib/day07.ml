@@ -28,9 +28,9 @@ module Solution : Solution.Solve = struct
 
   let part1 total_scores =
     total_scores
-    |> List.filter ~f:(Fn.flip Int.( <= ) 100_000)
+    |> List.filter ~f:(Fn.flip ( <= ) 100_000)
     |> List.sum (module Int) ~f:Fn.id
-    |> Solution.answer_of_integer
+    |> Solution.answer_of_int
 
   let part2 total_sizes =
     let max = List.fold total_sizes ~init:0 ~f:Int.max in
@@ -38,5 +38,5 @@ module Solution : Solution.Solve = struct
     total_sizes
     |> List.filter ~f:free_up_enough
     |> List.min_elt ~compare:Int.compare
-    |> Option.value_exn |> Solution.answer_of_integer
+    |> Option.value_exn |> Solution.answer_of_int
 end

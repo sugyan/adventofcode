@@ -21,14 +21,14 @@ module Solution : Solution.Solve = struct
         Array.mapi row ~f:(fun j col ->
             [ (-1, 0); (1, 0); (0, -1); (0, 1) ]
             |> List.map ~f:(collect_trees (i, j))
-            |> List.map ~f:(List.map ~f:(Fn.flip Int.( < ) col))))
+            |> List.map ~f:(List.map ~f:(Fn.flip ( < ) col))))
     |> Array.to_list
 
   let part1 lowers =
     let visible l =
       List.map l ~f:(List.for_all ~f:Fn.id) |> List.fold ~init:false ~f:( || )
     in
-    lowers |> List.count ~f:visible |> Solution.answer_of_integer
+    lowers |> List.count ~f:visible |> Solution.answer_of_int
 
   let part2 lowers =
     let scenic_score l =
@@ -38,9 +38,9 @@ module Solution : Solution.Solve = struct
         | Some (i, _) -> i + 1
         | None -> List.length lower
       in
-      List.map l ~f:distance |> List.fold ~init:1 ~f:Int.( * )
+      List.map l ~f:distance |> List.fold ~init:1 ~f:( * )
     in
     lowers |> List.map ~f:scenic_score
     |> List.fold ~init:0 ~f:Int.max
-    |> Solution.answer_of_integer
+    |> Solution.answer_of_int
 end
