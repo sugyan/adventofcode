@@ -10,19 +10,19 @@ module Solution : Solution.Solve = struct
       |> List.map ~f:to_int_array |> Array.of_list
     in
     let r, c = (Array.length grid, Array.length grid.(0)) in
-    let collect_trees (i, j) (di, dj) =
-      let rec loop acc i j =
-        if i < 0 || i >= r || j < 0 || j >= c then acc
-        else loop (grid.(i).(j) :: acc) (i + di) (j + dj)
+    let f (i, j) =
+      let collect_trees (di, dj) =
+        let rec loop acc i j =
+          if i < 0 || i >= r || j < 0 || j >= c then acc
+          else loop (grid.(i).(j) :: acc) (i + di) (j + dj)
+        in
+        loop [] (i + di) (j + dj) |> List.rev
       in
-      loop [] (i + di) (j + dj) |> List.rev
+      [ (-1, 0); (1, 0); (0, -1); (0, 1) ]
+      |> List.map ~f:collect_trees
+      |> List.map ~f:(List.map ~f:(Fn.flip ( < ) grid.(i).(j)))
     in
-    Array.concat_mapi grid ~f:(fun i row ->
-        Array.mapi row ~f:(fun j col ->
-            [ (-1, 0); (1, 0); (0, -1); (0, 1) ]
-            |> List.map ~f:(collect_trees (i, j))
-            |> List.map ~f:(List.map ~f:(Fn.flip ( < ) col))))
-    |> Array.to_list
+    List.cartesian_product (List.range 0 r) (List.range 0 c) |> List.map ~f
 
   let part1 lowers =
     let visible l =
