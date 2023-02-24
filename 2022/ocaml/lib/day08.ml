@@ -33,7 +33,7 @@ module Solution : Solution.Solve = struct
   let part2 lowers =
     let scenic_score l =
       let distance lower =
-        let f _ = Fn.id |> Fn.non in
+        let f _ = Fn.non Fn.id in
         List.findi lower ~f |> function
         | Some (i, _) -> i + 1
         | None -> List.length lower

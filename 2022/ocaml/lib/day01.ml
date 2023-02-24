@@ -5,7 +5,7 @@ module Solution : Solution.Solve = struct
 
   let parse input =
     let rec split_by_blank_line xs =
-      List.split_while xs ~f:(String.is_empty |> Fn.non) |> function
+      List.split_while xs ~f:(Fn.non String.is_empty) |> function
       | hd, [] -> [ hd ]
       | hd, _ :: tl -> hd :: split_by_blank_line tl
     in

@@ -6,7 +6,7 @@ module Solution : Solution.Solve = struct
   let parse input =
     let hd, tl =
       Stdio.In_channel.input_lines input
-      |> List.split_while ~f:(String.is_empty |> Fn.non)
+      |> List.split_while ~f:(Fn.non String.is_empty)
     in
     let stacks =
       let stack_of i =

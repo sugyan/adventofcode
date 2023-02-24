@@ -21,18 +21,16 @@ module Solution : Solution.Solve = struct
 
   let ( < ) v0 v1 =
     let rec cmp = function
-      | Integer i0, Integer i1 -> Int.compare i0 i1
-      | Integer i, l -> cmp (List [ Integer i ], l)
-      | l, Integer i -> cmp (l, List [ Integer i ])
-      | List l0, List l1 ->
-          let rec loop = function
-            | [], [] -> 0
-            | [], _ -> -1
-            | _, [] -> 1
-            | hd0 :: tl0, hd1 :: tl1 -> (
-                cmp (hd0, hd1) |> function 0 -> loop (tl0, tl1) | o -> o)
-          in
-          loop (l0, l1)
+      | Integer i0, Integer i1 -> compare i0 i1
+      | List l0, List l1 -> cmp_lst (l0, l1)
+      | i, List l -> cmp_lst ([ i ], l)
+      | List l, i -> cmp_lst (l, [ i ])
+    and cmp_lst = function
+      | [], [] -> 0
+      | [], _ -> -1
+      | _, [] -> 1
+      | hd0 :: tl0, hd1 :: tl1 -> (
+          cmp (hd0, hd1) |> function 0 -> cmp_lst (tl0, tl1) | o -> o)
     in
     cmp (v0, v1) < 0
 
@@ -42,9 +40,8 @@ module Solution : Solution.Solve = struct
       | _ -> failwith "invalid input"
     in
     Stdio.In_channel.input_lines input
-    |> List.chunks_of ~length:3
-    |> List.map ~f:(Fn.flip List.take 2)
-    |> List.map ~f:parse_chunks
+    |> List.filter ~f:(Fn.non String.is_empty)
+    |> List.chunks_of ~length:2 |> List.map ~f:parse_chunks
 
   let part1 pairs =
     let f i (l, r) = if l < r then Some (i + 1) else None in
