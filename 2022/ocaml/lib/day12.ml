@@ -3,11 +3,6 @@ open Base
 module Solution : Solution.Solve = struct
   type t = (char -> bool) -> int
 
-  let height = function
-    | 'S' -> Char.to_int 'a'
-    | 'E' -> Char.to_int 'z'
-    | c -> Char.to_int c
-
   let parse input =
     let grid =
       let f line = String.to_array line in
@@ -20,9 +15,14 @@ module Solution : Solution.Solve = struct
         List.cartesian_product (List.range 0 r) (List.range 0 c)
         |> List.find_exn ~f
       in
+      let height = function
+        | 'S' -> Char.to_int 'a'
+        | 'E' -> Char.to_int 'z'
+        | c -> Char.to_int c
+      in
       let mins = Array.make_matrix ~dimx:r ~dimy:c None in
       let q = Queue.create () in
-      let rec loop ((i, j), d) =
+      let rec bfs ((i, j), d) =
         if finish grid.(i).(j) then d
         else
           let h = height grid.(i).(j) in
@@ -37,9 +37,9 @@ module Solution : Solution.Solve = struct
           in
           [ (i - 1, j); (i + 1, j); (i, j - 1); (i, j + 1) ]
           |> List.filter ~f:moveble |> List.iter ~f:enqueue;
-          loop (Queue.dequeue_exn q)
+          bfs (Queue.dequeue_exn q)
       in
-      loop (p, 0)
+      bfs (p, 0)
 
   let part1 min_steps =
     let f = function 'S' -> true | _ -> false in
