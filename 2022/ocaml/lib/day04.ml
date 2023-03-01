@@ -1,10 +1,8 @@
 open Base
+open Solution
 
-module Solution : Solution.Solve = struct
+module Solution : Solve = struct
   type t = ((int * int) * (int * int) -> bool) -> int
-
-  let fully_contains ((a, b), (c, d)) = (a <= c && d <= b) || (c <= a && b <= d)
-  let overlaps ((a, b), (c, d)) = a <= d && c <= b
 
   let parse input =
     let parse_range s =
@@ -21,10 +19,10 @@ module Solution : Solution.Solve = struct
     fun f -> List.count pairs ~f
 
   let part1 count_pairs =
-    let f = fully_contains in
-    count_pairs f |> Solution.answer_of_int
+    count_pairs (fun ((a, b), (c, d)) ->
+        (a <= c && d <= b) || (c <= a && b <= d))
+    |> answer_of_int
 
   let part2 count_pairs =
-    let f = overlaps in
-    count_pairs f |> Solution.answer_of_int
+    count_pairs (fun ((a, b), (c, d)) -> a <= d && c <= b) |> answer_of_int
 end

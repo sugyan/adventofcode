@@ -1,7 +1,14 @@
 open Base
+open Solution
 
-module Solution : Solution.Solve = struct
+module Solution : Solve = struct
   type t = int * int -> int
+
+  type monkey = {
+    items : int list;
+    operation : int -> int;
+    test : int * (int * int);
+  }
 
   let parse input =
     let parse_monkey chunk =
@@ -25,10 +32,10 @@ module Solution : Solution.Solve = struct
         let f s = s |> String.split ~on:' ' |> List.last_exn |> Int.of_string in
         chunk |> Fn.flip List.drop 3 |> Fn.flip List.take 3 |> List.map ~f
         |> function
-        | [ div; t; f ] -> (div, t, f)
+        | [ div; t; f ] -> (div, (t, f))
         | _ -> failwith "invalid test"
       in
-      (items, (operation, test))
+      { items; operation; test }
     in
     let monkeys =
       Stdio.In_channel.input_lines input
@@ -37,20 +44,21 @@ module Solution : Solution.Solve = struct
       |> List.map ~f:parse_monkey
     in
     fun (n, d) ->
-      let items = monkeys |> List.map ~f:fst |> Array.of_list in
+      let items =
+        monkeys |> List.map ~f:(fun { items; _ } -> items) |> Array.of_list
+      in
       let lcm =
-        let f (div, _, _) = div in
-        monkeys |> List.map ~f:snd |> List.map ~f:snd |> List.map ~f
+        monkeys
+        |> List.map ~f:(fun { test = div, _; _ } -> div)
         |> List.fold ~init:1 ~f:( * )
       in
       let inspect counts =
-        let f i (_, (operation, (div, t, f))) =
-          let test x = x |> Fn.flip ( % ) div |> ( = ) 0 in
+        let f i { operation; test = div, (t, f); _ } =
           let ts, fs =
             items.(i) |> List.map ~f:operation
             |> List.map ~f:(Fn.flip ( / ) d)
             |> List.map ~f:(Fn.flip ( % ) lcm)
-            |> List.partition_tf ~f:test
+            |> List.partition_tf ~f:(fun x -> x % div = 0)
           in
           items.(i) <- [];
           items.(t) <- ts @ items.(t);
@@ -60,11 +68,9 @@ module Solution : Solution.Solve = struct
         monkeys |> List.mapi ~f |> List.map2_exn counts ~f:( + )
       in
       Fn.apply_n_times ~n inspect (List.map monkeys ~f:(Fn.const 0))
-      |> List.sort ~compare:Int.descending
+      |> List.sort ~compare:descending
       |> Fn.flip List.take 2 |> List.fold ~init:1 ~f:( * )
 
-  let part1 monkey_business = monkey_business (20, 3) |> Solution.answer_of_int
-
-  let part2 monkey_business =
-    monkey_business (10000, 1) |> Solution.answer_of_int
+  let part1 monkey_business = monkey_business (20, 3) |> answer_of_int
+  let part2 monkey_business = monkey_business (10000, 1) |> answer_of_int
 end

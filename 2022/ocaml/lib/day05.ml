@@ -1,6 +1,7 @@
 open Base
+open Solution
 
-module Solution : Solution.Solve = struct
+module Solution : Solve = struct
   type t = (char list -> char list) -> string
 
   let parse input =
@@ -42,6 +43,6 @@ module Solution : Solution.Solve = struct
       |> Array.filter_map ~f:List.hd
       |> Array.to_list |> String.of_char_list
 
-  let part1 top_crates = top_crates List.rev |> Solution.answer_of_string
-  let part2 top_crates = top_crates Fn.id |> Solution.answer_of_string
+  let part1 top_crates = top_crates List.rev |> answer_of_string
+  let part2 top_crates = top_crates Fn.id |> answer_of_string
 end

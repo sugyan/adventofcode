@@ -1,6 +1,7 @@
 open Base
+open Solution
 
-module Solution : Solution.Solve = struct
+module Solution : Solve = struct
   type t = int list list
 
   let parse input =
@@ -10,8 +11,7 @@ module Solution : Solution.Solve = struct
       | _ -> failwith "invalid char"
     in
     Stdio.In_channel.input_lines input
-    |> List.map ~f:String.to_list
-    |> List.map ~f:(List.map ~f:priority)
+    |> List.map ~f:(fun s -> String.to_list s |> List.map ~f:priority)
 
   let part1 items =
     let f l =
@@ -21,7 +21,7 @@ module Solution : Solution.Solve = struct
         (snd half |> Set.of_list (module Int))
       |> Set.choose_exn
     in
-    items |> List.sum (module Int) ~f |> Solution.answer_of_int
+    items |> List.sum (module Int) ~f |> answer_of_int
 
   let part2 items =
     let f l =
@@ -31,5 +31,5 @@ module Solution : Solution.Solve = struct
     in
     items |> List.chunks_of ~length:3
     |> List.sum (module Int) ~f
-    |> Solution.answer_of_int
+    |> answer_of_int
 end

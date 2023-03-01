@@ -1,13 +1,8 @@
 open Base
+open Solution
 
-module Solution : Solution.Solve = struct
+module Solution : Solve = struct
   type t = int -> int
-
-  module XY = struct
-    type t = int * int [@@deriving compare, sexp_of, hash]
-  end
-
-  let dup x = (x, x)
 
   let parse input =
     let motions =
@@ -15,10 +10,10 @@ module Solution : Solution.Solve = struct
         String.split s ~on:' ' |> function
         | [ dir; steps ] ->
             ( (match dir with
-              | "U" -> (0, 1)
-              | "D" -> (0, -1)
-              | "L" -> (-1, 0)
-              | "R" -> (1, 0)
+              | "U" -> fun (x, y) -> (x, y + 1)
+              | "D" -> fun (x, y) -> (x, y - 1)
+              | "L" -> fun (x, y) -> (x - 1, y)
+              | "R" -> fun (x, y) -> (x + 1, y)
               | _ -> failwith "invalid direction"),
               Int.of_string steps )
         | _ -> failwith "invalid line"
@@ -27,26 +22,26 @@ module Solution : Solution.Solve = struct
     in
     fun n ->
       let do_motions acc (dir, steps) =
-        let do_move (knots, (x, y)) (dx, dy) =
-          let hd = (x + dx, y + dy) in
-          let move_knot acc (x, y) =
-            let dx, dy = (fst acc - x, snd acc - y) in
-            (if Int.abs dx < 2 && Int.abs dy < 2 then (x, y)
-            else (x + Int.compare dx 0, y + Int.compare dy 0))
-            |> dup
+        let do_move knots () =
+          let hd = List.hd_exn knots |> dir in
+          let move_knot (prev_x, prev_y) (x, y) =
+            let dx, dy = (prev_x - x, prev_y - y) in
+            (if abs dx < 2 && abs dy < 2 then (x, y)
+            else (x + compare dx 0, y + compare dy 0))
+            |> fun p -> (p, p)
           in
-          let tl, knots = List.fold_map knots ~init:hd ~f:move_knot in
-          ((knots, hd), tl)
+          List.tl_exn knots |> List.fold_map ~init:hd ~f:move_knot
+          |> fun (last, tl) -> (hd :: tl, last)
         in
-        List.init steps ~f:(Fn.const dir) |> List.fold_map ~init:acc ~f:do_move
+        List.init steps ~f:ignore |> List.fold_map ~init:acc ~f:do_move
       in
-      let knots = List.init (n - 1) ~f:(Fn.const (0, 0)) in
+      let knots = List.init n ~f:(Fn.const (0, 0)) in
       motions
-      |> List.folding_map ~init:(knots, (0, 0)) ~f:do_motions
+      |> List.folding_map ~init:knots ~f:do_motions
       |> List.concat
-      |> Hash_set.of_list (module XY)
+      |> Hash_set.of_list (module Utils.XY)
       |> Hash_set.length
 
-  let part1 tail_visited = tail_visited 2 |> Solution.answer_of_int
-  let part2 tail_visited = tail_visited 10 |> Solution.answer_of_int
+  let part1 tail_visited = tail_visited 2 |> answer_of_int
+  let part2 tail_visited = tail_visited 10 |> answer_of_int
 end

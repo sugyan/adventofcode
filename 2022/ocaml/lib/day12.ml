@@ -1,19 +1,20 @@
 open Base
+open Solution
 
-module Solution : Solution.Solve = struct
+module Solution : Solve = struct
   type t = (char -> bool) -> int
 
   let parse input =
     let grid =
-      let f line = String.to_array line in
-      Stdio.In_channel.input_lines input |> List.map ~f |> List.to_array
+      Stdio.In_channel.input_lines input
+      |> List.map ~f:String.to_array
+      |> List.to_array
     in
     fun finish ->
       let r, c = (Array.length grid, Array.length grid.(0)) in
       let p =
-        let f (i, j) = Char.(grid.(i).(j) = 'E') in
         List.cartesian_product (List.range 0 r) (List.range 0 c)
-        |> List.find_exn ~f
+        |> List.find_exn ~f:(fun (i, j) -> Char.(grid.(i).(j) = 'E'))
       in
       let height = function
         | 'S' -> Char.to_int 'a'
@@ -42,10 +43,8 @@ module Solution : Solution.Solve = struct
       bfs (p, 0)
 
   let part1 min_steps =
-    let f = function 'S' -> true | _ -> false in
-    min_steps f |> Solution.answer_of_int
+    min_steps (function 'S' -> true | _ -> false) |> answer_of_int
 
   let part2 min_steps =
-    let f = function 'S' | 'a' -> true | _ -> false in
-    min_steps f |> Solution.answer_of_int
+    min_steps (function 'S' | 'a' -> true | _ -> false) |> answer_of_int
 end

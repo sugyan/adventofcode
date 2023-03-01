@@ -1,24 +1,22 @@
 open Base
+open Solution
 
-module Solution : Solution.Solve = struct
+module Solution : Solve = struct
   type t = int list
 
   let parse input =
     let table = Hashtbl.create (module String) in
-    let folding_update size acc dir =
-      let id = String.concat ~sep:"/" [ dir; acc ] in
-      Hashtbl.update table id ~f:(function
-        | None -> size
-        | Some sum -> sum + size);
-      id
-    in
     let f path = function
       | "$ cd", ".." -> List.tl_exn path
       | "$ cd", dir -> dir :: path
       | ("dir" | "$"), _ -> path
       | s, _ ->
-          List.fold_right path ~init:"" ~f:(folding_update (Int.of_string s))
-          |> ignore;
+          let update n =
+            Hashtbl.update table ~f:(function Some sum -> sum + n | None -> n)
+          in
+          List.rev path
+          |> Utils.scan ~init:"" ~f:(fun acc dir -> dir ^ "/" ^ acc)
+          |> List.iter ~f:(update (Int.of_string s));
           path
     in
     Stdio.In_channel.input_lines input
@@ -30,13 +28,11 @@ module Solution : Solution.Solve = struct
     total_scores
     |> List.filter ~f:(Fn.flip ( <= ) 100_000)
     |> List.sum (module Int) ~f:Fn.id
-    |> Solution.answer_of_int
+    |> answer_of_int
 
   let part2 total_sizes =
-    let max = List.fold total_sizes ~init:0 ~f:Int.max in
-    let free_up_enough size = max - size < 40_000_000 in
+    let max = List.fold total_sizes ~init:0 ~f:max in
     total_sizes
-    |> List.filter ~f:free_up_enough
-    |> List.min_elt ~compare:Int.compare
-    |> Option.value_exn |> Solution.answer_of_int
+    |> List.filter ~f:(fun size -> max - size < 40_000_000)
+    |> List.min_elt ~compare |> Option.value_exn |> answer_of_int
 end

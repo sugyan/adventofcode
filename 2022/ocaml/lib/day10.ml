@@ -1,6 +1,7 @@
 open Base
+open Solution
 
-module Solution : Solution.Solve = struct
+module Solution : Solve = struct
   type t = int list
 
   let parse input =
@@ -18,13 +19,13 @@ module Solution : Solution.Solve = struct
     let strength i = i * List.nth_exn values (i - 1) in
     [ 20; 60; 100; 140; 180; 220 ]
     |> List.sum (module Int) ~f:strength
-    |> Solution.answer_of_int
+    |> answer_of_int
 
   let part2 values =
     let row chunk =
-      let pixel i x = if i - x |> Int.abs < 2 then '#' else '.' in
+      let pixel i x = if i - x |> abs < 2 then '#' else '.' in
       List.mapi chunk ~f:pixel |> String.of_char_list |> ( ^ ) "\n"
     in
     values |> List.chunks_of ~length:40 |> List.map ~f:row |> String.concat
-    |> Solution.answer_of_string
+    |> answer_of_string
 end

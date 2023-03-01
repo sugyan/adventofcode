@@ -1,6 +1,7 @@
 open Base
+open Solution
 
-module Solution : Solution.Solve = struct
+module Solution : Solve = struct
   type t = int -> int
 
   let parse input =
@@ -13,6 +14,6 @@ module Solution : Solution.Solve = struct
       in
       loop buffer n
 
-  let part1 processed_count = processed_count 4 |> Solution.answer_of_int
-  let part2 processed_count = processed_count 14 |> Solution.answer_of_int
+  let part1 processed_count = processed_count 4 |> answer_of_int
+  let part2 processed_count = processed_count 14 |> answer_of_int
 end

@@ -12,23 +12,19 @@ module Solution : Solve = struct
           let x, y = String.lsplit2_exn s ~on:',' in
           (Int.of_string x, Int.of_string y)
         in
-        let rec pairs = function
-          | [] | [ _ ] -> []
-          | a :: b :: tl -> (a, b) :: pairs (b :: tl)
-        in
         String.split line ~on:' '
         |> List.filter ~f:(String.( <> ) "->")
-        |> List.map ~f:parse_xy |> pairs
+        |> List.map ~f:parse_xy |> Utils.pairs
         |> List.map ~f:(fun ((x0, y0), (x1, y1)) ->
                List.cartesian_product
                  (List.range (min x0 x1) (max x0 x1) ~stop:`inclusive)
                  (List.range (min y0 y1) (max y0 y1) ~stop:`inclusive))
         |> List.concat
-        |> Hash_set.of_list (module Common.XY)
+        |> Hash_set.of_list (module Utils.XY)
       in
       Stdio.In_channel.input_lines input
       |> List.map ~f:parse_line
-      |> List.fold ~init:(Hash_set.create (module Common.XY)) ~f:Hash_set.union
+      |> List.fold ~init:(Hash_set.create (module Utils.XY)) ~f:Hash_set.union
     in
     let ymax =
       Hash_set.to_list cave |> List.map ~f:snd |> List.fold ~init:0 ~f:max

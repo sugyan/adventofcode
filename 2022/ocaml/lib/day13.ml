@@ -1,6 +1,7 @@
 open Base
+open Solution
 
-module Solution : Solution.Solve = struct
+module Solution : Solve = struct
   type value = Integer of int | List of value list
   type t = (value * value) list
 
@@ -44,17 +45,17 @@ module Solution : Solution.Solve = struct
     |> List.chunks_of ~length:2 |> List.map ~f:parse_chunks
 
   let part1 pairs =
-    let f i (l, r) = if l < r then Some (i + 1) else None in
-    pairs |> List.filter_mapi ~f
+    pairs
+    |> List.filter_mapi ~f:(fun i (l, r) ->
+           if l < r then Some (i + 1) else None)
     |> List.sum (module Int) ~f:Fn.id
-    |> Solution.answer_of_int
+    |> answer_of_int
 
   let part2 pairs =
     let packets =
-      let to_list pair = [ fst pair; snd pair ] in
-      pairs |> List.map ~f:to_list |> List.concat
+      pairs |> List.map ~f:(fun pair -> [ fst pair; snd pair ]) |> List.concat
     in
-    let f i p = i + 1 + List.count packets ~f:(Fn.flip ( < ) p) in
-    [ "[[2]]"; "[[6]]" ] |> List.map ~f:parse_packet |> List.mapi ~f
-    |> List.fold ~init:1 ~f:( * ) |> Solution.answer_of_int
+    [ "[[2]]"; "[[6]]" ] |> List.map ~f:parse_packet
+    |> List.mapi ~f:(fun i p -> i + 1 + List.count packets ~f:(Fn.flip ( < ) p))
+    |> List.fold ~init:1 ~f:( * ) |> answer_of_int
 end
