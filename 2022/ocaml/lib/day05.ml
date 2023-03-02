@@ -23,12 +23,8 @@ module Solution : Solve = struct
     in
     let procedure =
       let parse_procedure s =
-        String.split s ~on:' ' |> function
-        | "move" :: num :: "from" :: from_idx :: "to" :: to_idx :: _ ->
-            ( Int.of_string num,
-              Int.of_string from_idx - 1,
-              Int.of_string to_idx - 1 )
-        | _ -> failwith "invalid procedure"
+        Caml.Scanf.sscanf s "move %d from %d to %d" (fun num from_idx to_idx ->
+            (num, from_idx - 1, to_idx - 1))
       in
       List.drop tl 1 |> List.map ~f:parse_procedure
     in

@@ -7,16 +7,14 @@ module Solution : Solve = struct
   let parse input =
     let motions =
       let parse_line s =
-        String.split s ~on:' ' |> function
-        | [ dir; steps ] ->
+        Caml.Scanf.sscanf s "%c %d" (fun dir steps ->
             ( (match dir with
-              | "U" -> fun (x, y) -> (x, y + 1)
-              | "D" -> fun (x, y) -> (x, y - 1)
-              | "L" -> fun (x, y) -> (x - 1, y)
-              | "R" -> fun (x, y) -> (x + 1, y)
+              | 'U' -> fun (x, y) -> (x, y + 1)
+              | 'D' -> fun (x, y) -> (x, y - 1)
+              | 'L' -> fun (x, y) -> (x - 1, y)
+              | 'R' -> fun (x, y) -> (x + 1, y)
               | _ -> failwith "invalid direction"),
-              Int.of_string steps )
-        | _ -> failwith "invalid line"
+              steps ))
       in
       Stdio.In_channel.input_lines input |> List.map ~f:parse_line
     in
