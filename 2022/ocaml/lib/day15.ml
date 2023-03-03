@@ -12,21 +12,17 @@ module Solution : Solve = struct
   let distance (x1, y1) (x2, y2) = abs (x1 - x2) + abs (y1 - y2)
 
   let ranges y reports =
-    let rec loop acc = function
-      | [] -> acc
-      | (xmin, xmax) :: tl ->
-          (match acc with
-          | [] -> [ (xmin, xmax) ]
-          | (xmin', xmax') :: tl' ->
-              if xmin > xmax' + 1 then (xmin, xmax) :: acc
-              else (xmin', max xmax xmax') :: tl')
-          |> Fn.flip loop tl
+    let rec loop = function
+      | ([] | [ _ ]) as acc -> acc
+      | (xmin0, xmax0) :: (xmin1, xmax1) :: tl ->
+          if xmin1 > xmax0 + 1 then (xmin0, xmax0) :: loop tl
+          else loop ((xmin0, max xmax0 xmax1) :: tl)
     in
     List.filter_map reports ~f:(fun ((sx, sy), (bx, by)) ->
         let d = distance (sx, sy) (bx, by) - abs (y - sy) in
         if d >= 0 then Some (sx - d, sx + d) else None)
     |> List.sort ~compare:Poly.compare
-    |> loop []
+    |> loop
 
   let parse input =
     let parse_line line =
@@ -49,10 +45,20 @@ module Solution : Solve = struct
     |> Fn.flip ( - ) xs |> answer_of_int
 
   let part2 reports =
-    List.range 0 max_coordinate
+    let ds =
+      List.map reports ~f:(fun ((sx, sy), b) -> (sx, sy, distance (sx, sy) b))
+    in
+    List.cartesian_product
+      (List.fold ds ~init:[ 0 ] ~f:(fun acc (x, y, d) ->
+           (y - x + (d + 1)) :: (y - x - (d + 1)) :: acc))
+      (List.fold ds ~init:[ max_coordinate ] ~f:(fun acc (x, y, d) ->
+           (y + x + (d + 1)) :: (y + x - (d + 1)) :: acc))
+    |> List.map ~f:(fun (b0, b1) -> (b0 + b1) / 2)
+    |> List.filter ~f:(fun y -> y >= 0 && y <= max_coordinate)
+    |> List.dedup_and_sort ~compare
     |> List.find_map_exn ~f:(fun y ->
            ranges y reports |> function
-           | [ (xmin, _); _ ] -> Some (((xmin - 1) * 4_000_000) + y)
+           | [ (_, xmax); _ ] -> Some (((xmax + 1) * 4_000_000) + y)
            | _ -> None)
     |> answer_of_int
 end
