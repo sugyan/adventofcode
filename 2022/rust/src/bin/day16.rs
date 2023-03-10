@@ -31,7 +31,7 @@ impl FromStr for Valve {
 }
 
 #[derive(Clone, Copy)]
-struct BitSet(usize);
+struct BitSet(u64);
 
 impl Iterator for BitSet {
     type Item = usize;
@@ -77,7 +77,9 @@ impl Solution {
         totals
     }
     fn search(&self, i: usize, opened: BitSet, minutes: u32, total: u32, totals: &mut Vec<u32>) {
-        totals[opened.0] = totals[opened.0].max(total);
+        if let Some(max) = totals.get_mut(opened.0 as usize) {
+            *max = total.max(*max)
+        }
         for j in self.flows & !opened {
             let remain = minutes.saturating_sub(self.dists[i][j] + 1);
             if remain > 0 {
@@ -129,7 +131,7 @@ impl Solve for Solution {
             }
         }
         let flows = BitSet(valves.iter().enumerate().fold(0, |acc, (i, valve)| {
-            acc | (usize::from(valve.flow_rate > 0) << i)
+            acc | (u64::from(valve.flow_rate > 0) << i)
         }));
         Self {
             valves,
