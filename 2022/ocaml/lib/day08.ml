@@ -7,7 +7,7 @@ module Solution : Solve = struct
   let parse input =
     let grid =
       Stdio.In_channel.input_lines input
-      |> List.map ~f:(fun s -> String.to_array s |> Array.map ~f:Char.to_int)
+      |> List.map ~f:(Fn.compose (Array.map ~f:Char.to_int) String.to_array)
       |> Array.of_list
     in
     let r, c = (Array.length grid, Array.length grid.(0)) in

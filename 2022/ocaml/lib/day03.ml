@@ -11,7 +11,7 @@ module Solution : Solve = struct
       | _ -> failwith "invalid char"
     in
     Stdio.In_channel.input_lines input
-    |> List.map ~f:(fun s -> String.to_list s |> List.map ~f:priority)
+    |> List.map ~f:(Fn.compose (List.map ~f:priority) String.to_list)
 
   let part1 items =
     let f l =

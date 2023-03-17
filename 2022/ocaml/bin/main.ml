@@ -26,7 +26,7 @@ let solve (module S : Solution.Solve) input =
     |> print_endline
 
 let () =
-  Arg.parse speclist (fun _ -> ()) usage_msg;
+  Arg.parse speclist ignore usage_msg;
   let s =
     match !day with
     | 1 -> (module Day01.Solution : Solution.Solve)
