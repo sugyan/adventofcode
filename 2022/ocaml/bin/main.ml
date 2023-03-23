@@ -45,6 +45,7 @@ let () =
     | 14 -> (module Day14.Solution : Solution.Solve)
     | 15 -> (module Day15.Solution : Solution.Solve)
     | 16 -> (module Day16.Solution : Solution.Solve)
+    | 17 -> (module Day17.Solution : Solution.Solve)
     | n -> failwith (Printf.sprintf "day %d not implemented" n)
   in
   solve s Stdio.stdin
