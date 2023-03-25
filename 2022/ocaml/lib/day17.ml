@@ -35,24 +35,24 @@ module Solution : Solve = struct
             top + ((top - top') * ((num_rocks - n) / (n - n')))
         | _ ->
             Hashtbl.set cache ~key ~data:(n, top);
-            if n = num_rocks then top else simulate n j top
-      and simulate n j top =
-        let r, h = aor.(n % 5) in
-        let c (dx, dy) =
-          List.map r ~f:(fun (x, y) -> (x + dx, y + dy))
-          |> List.for_all ~f:(fun (x, y) ->
-                 x >= 0 && x < 7 && y > 0 && not (Hash_set.mem tower (x, y)))
-        in
-        let rec fall (x, y) i =
-          ( (match aoj.((j + i) % len) with L -> (x - 1, y) | R -> (x + 1, y))
-          |> fun d -> if c d then d else (x, y) )
-          |> fun (x, y) ->
-          if c (x, y - 1) then fall (x, y - 1) (i + 1) else ((x, y), i + 1)
-        in
-        let (x', y'), j' = fall (2, top + 4) 0 in
-        List.map r ~f:(fun (x, y) -> (x + x', y + y'))
-        |> List.iter ~f:(Hash_set.add tower);
-        loop (n + 1) (j + j') (max top (y' + h))
+            let r, h = aor.(n % 5) in
+            let c (dx, dy) =
+              List.map r ~f:(fun (x, y) -> (x + dx, y + dy))
+              |> List.for_all ~f:(fun (x, y) ->
+                     x >= 0 && x < 7 && y > 0 && not (Hash_set.mem tower (x, y)))
+            in
+            let rec fall (x, y) i =
+              ( (match aoj.((j + i) % len) with
+                | L -> (x - 1, y)
+                | R -> (x + 1, y))
+              |> fun d -> if c d then d else (x, y) )
+              |> fun (x, y) ->
+              if c (x, y - 1) then fall (x, y - 1) (i + 1) else ((x, y), i + 1)
+            in
+            let (x', y'), j' = fall (2, top + 4) 0 in
+            List.map r ~f:(fun (x, y) -> (x + x', y + y'))
+            |> List.iter ~f:(Hash_set.add tower);
+            loop (n + 1) (j + j') (max top (y' + h))
       in
       loop 0 0 0
 
