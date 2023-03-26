@@ -49,8 +49,8 @@ impl Solve for Solution {
             .iter()
             .map(|&(x, y, z)| {
                 [x % maxs[0], y % maxs[1], z % maxs[2]]
-                    .iter()
-                    .filter(|&r| *r == 0)
+                    .into_iter()
+                    .filter(|r| *r == 0)
                     .count()
             })
             .sum();
@@ -67,15 +67,15 @@ impl Solve for Solution {
                 (0, !0, 0),
                 (0, 0, !0),
             ] {
-                let [xx, yy, zz] = [x.wrapping_add(dx), y.wrapping_add(dy), z.wrapping_add(dz)];
-                if (0..=maxs[0]).contains(&xx)
-                    && (0..=maxs[1]).contains(&yy)
-                    && (0..=maxs[2]).contains(&zz)
+                let [x, y, z] = [x.wrapping_add(dx), y.wrapping_add(dy), z.wrapping_add(dz)];
+                if (0..=maxs[0]).contains(&x)
+                    && (0..=maxs[1]).contains(&y)
+                    && (0..=maxs[2]).contains(&z)
                 {
-                    if self.cubes.contains(&(xx, yy, zz)) {
+                    if self.cubes.contains(&(x, y, z)) {
                         ret += 1;
                     } else {
-                        vd.push_back([xx, yy, zz]);
+                        vd.push_back([x, y, z]);
                     }
                 }
             }
