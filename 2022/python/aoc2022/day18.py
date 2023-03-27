@@ -20,33 +20,26 @@ class Solution(Solve):
 
     def part2(self) -> int:
         maxs = [max(map(lambda c: c[i], self.cubes)) + 1 for i in range(3)]
-        seen = set()
+        seen: set[coord] = set()
         d = deque([(-1, -1, -1)])
-        count = 0
         while d:
             c = d.popleft()
-            if c in seen:
-                continue
-            seen.add(c)
-            for n in self.neighbors(c):
-                if n in seen or not all([-1 <= n[i] <= maxs[i] for i in range(3)]):
-                    continue
-                if n in self.cubes:
-                    count += 1
-                else:
+            for n in self.neighbors(c) - seen - self.cubes:
+                if all([-1 <= n[i] <= maxs[i] for i in range(3)]):
+                    seen.add(n)
                     d.append(n)
-        return count
+        return sum(c in seen for c in chain(*map(self.neighbors, self.cubes)))
 
     @staticmethod
-    def neighbors(cube: coord) -> list[coord]:
-        return [
+    def neighbors(cube: coord) -> set[coord]:
+        return {
             (cube[0] - 1, cube[1], cube[2]),
             (cube[0] + 1, cube[1], cube[2]),
             (cube[0], cube[1] - 1, cube[2]),
             (cube[0], cube[1] + 1, cube[2]),
             (cube[0], cube[1], cube[2] - 1),
             (cube[0], cube[1], cube[2] + 1),
-        ]
+        }
 
 
 if __name__ == "__main__":
