@@ -3,8 +3,36 @@ use itertools::Itertools;
 use std::collections::{HashSet, VecDeque};
 use std::io::{BufRead, BufReader, Read};
 
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+struct Coordinate(usize, usize, usize);
+
+impl TryFrom<Option<(usize, usize, usize)>> for Coordinate {
+    type Error = ();
+
+    fn try_from(value: Option<(usize, usize, usize)>) -> Result<Self, Self::Error> {
+        if let Some((x, y, z)) = value {
+            Ok(Self(x, y, z))
+        } else {
+            Err(())
+        }
+    }
+}
+
+impl Coordinate {
+    fn neighbors(&self) -> Vec<Coordinate> {
+        vec![
+            Coordinate(self.0.wrapping_add(!0), self.1, self.2),
+            Coordinate(self.0.wrapping_add(1), self.1, self.2),
+            Coordinate(self.0, self.1.wrapping_add(!0), self.2),
+            Coordinate(self.0, self.1.wrapping_add(1), self.2),
+            Coordinate(self.0, self.1, self.2.wrapping_add(!0)),
+            Coordinate(self.0, self.1, self.2.wrapping_add(1)),
+        ]
+    }
+}
+
 struct Solution {
-    cubes: HashSet<(usize, usize, usize)>,
+    cubes: HashSet<Coordinate>,
 }
 
 impl Solve for Solution {
@@ -20,67 +48,52 @@ impl Solve for Solution {
                     line.split(',')
                         .filter_map(|s| s.parse().ok())
                         .collect_tuple()
+                        .try_into()
+                        .ok()
                 })
                 .collect(),
         }
     }
     fn part1(&self) -> Self::Answer1 {
-        self.cubes.len() * 6
-            - self
-                .cubes
-                .iter()
-                .map(|&(x, y, z)| {
-                    [(x + 1, y, z), (x, y + 1, z), (x, y, z + 1)]
-                        .iter()
-                        .filter(|p| self.cubes.contains(p))
-                        .count()
-                        * 2
-                })
-                .sum::<usize>()
-    }
-    fn part2(&self) -> Self::Answer2 {
-        let maxs = self.cubes.iter().fold([0, 0, 0], |acc, &(x, y, z)| {
-            [acc[0].max(x), acc[1].max(y), acc[2].max(z)]
-        });
-        let mut seen = vec![vec![vec![false; maxs[2] + 1]; maxs[1] + 1]; maxs[0] + 1];
-        let mut vd = VecDeque::<[usize; 3]>::from([[0, 0, 0]]);
-        let mut ret = self
-            .cubes
+        self.cubes
             .iter()
-            .map(|&(x, y, z)| {
-                [x % maxs[0], y % maxs[1], z % maxs[2]]
-                    .into_iter()
-                    .filter(|r| *r == 0)
+            .map(|cube| {
+                cube.neighbors()
+                    .iter()
+                    .filter(|c| !self.cubes.contains(c))
                     .count()
             })
-            .sum();
-        while let Some([x, y, z]) = vd.pop_front() {
-            if seen[x][y][z] {
-                continue;
-            }
-            seen[x][y][z] = true;
-            for &(dx, dy, dz) in &[
-                (1, 0, 0),
-                (0, 1, 0),
-                (0, 0, 1),
-                (!0, 0, 0),
-                (0, !0, 0),
-                (0, 0, !0),
-            ] {
-                let [x, y, z] = [x.wrapping_add(dx), y.wrapping_add(dy), z.wrapping_add(dz)];
-                if (0..=maxs[0]).contains(&x)
-                    && (0..=maxs[1]).contains(&y)
-                    && (0..=maxs[2]).contains(&z)
-                {
-                    if self.cubes.contains(&(x, y, z)) {
-                        ret += 1;
-                    } else {
-                        vd.push_back([x, y, z]);
-                    }
+            .sum()
+    }
+    fn part2(&self) -> Self::Answer2 {
+        let maxs = self.cubes.iter().fold([0, 0, 0], |acc, c| {
+            [acc[0].max(c.0), acc[1].max(c.1), acc[2].max(c.2)]
+        });
+        let in_range = |c: &Coordinate| {
+            (0..=maxs[0]).contains(&c.0)
+                && (0..=maxs[1]).contains(&c.1)
+                && (0..=maxs[2]).contains(&c.2)
+        };
+
+        let mut seen = vec![vec![vec![false; maxs[2] + 1]; maxs[1] + 1]; maxs[0] + 1];
+        let mut vd = VecDeque::from([Coordinate(0, 0, 0)]);
+        while let Some(c) = vd.pop_front() {
+            for n in &c.neighbors() {
+                if in_range(n) && !seen[n.0][n.1][n.2] && !self.cubes.contains(n) {
+                    vd.push_back(*n);
+                    seen[n.0][n.1][n.2] = true;
                 }
             }
         }
-        ret
+        self.cubes
+            .iter()
+            .map(|cube| {
+                cube.neighbors()
+                    .iter()
+                    .filter(|&n| !in_range(n) || seen[n.0][n.1][n.2])
+                    .count()
+            })
+            .sum()
     }
 }
 
