@@ -15,7 +15,7 @@ class Solution(Solve):
 
     def part1(self) -> int:
         return len(
-            [c for c in chain(*map(self.neighbors, self.cubes)) if c not in self.cubes]
+            [c for c in chain(*map(self.adjacents, self.cubes)) if c not in self.cubes]
         )
 
     def part2(self) -> int:
@@ -24,14 +24,14 @@ class Solution(Solve):
         d = deque([(-1, -1, -1)])
         while d:
             c = d.popleft()
-            for n in self.neighbors(c) - seen - self.cubes:
+            for n in self.adjacents(c) - seen - self.cubes:
                 if all([-1 <= n[i] <= maxs[i] for i in range(3)]):
                     seen.add(n)
                     d.append(n)
-        return sum(c in seen for c in chain(*map(self.neighbors, self.cubes)))
+        return sum(c in seen for c in chain(*map(self.adjacents, self.cubes)))
 
     @staticmethod
-    def neighbors(cube: coord) -> set[coord]:
+    def adjacents(cube: coord) -> set[coord]:
         return {
             (cube[0] - 1, cube[1], cube[2]),
             (cube[0] + 1, cube[1], cube[2]),

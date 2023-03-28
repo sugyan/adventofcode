@@ -19,15 +19,15 @@ impl TryFrom<Option<(usize, usize, usize)>> for Coordinate {
 }
 
 impl Coordinate {
-    fn neighbors(&self) -> Vec<Coordinate> {
-        vec![
+    fn adjacents(&self) -> HashSet<Coordinate> {
+        HashSet::from([
             Coordinate(self.0.wrapping_add(!0), self.1, self.2),
             Coordinate(self.0.wrapping_add(1), self.1, self.2),
             Coordinate(self.0, self.1.wrapping_add(!0), self.2),
             Coordinate(self.0, self.1.wrapping_add(1), self.2),
             Coordinate(self.0, self.1, self.2.wrapping_add(!0)),
             Coordinate(self.0, self.1, self.2.wrapping_add(1)),
-        ]
+        ])
     }
 }
 
@@ -57,12 +57,7 @@ impl Solve for Solution {
     fn part1(&self) -> Self::Answer1 {
         self.cubes
             .iter()
-            .map(|cube| {
-                cube.neighbors()
-                    .iter()
-                    .filter(|c| !self.cubes.contains(c))
-                    .count()
-            })
+            .map(|cube| cube.adjacents().difference(&self.cubes).count())
             .sum()
     }
     fn part2(&self) -> Self::Answer2 {
@@ -78,8 +73,8 @@ impl Solve for Solution {
         let mut seen = vec![vec![vec![false; maxs[2] + 1]; maxs[1] + 1]; maxs[0] + 1];
         let mut vd = VecDeque::from([Coordinate(0, 0, 0)]);
         while let Some(c) = vd.pop_front() {
-            for n in &c.neighbors() {
-                if in_range(n) && !seen[n.0][n.1][n.2] && !self.cubes.contains(n) {
+            for n in c.adjacents().difference(&self.cubes) {
+                if in_range(n) && !seen[n.0][n.1][n.2] {
                     vd.push_back(*n);
                     seen[n.0][n.1][n.2] = true;
                 }
@@ -88,7 +83,7 @@ impl Solve for Solution {
         self.cubes
             .iter()
             .map(|cube| {
-                cube.neighbors()
+                cube.adjacents()
                     .iter()
                     .filter(|&n| !in_range(n) || seen[n.0][n.1][n.2])
                     .count()
