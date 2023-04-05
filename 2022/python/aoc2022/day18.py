@@ -31,14 +31,14 @@ class Solution(Solve):
         return sum(c in seen for c in chain(*map(self.adjacents, self.cubes)))
 
     @staticmethod
-    def adjacents(cube: coord) -> set[coord]:
+    def adjacents(c: coord) -> set[coord]:
         return {
-            (cube[0] - 1, cube[1], cube[2]),
-            (cube[0] + 1, cube[1], cube[2]),
-            (cube[0], cube[1] - 1, cube[2]),
-            (cube[0], cube[1] + 1, cube[2]),
-            (cube[0], cube[1], cube[2] - 1),
-            (cube[0], cube[1], cube[2] + 1),
+            (c[0] - 1, c[1], c[2]),
+            (c[0] + 1, c[1], c[2]),
+            (c[0], c[1] - 1, c[2]),
+            (c[0], c[1] + 1, c[2]),
+            (c[0], c[1], c[2] - 1),
+            (c[0], c[1], c[2] + 1),
         }
 
 

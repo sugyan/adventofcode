@@ -57,7 +57,7 @@ impl Solve for Solution {
     fn part1(&self) -> Self::Answer1 {
         self.cubes
             .iter()
-            .map(|cube| cube.adjacents().difference(&self.cubes).count())
+            .map(|c| c.adjacents().difference(&self.cubes).count())
             .sum()
     }
     fn part2(&self) -> Self::Answer2 {
@@ -82,8 +82,8 @@ impl Solve for Solution {
         }
         self.cubes
             .iter()
-            .map(|cube| {
-                cube.adjacents()
+            .map(|c| {
+                c.adjacents()
                     .iter()
                     .filter(|&n| !in_range(n) || seen[n.0][n.1][n.2])
                     .count()
