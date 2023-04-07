@@ -5,37 +5,44 @@ from typing import TextIO
 
 from aoc2022 import Solve, run
 
-Units = list[int]
-
 
 @dataclass
 class Blueprint:
-    costs: tuple[Units, Units, Units, Units]
-    maxs: list[int]
+    costs: tuple[list[int], ...]
+    maxs: tuple[int, ...]
 
     def max_geodes(self, minutes: int) -> int:
-        def dfs(robots: Units, resources: Units, minutes: int) -> int:
-            ret = resources[3] + robots[3] * minutes
-            for i in range(4):
-                if (
-                    i < 3 and resources[i] >= (self.maxs[i] - robots[i]) * minutes
-                ) or any(self.costs[i][j] > 0 and robots[j] == 0 for j in range(4)):
+        best = 0
+
+        def dfs(robots: list[int], resources: list[int], minutes: int) -> None:
+            nonlocal best
+
+            geodes = resources[3] + robots[3] * minutes
+            if geodes + (minutes - 1) * minutes // 2 < best:
+                return
+
+            best = max(best, geodes)
+            for i, costs in enumerate(self.costs):
+                if i < 3 and resources[i] >= (self.maxs[i] - robots[i]) * minutes:
                     continue
-                wait = max(
-                    max(0, (self.costs[i][j] - resources[j] - 1) // robots[j] + 1)
+                if any(c > 0 and r == 0 for c, r in zip(costs, robots)):
+                    continue
+                waits = (
+                    (costs[j] - resources[j] - 1) // robots[j] + 1
                     for j in range(4)
-                    if robots[j] > 0
+                    if robots[j] > 0 and costs[j] > resources[j]
                 )
+                wait = max(waits, default=0)
                 if wait >= minutes:
                     continue
-                next_rob, next_res = robots[:], resources[:]
+                next_state = robots[:], resources[:]
                 for j in range(4):
-                    next_res[j] += (wait + 1) * robots[j] - self.costs[i][j]
-                next_rob[i] += 1
-                ret = max(ret, dfs(next_rob, next_res, minutes - wait - 1))
-            return ret
+                    next_state[0][i] += i == j
+                    next_state[1][j] += (wait + 1) * robots[j] - costs[j]
+                dfs(*next_state, minutes - wait - 1)
 
-        return dfs([1, 0, 0, 0], [0, 0, 0, 0], minutes)
+        dfs([1, 0, 0, 0], [0, 0, 0, 0], minutes)
+        return best
 
 
 class Solution(Solve):
@@ -48,7 +55,7 @@ class Solution(Solve):
                 [v[2], v[3], 0, 0],
                 [v[4], 0, v[5], 0],
             )
-            maxs = [max(costs[j][i] for j in range(4)) for i in range(4)]
+            maxs = (max(v[0], v[1], v[2], v[4]), v[3], v[5], 0)
             return Blueprint(costs, maxs)
 
         self.blueprints = list(map(parse_blueprint, io))
