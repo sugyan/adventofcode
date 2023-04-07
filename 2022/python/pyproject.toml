@@ -6,7 +6,7 @@ authors = ["sugyan <sugi1982@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.10"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
