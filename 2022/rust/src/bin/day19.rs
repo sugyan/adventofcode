@@ -11,35 +11,34 @@ struct Blueprint {
 impl Blueprint {
     fn max_geodes(&self, minutes: u32) -> u32 {
         let mut max = 0;
-        self.dfs(minutes, [[0; 4], [1, 0, 0, 0]], &mut max);
+        self.dfs([1, 0, 0, 0], [0; 4], minutes, &mut max);
         max
     }
-    fn dfs(&self, minutes: u32, state: [[u32; 4]; 2], max: &mut u32) {
-        if state[0][3] + state[1][3] * minutes + (minutes + 1) * minutes / 2 < *max {
+    fn dfs(&self, robots: [u32; 4], resources: [u32; 4], minutes: u32, max: &mut u32) {
+        if resources[3] + robots[3] * minutes + (minutes.max(1) - 1) * minutes / 2 < *max {
             return;
         }
         for (i, cost) in self.costs.iter().enumerate() {
-            if i < 3 && state[0][i] >= (self.max[i] - state[1][i]) * minutes
-                || (0..4).any(|j| cost[j] > 0 && state[1][j] == 0)
+            if i < 3 && resources[i] >= (self.max[i] - robots[i]) * minutes
+                || (0..4).any(|j| cost[j] > 0 && robots[j] == 0)
             {
                 continue;
             }
-            let mut state = state;
+            let (mut next_robots, mut next_resources) = (robots, resources);
             let mut wait = 0;
-            while wait < minutes && cost.iter().enumerate().any(|(j, &c)| state[0][j] < c) {
-                (0..4).for_each(|j| state[0][j] += state[1][j]);
+            while wait < minutes && cost.iter().enumerate().any(|(j, &c)| next_resources[j] < c) {
+                (0..4).for_each(|j| next_resources[j] += robots[j]);
                 wait += 1;
             }
             if wait == minutes {
-                *max = state[0][3].max(*max);
+                *max = next_resources[3].max(*max);
             } else {
-                let mut state = state;
                 for (j, c) in cost.iter().enumerate() {
-                    state[0][j] += state[1][j];
-                    state[0][j] -= c;
+                    next_resources[j] += robots[j];
+                    next_resources[j] -= c;
                 }
-                state[1][i] += 1;
-                self.dfs(minutes - wait - 1, state, max);
+                next_robots[i] += 1;
+                self.dfs(next_robots, next_resources, minutes - wait - 1, max);
             }
         }
     }
