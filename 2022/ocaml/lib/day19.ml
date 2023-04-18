@@ -8,6 +8,26 @@ module Solution : Solve = struct
   let max_geodes minutes blueprint =
     let best = ref 0 in
     let rec dfs robots_resources minutes =
+      let target i ((costs, max), (robot, resource)) =
+        let can_build =
+          List.zip_exn costs robots_resources
+          |> List.for_all ~f:(fun (cost, (robot, _)) -> cost = 0 || robot > 0)
+        in
+        let enough = i > 0 && resource >= (max - robot) * minutes in
+        if can_build && not enough then Some (i, costs) else None
+      in
+      let wait_for costs =
+        List.map2_exn robots_resources costs ~f:(fun (robot, resource) cost ->
+            if robot = 0 || resource >= cost then 0
+            else ((cost - resource - 1) / robot) + 1)
+        |> List.fold ~init:0 ~f:max
+      in
+      let builded costs i wait =
+        List.zip_exn robots_resources costs
+        |> List.mapi ~f:(fun j ((robot, resource), cost) ->
+               ( (if j = i then robot + 1 else robot),
+                 resource + ((wait + 1) * robot) - cost ))
+      in
       let geodes =
         List.hd_exn robots_resources |> fun (robot, resource) ->
         resource + (robot * minutes)
@@ -16,31 +36,11 @@ module Solution : Solve = struct
       else (
         best := max !best geodes;
         List.zip_exn blueprint robots_resources
-        |> List.mapi ~f:(fun i x -> (i, x))
-        |> List.rev
-        |> List.filter ~f:(fun (i, ((costs, max), (robot, resource))) ->
-               List.zip_exn costs robots_resources
-               |> List.for_all ~f:(fun (cost, (robot, _)) ->
-                      cost = 0 || robot > 0)
-               && (i = 0 || resource < (max - robot) * minutes))
-        |> List.filter_map ~f:(fun (i, ((costs, _), _)) ->
-               let wait =
-                 List.map2_exn robots_resources costs
-                   ~f:(fun (robot, resource) cost ->
-                     if robot = 0 || resource >= cost then 0
-                     else ((cost - resource - 1) / robot) + 1)
-                 |> List.fold ~init:0 ~f:max
-               in
-               if wait < minutes then Some (i, wait, costs) else None)
-        |> List.iter ~f:(fun (i, wait, costs) ->
-               dfs
-                 (List.zip_exn
-                    (List.mapi robots_resources ~f:(fun j (robot, _) ->
-                         if j = i then robot + 1 else robot))
-                    (List.map2_exn robots_resources costs
-                       ~f:(fun (robot, resource) cost ->
-                         resource + ((wait + 1) * robot) - cost)))
-                 (minutes - wait - 1)))
+        |> List.filter_mapi ~f:target
+        |> List.iter ~f:(fun (i, costs) ->
+               let wait = wait_for costs in
+               if wait >= minutes then ()
+               else dfs (builded costs i wait) (minutes - wait - 1)))
     in
     dfs [ (0, 0); (0, 0); (0, 0); (1, 0) ] minutes;
     !best
