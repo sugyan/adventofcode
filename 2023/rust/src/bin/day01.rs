@@ -69,7 +69,6 @@ mod tests {
     #[test]
     fn part1() {
         assert_eq!(
-            142,
             Solution::new(
                 r"
 1abc2
@@ -79,14 +78,14 @@ treb7uchet
 "[1..]
                     .as_bytes()
             )
-            .part1()
+            .part1(),
+            142
         );
     }
 
     #[test]
     fn part2() {
         assert_eq!(
-            281,
             Solution::new(
                 r"
 two1nine
@@ -99,7 +98,8 @@ zoneight234
 "[1..]
                     .as_bytes()
             )
-            .part2()
+            .part2(),
+            281,
         );
     }
 }
