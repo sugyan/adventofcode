@@ -20,9 +20,9 @@ impl FromStr for Game {
 }
 
 struct Cubes {
-    red: usize,
-    green: usize,
-    blue: usize,
+    red: u32,
+    green: u32,
+    blue: u32,
 }
 
 impl FromStr for Cubes {
@@ -77,7 +77,15 @@ impl Solve for Solution {
             .sum()
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        self.games
+            .iter()
+            .map(|game| {
+                let (r, g, b) = game.subsets.iter().fold((0, 0, 0), |(r, g, b), cubes| {
+                    (r.max(cubes.red), g.max(cubes.green), b.max(cubes.blue))
+                });
+                r * g * b
+            })
+            .sum()
     }
 }
 
@@ -105,5 +113,10 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green
     #[test]
     fn part1() {
         assert_eq!(Solution::new(example_input()).part1(), 8);
+    }
+
+    #[test]
+    fn part2() {
+        assert_eq!(Solution::new(example_input()).part2(), 2286);
     }
 }
