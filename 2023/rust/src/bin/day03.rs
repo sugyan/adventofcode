@@ -1,8 +1,12 @@
 use aoc2023::Solve;
+use itertools::Itertools;
+use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Read};
 
+type Symbol = (u8, (usize, usize));
+
 struct Solution {
-    schematic: Vec<Vec<char>>,
+    numbers: Vec<(u32, Vec<Symbol>)>,
 }
 
 impl Solve for Solution {
@@ -10,45 +14,70 @@ impl Solve for Solution {
     type Answer2 = u32;
 
     fn new(r: impl Read) -> Self {
-        Self {
-            schematic: BufReader::new(r)
-                .lines()
-                .map_while(Result::ok)
-                .map(|s| s.chars().collect())
-                .collect(),
-        }
-    }
-    fn part1(&self) -> Self::Answer1 {
-        let (rows, cols) = (self.schematic.len(), self.schematic[0].len());
-        let mut ret = 0;
-        for (i, row) in self.schematic.iter().enumerate() {
-            for (j, c) in row.iter().enumerate() {
-                if !c.is_ascii_digit() || (j != 0 && row[j - 1].is_ascii_digit()) {
+        let schematic = BufReader::new(r)
+            .lines()
+            .map_while(Result::ok)
+            .map(|s| s.bytes().collect::<Vec<_>>())
+            .collect::<Vec<_>>();
+        let (rows, cols) = (schematic.len(), schematic[0].len());
+        let mut numbers = Vec::new();
+        for (i, row) in schematic.iter().enumerate() {
+            for (j, b) in row.iter().enumerate() {
+                if !b.is_ascii_digit() || (j != 0 && row[j - 1].is_ascii_digit()) {
                     continue;
                 }
-                let (mut number, mut len) = (u32::from(*c as u8 - b'0'), 1);
-                while j + len < cols && self.schematic[i][j + len].is_ascii_digit() {
-                    number = number * 10 + u32::from(row[j + len] as u8 - b'0');
+                let (mut number, mut len) = (u32::from(b - b'0'), 1);
+                while j + len < cols && schematic[i][j + len].is_ascii_digit() {
+                    number = number * 10 + u32::from(row[j + len] - b'0');
                     len += 1;
                 }
-                let mut is_part = false;
-                for ii in (i.max(1) - 1)..=(i + 1).min(rows - 1) {
-                    for jj in (j.max(1) - 1)..=(j + len).min(cols - 1) {
-                        if !self.schematic[ii][jj].is_ascii_digit() && self.schematic[ii][jj] != '.'
-                        {
-                            is_part = true;
+                let symbols = ((i.max(1) - 1)..=(i + 1).min(rows - 1))
+                    .cartesian_product((j.max(1) - 1)..=(j + len).min(cols - 1))
+                    .filter_map(|(i, j)| {
+                        let b = schematic[i][j];
+                        if !b.is_ascii_digit() && b != b'.' {
+                            Some((b, (i, j)))
+                        } else {
+                            None
                         }
-                    }
+                    })
+                    .collect();
+                numbers.push((number, symbols));
+            }
+        }
+        Self { numbers }
+    }
+    fn part1(&self) -> Self::Answer1 {
+        self.numbers
+            .iter()
+            .filter_map(|(number, symbols)| {
+                if symbols.is_empty() {
+                    None
+                } else {
+                    Some(number)
                 }
-                if is_part {
-                    ret += number;
+            })
+            .sum()
+    }
+    fn part2(&self) -> Self::Answer2 {
+        let mut gears = HashMap::new();
+        for (number, symbols) in &self.numbers {
+            for (c, (i, j)) in symbols {
+                if *c == b'*' {
+                    gears.entry((i, j)).or_insert_with(Vec::new).push(*number);
                 }
             }
         }
-        ret
-    }
-    fn part2(&self) -> Self::Answer2 {
-        todo!()
+        gears
+            .values()
+            .filter_map(|v| {
+                if v.len() == 2 {
+                    Some(v[0] * v[1])
+                } else {
+                    None
+                }
+            })
+            .sum()
     }
 }
 fn main() {
@@ -80,5 +109,10 @@ mod tests {
     #[test]
     fn part1() {
         assert_eq!(Solution::new(example_input()).part1(), 4361);
+    }
+
+    #[test]
+    fn part2() {
+        assert_eq!(Solution::new(example_input()).part2(), 467_835);
     }
 }
