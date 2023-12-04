@@ -1,10 +1,11 @@
 use aoc2023::Solve;
+use std::collections::HashSet;
 use std::io::{BufRead, BufReader, Read};
 use std::str::FromStr;
 
 struct Card {
     winnings: Vec<u32>,
-    haves: Vec<u32>,
+    haves: HashSet<u32>,
 }
 
 impl FromStr for Card {
@@ -25,7 +26,7 @@ impl FromStr for Card {
 }
 
 struct Solution {
-    cards: Vec<Card>,
+    matches: Vec<usize>,
 }
 
 impl Solve for Solution {
@@ -34,28 +35,30 @@ impl Solve for Solution {
 
     fn new(r: impl Read) -> Self {
         Self {
-            cards: BufReader::new(r)
+            matches: BufReader::new(r)
                 .lines()
                 .map_while(Result::ok)
-                .filter_map(|s| s.parse().ok())
+                .filter_map(|s| s.parse::<Card>().ok())
+                .map(|card| {
+                    card.winnings
+                        .iter()
+                        .filter(|n| card.haves.contains(n))
+                        .count()
+                })
                 .collect(),
         }
     }
     fn part1(&self) -> Self::Answer1 {
-        self.cards
-            .iter()
-            .map(|card| {
-                (1 << card
-                    .winnings
-                    .iter()
-                    .filter(|n| card.haves.contains(n))
-                    .count())
-                    >> 1
-            })
-            .sum()
+        self.matches.iter().map(|n| (1 << n) >> 1).sum()
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        let mut v = vec![1; self.matches.len()];
+        for (i, n) in self.matches.iter().enumerate() {
+            for j in i + 1..=(i + *n).min(v.len() - 1) {
+                v[j] += v[i];
+            }
+        }
+        v.iter().sum()
     }
 }
 
@@ -84,5 +87,10 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11
     #[test]
     fn part1() {
         assert_eq!(Solution::new(example_input()).part1(), 13);
+    }
+
+    #[test]
+    fn part2() {
+        assert_eq!(Solution::new(example_input()).part2(), 30);
     }
 }
