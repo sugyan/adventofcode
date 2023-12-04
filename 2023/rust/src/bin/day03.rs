@@ -80,6 +80,7 @@ impl Solve for Solution {
             .sum()
     }
 }
+
 fn main() {
     let solution = Solution::new(std::io::stdin().lock());
     println!("Part 1: {}", solution.part1());
