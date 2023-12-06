@@ -14,11 +14,11 @@ impl FromStr for Card {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let (w, h) = s.split(": ").nth(1).unwrap().split_once(" | ").unwrap();
         let winnings = w
-            .split(char::is_whitespace)
+            .split_ascii_whitespace()
             .filter_map(|s| s.parse().ok())
             .collect();
         let haves = h
-            .split(char::is_whitespace)
+            .split_ascii_whitespace()
             .filter_map(|s| s.parse().ok())
             .collect();
         Ok(Self { winnings, haves })

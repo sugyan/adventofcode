@@ -15,19 +15,20 @@ impl Solve for Solution {
             .lines()
             .map_while(Result::ok)
             .collect::<Vec<_>>();
-        let times = lines[0]
-            .strip_prefix("Time:")
-            .unwrap()
-            .split_whitespace()
-            .map(String::from)
-            .collect();
-        let distances = lines[1]
-            .strip_prefix("Distance:")
-            .unwrap()
-            .split_whitespace()
-            .map(String::from)
-            .collect();
-        Self { times, distances }
+        Self {
+            times: lines[0]
+                .strip_prefix("Time:")
+                .unwrap()
+                .split_ascii_whitespace()
+                .map(String::from)
+                .collect(),
+            distances: lines[1]
+                .strip_prefix("Distance:")
+                .unwrap()
+                .split_ascii_whitespace()
+                .map(String::from)
+                .collect(),
+        }
     }
     fn part1(&self) -> Self::Answer1 {
         self.times
