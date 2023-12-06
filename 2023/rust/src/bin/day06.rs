@@ -2,12 +2,13 @@ use aoc2023::Solve;
 use std::io::{BufRead, BufReader, Read};
 
 struct Solution {
-    races: Vec<(u32, u32)>,
+    times: Vec<String>,
+    distances: Vec<String>,
 }
 
 impl Solve for Solution {
     type Answer1 = usize;
-    type Answer2 = u32;
+    type Answer2 = usize;
 
     fn new(r: impl Read) -> Self {
         let lines = BufReader::new(r)
@@ -18,24 +19,28 @@ impl Solve for Solution {
             .strip_prefix("Time:")
             .unwrap()
             .split_whitespace()
-            .map(|s| s.parse().unwrap());
+            .map(String::from)
+            .collect();
         let distances = lines[1]
             .strip_prefix("Distance:")
             .unwrap()
             .split_whitespace()
-            .map(|s| s.parse().unwrap());
-        Self {
-            races: times.zip(distances).collect(),
-        }
+            .map(String::from)
+            .collect();
+        Self { times, distances }
     }
     fn part1(&self) -> Self::Answer1 {
-        self.races
+        self.times
             .iter()
-            .map(|&(t, d)| (1..t).filter(|i| i * (t - i) > d).count())
+            .map(|s| s.parse().unwrap())
+            .zip(self.distances.iter().map(|s| s.parse().unwrap()))
+            .map(|(t, d)| (1..t).filter(|i| i * (t - i) > d).count())
             .product()
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        let t = self.times.join("").parse::<u64>().unwrap();
+        let d = self.distances.join("").parse::<u64>().unwrap();
+        (1..t).filter(|i| i * (t - i) > d).count()
     }
 }
 
@@ -60,5 +65,10 @@ Distance:  9  40  200
     #[test]
     fn part1() {
         assert_eq!(Solution::new(example_input()).part1(), 288);
+    }
+
+    #[test]
+    fn part2() {
+        assert_eq!(Solution::new(example_input()).part2(), 71503);
     }
 }
