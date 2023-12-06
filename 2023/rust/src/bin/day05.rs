@@ -1,10 +1,67 @@
 use aoc2023::Solve;
 use itertools::Itertools;
 use std::io::{BufRead, BufReader, Read};
+use std::ops::Range;
 
 struct Solution {
     seeds: Vec<i64>,
-    maps: Vec<Vec<(i64, i64, i64)>>,
+    maps: Vec<Vec<(Range<i64>, i64)>>,
+}
+
+impl Solution {
+    fn lowest_location(&self, mut ranges: Vec<Range<i64>>) -> i64 {
+        for map in &self.maps {
+            let search = |n: i64| {
+                map.binary_search_by(|(r, _)| {
+                    if n < r.start {
+                        std::cmp::Ordering::Greater
+                    } else if n >= r.end {
+                        std::cmp::Ordering::Less
+                    } else {
+                        std::cmp::Ordering::Equal
+                    }
+                })
+            };
+            ranges = ranges
+                .iter()
+                .flat_map(|range| {
+                    let start = search(range.start);
+                    let end = search(range.end);
+                    if let (Err(i), Err(j)) = (start, end) {
+                        if i == j || i == map.len() || j == 0 {
+                            return vec![range.clone()];
+                        }
+                    }
+                    let mut v = Vec::new();
+                    let i = match start {
+                        Ok(i) => i,
+                        Err(i) => {
+                            v.push(range.start..map[i].0.start);
+                            i
+                        }
+                    };
+                    let j = match end {
+                        Ok(j) => j,
+                        Err(j) => {
+                            v.push(map[j - 1].0.end..range.end);
+                            j - 1
+                        }
+                    };
+                    for k in i..=j {
+                        if k < j && map[k].0.end < map[k + 1].0.start {
+                            v.push(map[k].0.end..map[k + 1].0.start);
+                        }
+                        v.push(
+                            map[k].0.start.max(range.start) + map[k].1
+                                ..map[k].0.end.min(range.end) + map[k].1,
+                        );
+                    }
+                    v
+                })
+                .collect();
+        }
+        ranges.iter().map(|r| r.start).min().unwrap()
+    }
 }
 
 impl Solve for Solution {
@@ -36,31 +93,22 @@ impl Solve for Solution {
                                 .unwrap()
                         })
                         .sorted_by_cached_key(|(_, src, _)| *src)
+                        .map(|(dst, src, len)| ((src..src + len), dst - src))
                         .collect()
                 })
                 .collect(),
         }
     }
     fn part1(&self) -> Self::Answer1 {
-        let mut ret = i64::MAX;
-        for seed in &self.seeds {
-            let mut n = *seed;
-            for m in &self.maps {
-                let ret = m.binary_search_by_key(&n, |(_, src, _)| *src);
-                let (dst, src, len) = match ret {
-                    Ok(i) => m[i],
-                    Err(i) => m[i.max(1) - 1],
-                };
-                if n >= src && n < src + len {
-                    n += dst - src;
-                }
-            }
-            ret = ret.min(n);
-        }
-        ret
+        self.lowest_location(self.seeds.iter().map(|&seed| seed..seed + 1).collect())
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        self.lowest_location(
+            self.seeds
+                .chunks(2)
+                .map(|chunk| chunk[0]..chunk[0] + chunk[1])
+                .collect(),
+        )
     }
 }
 
@@ -116,5 +164,10 @@ humidity-to-location map:
     #[test]
     fn part1() {
         assert_eq!(Solution::new(example_input()).part1(), 35);
+    }
+
+    #[test]
+    fn part2() {
+        assert_eq!(Solution::new(example_input()).part2(), 46);
     }
 }
