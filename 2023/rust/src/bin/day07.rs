@@ -1,10 +1,10 @@
 use aoc2023::Solve;
 use itertools::Itertools;
-use std::cmp::Ordering;
+use std::array;
 use std::io::{BufRead, BufReader, Read};
 use std::str::FromStr;
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy)]
 enum Card {
     Number(u8),
     T,
@@ -15,14 +15,15 @@ enum Card {
 }
 
 impl Card {
-    fn strength_value(&self) -> usize {
+    fn strength_value(&self, joker: bool) -> usize {
         match self {
-            Self::Number(n) => *n as usize - 2,
-            Self::T => 8,
-            Self::J => 9,
-            Self::Q => 10,
-            Self::K => 11,
-            Self::A => 12,
+            Self::Number(n) => *n as usize,
+            Self::T => 10,
+            Self::J if joker => 0,
+            Self::J => 11,
+            Self::Q => 12,
+            Self::K => 13,
+            Self::A => 14,
         }
     }
 }
@@ -43,46 +44,40 @@ impl TryFrom<char> for Card {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
 struct Hand {
     cards: [Card; 5],
 }
 
 impl Hand {
-    fn type_value(&self) -> u32 {
-        let mut counts = [0; 13];
+    fn values(&self, joker: bool) -> (u8, [usize; 5]) {
+        (
+            self.type_value(joker),
+            array::from_fn(|i| self.cards[i].strength_value(joker)),
+        )
+    }
+    fn type_value(&self, joker: bool) -> u8 {
+        let mut counts = [0; 15];
         for c in &self.cards {
-            counts[c.strength_value()] += 1;
+            counts[c.strength_value(joker)] += 1;
         }
-        match counts.iter().sorted().rev().take(3).collect_tuple() {
-            Some((5, 0, 0)) => 6,
-            Some((4, 1, 0)) => 5,
-            Some((3, 2, 0)) => 4,
-            Some((3, 1, 1)) => 3,
-            Some((2, 2, 1)) => 2,
-            Some((2, 1, 1)) => 1,
+        let mut v = counts[1..]
+            .iter()
+            .sorted()
+            .rev()
+            .take(2)
+            .cloned()
+            .collect_vec();
+        if joker {
+            v[0] += counts[0];
+        }
+        match v.as_slice() {
+            [5, 0] => 6,
+            [4, 1] => 5,
+            [3, 2] => 4,
+            [3, 1] => 3,
+            [2, 2] => 2,
+            [2, 1] => 1,
             _ => 0,
-        }
-    }
-}
-
-impl PartialOrd for Hand {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for Hand {
-    fn cmp(&self, other: &Self) -> Ordering {
-        match self.type_value().cmp(&other.type_value()) {
-            Ordering::Equal => self
-                .cards
-                .iter()
-                .zip(other.cards.iter())
-                .map(|(a, b)| a.strength_value().cmp(&b.strength_value()))
-                .find(|&o| o != Ordering::Equal)
-                .unwrap_or(Ordering::Equal),
-            o => o,
         }
     }
 }
@@ -100,16 +95,31 @@ impl FromStr for Hand {
         if s.len() != 5 {
             return Err(ParseHandError::InvalidLength);
         }
-        let mut cards = [Card::Number(0); 5];
-        for (i, c) in s.chars().enumerate() {
-            cards[i] = c.try_into().map_err(|_| ParseHandError::InvalidCard)?;
-        }
-        Ok(Self { cards })
+        let v: Vec<_> = s
+            .chars()
+            .map(|c| c.try_into().map_err(|_| ParseHandError::InvalidCard))
+            .try_collect()?;
+        Ok(Self {
+            cards: array::from_fn(|i| v[i]),
+        })
     }
 }
 
 struct Solution {
     list: Vec<(Hand, u32)>,
+}
+
+impl Solution {
+    fn total_winnings(&self, joker: bool) -> u32 {
+        (1..)
+            .zip(
+                self.list
+                    .iter()
+                    .sorted_by_cached_key(|(hand, _)| hand.values(joker)),
+            )
+            .map(|(i, (_, bid))| i * bid)
+            .sum()
+    }
 }
 
 impl Solve for Solution {
@@ -132,15 +142,10 @@ impl Solve for Solution {
         }
     }
     fn part1(&self) -> Self::Answer1 {
-        self.list
-            .iter()
-            .sorted()
-            .enumerate()
-            .map(|(i, (_, bid))| (i as u32 + 1) * bid)
-            .sum()
+        self.total_winnings(false)
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        self.total_winnings(true)
     }
 }
 
@@ -168,5 +173,10 @@ QQQJA 483
     #[test]
     fn part1() {
         assert_eq!(Solution::new(example_input()).part1(), 6440);
+    }
+
+    #[test]
+    fn part2() {
+        assert_eq!(Solution::new(example_input()).part2(), 5905);
     }
 }
