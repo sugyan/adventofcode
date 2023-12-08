@@ -132,11 +132,14 @@ impl Solve for Solution {
                 .lines()
                 .map_while(Result::ok)
                 .map(|line| {
-                    let (hand, bid) = line.split_once(' ').expect("invalid line");
-                    (
-                        hand.parse().expect("invalid hand"),
-                        bid.parse().expect("invalid bid"),
-                    )
+                    line.split_once(' ')
+                        .map(|(hand, bid)| {
+                            (
+                                hand.parse().expect("invalid hand"),
+                                bid.parse().expect("invalid bid"),
+                            )
+                        })
+                        .expect("invalid line")
                 })
                 .collect(),
         }
