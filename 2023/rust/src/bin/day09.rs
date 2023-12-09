@@ -1,5 +1,45 @@
 use aoc2023::Solve;
+use itertools::Itertools;
+use std::collections::VecDeque;
 use std::io::{BufRead, BufReader, Read};
+
+enum Direction {
+    Forward,
+    Backward,
+}
+
+fn next_value(history: &[i32], direction: Direction) -> i32 {
+    let mut stack = vec![VecDeque::from_iter(history.iter().copied())];
+    while let Some(last) = stack.last() {
+        if last.iter().all(|h| *h == 0) {
+            break;
+        }
+        stack.push(
+            last.iter()
+                .collect_vec()
+                .windows(2)
+                .map(|w| w[1] - w[0])
+                .collect(),
+        );
+    }
+    let mut value = 0;
+    while stack.pop().is_some() {
+        if let Some(last) = stack.last_mut() {
+            #[allow(clippy::assign_op_pattern)]
+            match direction {
+                Direction::Forward => {
+                    value = last.back().expect("should have last element") + value;
+                    last.push_back(value);
+                }
+                Direction::Backward => {
+                    value = last.front().expect("should have first element") - value;
+                    last.push_front(value);
+                }
+            }
+        }
+    }
+    value
+}
 
 struct Solution {
     histories: Vec<Vec<i32>>,
@@ -23,29 +63,16 @@ impl Solve for Solution {
         }
     }
     fn part1(&self) -> Self::Answer1 {
-        let mut answer = 0;
-        for history in &self.histories {
-            let mut stack = vec![history.clone()];
-            while let Some(last) = stack.last() {
-                if last.iter().all(|h| *h == 0) {
-                    break;
-                }
-                stack.push(last.windows(2).map(|w| w[1] - w[0]).collect());
-            }
-            stack.last_mut().expect("should have last").push(0);
-            let mut carry = 0;
-            while let Some(pop) = stack.pop() {
-                if let Some(last) = stack.last_mut() {
-                    carry += last[last.len() - 1];
-                    last.push(carry);
-                }
-            }
-            answer += carry;
-        }
-        answer
+        self.histories
+            .iter()
+            .map(|history| next_value(history, Direction::Forward))
+            .sum()
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        self.histories
+            .iter()
+            .map(|history| next_value(history, Direction::Backward))
+            .sum()
     }
 }
 
@@ -71,5 +98,10 @@ mod tests {
     #[test]
     fn part1() {
         assert_eq!(Solution::new(example_input()).part1(), 114);
+    }
+
+    #[test]
+    fn part2() {
+        assert_eq!(Solution::new(example_input()).part2(), 2);
     }
 }
