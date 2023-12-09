@@ -1,15 +1,9 @@
 use aoc2023::Solve;
 use itertools::Itertools;
-use std::collections::VecDeque;
 use std::io::{BufRead, BufReader, Read};
 
-enum Direction {
-    Forward,
-    Backward,
-}
-
-fn next_value(history: &[i32], direction: Direction) -> i32 {
-    let mut stack = vec![VecDeque::from_iter(history.iter().copied())];
+fn next_value(history: impl Iterator<Item = i32>) -> i32 {
+    let mut stack = vec![Vec::from_iter(history)];
     while let Some(last) = stack.last() {
         if last.iter().all(|h| *h == 0) {
             break;
@@ -25,17 +19,8 @@ fn next_value(history: &[i32], direction: Direction) -> i32 {
     let mut value = 0;
     while stack.pop().is_some() {
         if let Some(last) = stack.last_mut() {
-            #[allow(clippy::assign_op_pattern)]
-            match direction {
-                Direction::Forward => {
-                    value = last.back().expect("should have last element") + value;
-                    last.push_back(value);
-                }
-                Direction::Backward => {
-                    value = last.front().expect("should have first element") - value;
-                    last.push_front(value);
-                }
-            }
+            value += last.last().expect("should have last element");
+            last.push(value);
         }
     }
     value
@@ -65,13 +50,13 @@ impl Solve for Solution {
     fn part1(&self) -> Self::Answer1 {
         self.histories
             .iter()
-            .map(|history| next_value(history, Direction::Forward))
+            .map(|history| next_value(history.iter().copied()))
             .sum()
     }
     fn part2(&self) -> Self::Answer2 {
         self.histories
             .iter()
-            .map(|history| next_value(history, Direction::Backward))
+            .map(|history| next_value(history.iter().copied().rev()))
             .sum()
     }
 }
