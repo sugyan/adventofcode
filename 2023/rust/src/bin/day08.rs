@@ -3,6 +3,18 @@ use itertools::Itertools;
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Read};
 
+fn gcd(a: u64, b: u64) -> u64 {
+    if b == 0 {
+        a
+    } else {
+        gcd(b, a % b)
+    }
+}
+
+fn lcm(a: u64, b: u64) -> u64 {
+    a * b / gcd(a, b)
+}
+
 struct Solution {
     instructions: String,
     network: HashMap<String, (String, String)>,
@@ -20,9 +32,8 @@ impl Solution {
                 }
             })
             .map(String::as_str)
-            .sorted()
             .map(|s| self.find_cycle(s))
-            .fold(1, Self::lcm)
+            .fold(1, lcm)
     }
     fn find_cycle(&self, start: &str) -> u64 {
         let (mut current, mut hm) = (start, HashMap::new());
@@ -44,16 +55,6 @@ impl Solution {
             hm.insert((index, current), i);
         }
         unreachable!()
-    }
-    fn gcd(a: u64, b: u64) -> u64 {
-        if b == 0 {
-            a
-        } else {
-            Self::gcd(b, a % b)
-        }
-    }
-    fn lcm(a: u64, b: u64) -> u64 {
-        a * b / Self::gcd(a, b)
     }
 }
 
