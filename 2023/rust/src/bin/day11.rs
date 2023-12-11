@@ -15,12 +15,9 @@ impl Solution {
         let space_cols = (0..cols)
             .filter(|&j| (0..rows).all(|i| !self.image[i][j]))
             .collect_vec();
-        let galaxies = (0..rows)
+        (0..rows)
             .cartesian_product(0..cols)
             .filter(|&(i, j)| self.image[i][j])
-            .collect_vec();
-        galaxies
-            .iter()
             .combinations(2)
             .map(|c| {
                 let (rmin, rmax) = (c[0].0.min(c[1].0), c[0].0.max(c[1].0));
