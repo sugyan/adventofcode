@@ -104,14 +104,11 @@ impl Solve for Solution {
                 .fold((0, None), |(count, prev), c| {
                     (
                         count
-                            + if c == '|'
-                                || (prev == Some('L') && c == '7')
-                                || (prev == Some('F') && c == 'J')
-                            {
-                                1
-                            } else {
-                                0
-                            },
+                            + i32::from(
+                                c == '|'
+                                    || (prev == Some('L') && c == '7')
+                                    || (prev == Some('F') && c == 'J'),
+                            ),
                         Some(c),
                     )
                 })

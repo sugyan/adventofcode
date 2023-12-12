@@ -15,9 +15,9 @@ enum Card {
 }
 
 impl Card {
-    fn strength_value(&self, joker: bool) -> usize {
+    fn strength_value(self, joker: bool) -> usize {
         match self {
-            Self::Number(n) => *n as usize,
+            Self::Number(n) => n as usize,
             Self::T => 10,
             Self::J if joker => 0,
             Self::J => 11,
@@ -65,7 +65,7 @@ impl Hand {
             .sorted()
             .rev()
             .take(2)
-            .cloned()
+            .copied()
             .collect_vec();
         if joker {
             v[0] += counts[0];
@@ -97,7 +97,7 @@ impl FromStr for Hand {
         }
         let v: Vec<_> = s
             .chars()
-            .map(|c| c.try_into().map_err(|_| ParseHandError::InvalidCard))
+            .map(|c| c.try_into().map_err(|()| ParseHandError::InvalidCard))
             .try_collect()?;
         Ok(Self {
             cards: array::from_fn(|i| v[i]),

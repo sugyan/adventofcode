@@ -1,16 +1,15 @@
 use aoc2023::Solve;
-use itertools::Itertools;
 use std::io::{BufRead, BufReader, Read};
 
 fn next_value(history: impl Iterator<Item = i32>) -> i32 {
-    let mut stack = vec![Vec::from_iter(history)];
+    let mut stack = vec![history.collect::<Vec<_>>()];
     while let Some(last) = stack.last() {
         if last.iter().all(|h| *h == 0) {
             break;
         }
         stack.push(
             last.iter()
-                .collect_vec()
+                .collect::<Vec<_>>()
                 .windows(2)
                 .map(|w| w[1] - w[0])
                 .collect(),

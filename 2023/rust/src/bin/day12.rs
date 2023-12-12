@@ -18,7 +18,7 @@ impl FromStr for Row {
             springs: springs.to_string(),
             groups: groups
                 .split(',')
-                .map(|s| s.parse())
+                .map(str::parse)
                 .collect::<Result<_, _>>()
                 .map_err(|_| ())?,
         })
