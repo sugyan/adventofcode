@@ -1,5 +1,4 @@
 use aoc2023::Solve;
-use itertools::Itertools;
 use std::io::{BufRead, BufReader, Read};
 
 struct Solution {
@@ -7,50 +6,36 @@ struct Solution {
 }
 
 impl Solution {
-    fn summarized_numbers(pattern: &[Vec<bool>]) -> (Vec<u32>, Vec<u32>) {
+    fn summarized_number(pattern: &[Vec<bool>], target_error: usize) -> u32 {
         let (rows, cols) = (pattern.len(), pattern[0].len());
-        let (mut r, mut c) = (vec![true; rows - 1], vec![true; cols - 1]);
-        #[allow(clippy::needless_range_loop)]
-        for i in 0..rows {
-            for j in 0..cols - 1 {
-                if !c[j] {
-                    continue;
-                }
-                let mut k = 0;
-                while k <= j && j + k + 1 < cols {
-                    if pattern[i][j - k] != pattern[i][j + k + 1] {
-                        c[j] = false;
-                        break;
-                    }
-                    k += 1;
-                }
+        let mut ret = 0;
+        for (i, num) in (0..rows - 1).zip(1..) {
+            if (0..cols)
+                .map(|j| {
+                    (0..(i + 1).min(rows - i - 1))
+                        .filter(|k| pattern[i - k][j] != pattern[i + k + 1][j])
+                        .count()
+                })
+                .sum::<usize>()
+                == target_error
+            {
+                ret += num * 100;
             }
         }
-        for j in 0..cols {
-            for i in 0..rows - 1 {
-                if !r[i] {
-                    continue;
-                }
-                let mut k = 0;
-                while k <= i && i + k + 1 < rows {
-                    if pattern[i - k][j] != pattern[i + k + 1][j] {
-                        r[i] = false;
-                        break;
-                    }
-                    k += 1;
-                }
+        for (j, num) in (0..cols - 1).zip(1..) {
+            if (0..rows)
+                .map(|i| {
+                    (0..(j + 1).min(cols - j - 1))
+                        .filter(|k| pattern[i][j - k] != pattern[i][j + k + 1])
+                        .count()
+                })
+                .sum::<usize>()
+                == target_error
+            {
+                ret += num;
             }
         }
-        (
-            (1..)
-                .zip(&c)
-                .filter_map(|(i, b)| if *b { Some(i) } else { None })
-                .collect(),
-            (1..)
-                .zip(&r)
-                .filter_map(|(i, b)| if *b { Some(i * 100) } else { None })
-                .collect(),
-        )
+        ret
     }
 }
 
@@ -77,37 +62,13 @@ impl Solve for Solution {
     fn part1(&self) -> Self::Answer1 {
         self.patterns
             .iter()
-            .map(|pattern| {
-                let (cs, rs) = Self::summarized_numbers(pattern);
-                assert!(cs.len() + rs.len() == 1);
-                cs.first()
-                    .copied()
-                    .or(rs.first().copied())
-                    .expect("should have a summarized number")
-            })
+            .map(|pattern| Self::summarized_number(pattern, 0))
             .sum()
     }
     fn part2(&self) -> Self::Answer2 {
         self.patterns
             .iter()
-            .map(|pattern| {
-                let (cs, rs) = Self::summarized_numbers(pattern);
-                assert!(cs.len() + rs.len() == 1);
-                let (rows, cols) = (pattern.len(), pattern[0].len());
-                (0..rows)
-                    .cartesian_product(0..cols)
-                    .find_map(|(i, j)| {
-                        let mut cloned = pattern.clone();
-                        cloned[i][j] = !cloned[i][j];
-                        let (new_cs, new_rs) = Self::summarized_numbers(&cloned);
-                        new_cs
-                            .iter()
-                            .find(|n| !cs.contains(n))
-                            .copied()
-                            .or(new_rs.iter().find(|n| !rs.contains(n)).copied())
-                    })
-                    .expect("should have a new summarized number")
-            })
+            .map(|pattern| Self::summarized_number(pattern, 1))
             .sum()
     }
 }
