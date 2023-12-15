@@ -1,12 +1,23 @@
 use aoc2023::Solve;
 use std::io::{BufReader, Read};
 
+enum Operation {
+    Sign(u32),
+    Dash,
+}
+
 struct Solution {
     sequence: Vec<String>,
 }
 
+impl Solution {
+    fn hash(s: &str) -> usize {
+        s.bytes().fold(0, |acc, u| (acc + u as usize) * 17 % 256)
+    }
+}
+
 impl Solve for Solution {
-    type Answer1 = u32;
+    type Answer1 = usize;
     type Answer2 = u32;
 
     fn new(r: impl Read) -> Self {
@@ -19,13 +30,45 @@ impl Solve for Solution {
         }
     }
     fn part1(&self) -> Self::Answer1 {
-        self.sequence
-            .iter()
-            .map(|s| s.bytes().fold(0, |acc, u| (acc + u as u32) * 17 % 256))
-            .sum()
+        self.sequence.iter().map(|s| Self::hash(s)).sum()
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        let mut boxes = vec![Vec::new(); 256];
+        for s in &self.sequence {
+            let (label, operation) = if let Some((label, focal_length)) = s.split_once('=') {
+                (
+                    label,
+                    Operation::Sign(focal_length.parse().expect("should be valid number")),
+                )
+            } else {
+                (&s[..s.len() - 1], Operation::Dash)
+            };
+            let index = Self::hash(label);
+            let old = boxes[index].iter().position(|&(l, _)| l == label);
+            match operation {
+                Operation::Sign(focal_length) => {
+                    if let Some(i) = old {
+                        boxes[index][i].1 = focal_length;
+                    } else {
+                        boxes[index].push((label, focal_length));
+                    }
+                }
+                Operation::Dash => {
+                    if let Some(i) = old {
+                        boxes[Self::hash(label)].remove(i);
+                    }
+                }
+            }
+        }
+        (1..)
+            .zip(boxes)
+            .map(|(box_number, b)| {
+                (1..)
+                    .zip(b)
+                    .map(|(slot_number, (_, focal_length))| box_number * slot_number * focal_length)
+                    .sum::<u32>()
+            })
+            .sum()
     }
 }
 
@@ -46,5 +89,10 @@ mod tests {
     #[test]
     fn part1() {
         assert_eq!(Solution::new(example_input()).part1(), 1320);
+    }
+
+    #[test]
+    fn part2() {
+        assert_eq!(Solution::new(example_input()).part2(), 145);
     }
 }
