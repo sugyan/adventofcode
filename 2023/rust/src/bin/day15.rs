@@ -44,19 +44,16 @@ impl Solve for Solution {
                 (&s[..s.len() - 1], Operation::Dash)
             };
             let index = Self::hash(label);
-            let old = boxes[index].iter().position(|&(l, _)| l == label);
             match operation {
                 Operation::Sign(focal_length) => {
-                    if let Some(i) = old {
+                    if let Some(i) = boxes[index].iter().position(|&(l, _)| l == label) {
                         boxes[index][i].1 = focal_length;
                     } else {
                         boxes[index].push((label, focal_length));
                     }
                 }
                 Operation::Dash => {
-                    if let Some(i) = old {
-                        boxes[Self::hash(label)].remove(i);
-                    }
+                    boxes[index].retain(|&(l, _)| l != label);
                 }
             }
         }

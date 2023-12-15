@@ -9,6 +9,12 @@ enum Tilt {
     East,
 }
 
+impl Tilt {
+    fn cycle() -> impl Iterator<Item = Self> {
+        [Self::North, Self::West, Self::South, Self::East].into_iter()
+    }
+}
+
 struct Solution {
     platform: Vec<Vec<char>>,
 }
@@ -89,18 +95,15 @@ impl Solve for Solution {
         let mut platform = self.platform.clone();
         let mut hm = HashMap::new();
         for i in 1.. {
-            Self::tilt(Tilt::North, &mut platform);
-            Self::tilt(Tilt::West, &mut platform);
-            Self::tilt(Tilt::South, &mut platform);
-            Self::tilt(Tilt::East, &mut platform);
-            if let Some((j, _)) = hm.get(&platform) {
-                let k = (1_000_000_000 - i) % (i - j);
-                return hm
-                    .values()
-                    .find_map(|&(i, load)| if j + k == i { Some(load) } else { None })
-                    .expect("should have value");
+            for tilt in Tilt::cycle() {
+                Self::tilt(tilt, &mut platform);
+            }
+            if let Some(j) = hm.get(&platform) {
+                if (1_000_000_000 - i) % (i - j) == 0 {
+                    return Self::total_load(&platform);
+                }
             } else {
-                hm.insert(platform.clone(), (i, Self::total_load(&platform)));
+                hm.insert(platform.clone(), i);
             }
         }
         unreachable!()
