@@ -14,26 +14,11 @@ struct Solution {
     contraption: Vec<Vec<char>>,
 }
 
-impl Solve for Solution {
-    type Answer1 = usize;
-    type Answer2 = u32;
-
-    fn new(r: impl Read) -> Self {
-        Self {
-            contraption: BufReader::new(r)
-                .lines()
-                .map_while(Result::ok)
-                .map(|s| s.chars().collect())
-                .collect(),
-        }
-    }
-    fn part1(&self) -> Self::Answer1 {
-        for row in &self.contraption {
-            println!("{}", row.iter().collect::<String>());
-        }
+impl Solution {
+    fn energized_count(&self, start: (usize, usize), direction: Direction) -> usize {
         let (rows, cols) = (self.contraption.len(), self.contraption[0].len());
         let mut seen = HashSet::new();
-        let mut beams = vec![((0_usize, !0_usize), Direction::Right)];
+        let mut beams = vec![(start, direction)];
         while let Some(((i, j), direction)) = beams.pop() {
             let (i, j) = match direction {
                 Direction::Right => (i, j.wrapping_add(1)),
@@ -84,8 +69,45 @@ impl Solve for Solution {
             .collect::<HashSet<_>>()
             .len()
     }
+}
+
+impl Solve for Solution {
+    type Answer1 = usize;
+    type Answer2 = usize;
+
+    fn new(r: impl Read) -> Self {
+        Self {
+            contraption: BufReader::new(r)
+                .lines()
+                .map_while(Result::ok)
+                .map(|s| s.chars().collect())
+                .collect(),
+        }
+    }
+    fn part1(&self) -> Self::Answer1 {
+        self.energized_count((0, !0), Direction::Right)
+    }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        let (rows, cols) = (self.contraption.len(), self.contraption[0].len());
+        [
+            (0..cols)
+                .map(|j| ((!0, j), Direction::Down))
+                .collect::<Vec<_>>(),
+            (0..cols)
+                .map(|j| ((rows, j), Direction::Up))
+                .collect::<Vec<_>>(),
+            (0..rows)
+                .map(|i| ((i, !0), Direction::Right))
+                .collect::<Vec<_>>(),
+            (0..rows)
+                .map(|i| ((i, cols), Direction::Left))
+                .collect::<Vec<_>>(),
+        ]
+        .concat()
+        .iter()
+        .map(|&(start, direction)| self.energized_count(start, direction))
+        .max()
+        .expect("should have max value")
     }
 }
 
@@ -118,5 +140,10 @@ mod tests {
     #[test]
     fn part1() {
         assert_eq!(Solution::new(example_input()).part1(), 46);
+    }
+
+    #[test]
+    fn part2() {
+        assert_eq!(Solution::new(example_input()).part2(), 51);
     }
 }
