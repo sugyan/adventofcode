@@ -11,8 +11,10 @@ struct Solution {
 }
 
 impl Solution {
-    fn hash(s: &str) -> usize {
-        s.bytes().fold(0, |acc, u| (acc + u as usize) * 17 % 256)
+    fn hash(s: impl AsRef<str>) -> usize {
+        s.as_ref()
+            .bytes()
+            .fold(0, |acc, u| (acc + u as usize) * 17 % 256)
     }
 }
 
@@ -30,7 +32,7 @@ impl Solve for Solution {
         }
     }
     fn part1(&self) -> Self::Answer1 {
-        self.sequence.iter().map(|s| Self::hash(s)).sum()
+        self.sequence.iter().map(Self::hash).sum()
     }
     fn part2(&self) -> Self::Answer2 {
         let mut boxes = vec![Vec::new(); 256];
