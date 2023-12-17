@@ -1,4 +1,5 @@
 use aoc2023::Solve;
+use itertools::Itertools;
 use std::collections::HashSet;
 use std::io::{BufRead, BufReader, Read};
 
@@ -10,6 +11,36 @@ enum Direction {
     Down,
 }
 
+impl Direction {
+    fn next_position(&self, (i, j): (usize, usize)) -> (usize, usize) {
+        match self {
+            Self::Right => (i, j.wrapping_add(1)),
+            Self::Up => (i.wrapping_sub(1), j),
+            Self::Left => (i, j.wrapping_sub(1)),
+            Self::Down => (i.wrapping_add(1), j),
+        }
+    }
+    fn next_directions(&self, tile: char) -> Vec<Self> {
+        match (self, tile) {
+            (Self::Right | Self::Left, '|') => vec![Self::Up, Self::Down],
+            (Self::Up | Self::Down, '-') => vec![Self::Right, Self::Left],
+            (d, '/') => vec![match d {
+                Self::Right => Self::Up,
+                Self::Up => Self::Right,
+                Self::Left => Self::Down,
+                Self::Down => Self::Left,
+            }],
+            (d, '\\') => vec![match d {
+                Self::Right => Self::Down,
+                Self::Up => Self::Left,
+                Self::Left => Self::Up,
+                Self::Down => Self::Right,
+            }],
+            _ => vec![*self],
+        }
+    }
+}
+
 struct Solution {
     contraption: Vec<Vec<char>>,
 }
@@ -19,55 +50,19 @@ impl Solution {
         let (rows, cols) = (self.contraption.len(), self.contraption[0].len());
         let mut seen = HashSet::new();
         let mut beams = vec![(start, direction)];
-        while let Some(((i, j), direction)) = beams.pop() {
-            let (i, j) = match direction {
-                Direction::Right => (i, j.wrapping_add(1)),
-                Direction::Up => (i.wrapping_add(!0), j),
-                Direction::Left => (i, j.wrapping_add(!0)),
-                Direction::Down => (i.wrapping_add(1), j),
-            };
+        while let Some((position, direction)) = beams.pop() {
+            let (i, j) = direction.next_position(position);
             if !(0..rows).contains(&i) || !(0..cols).contains(&j) {
                 continue;
             }
             if !seen.insert(((i, j), direction)) {
                 continue;
             }
-            match (self.contraption[i][j], &direction) {
-                ('|', Direction::Right | Direction::Left) => {
-                    beams.push(((i, j), Direction::Up));
-                    beams.push(((i, j), Direction::Down));
-                }
-                ('-', Direction::Up | Direction::Down) => {
-                    beams.push(((i, j), Direction::Right));
-                    beams.push(((i, j), Direction::Left));
-                }
-                ('/', d) => beams.push((
-                    (i, j),
-                    match d {
-                        Direction::Right => Direction::Up,
-                        Direction::Up => Direction::Right,
-                        Direction::Left => Direction::Down,
-                        Direction::Down => Direction::Left,
-                    },
-                )),
-                ('\\', d) => {
-                    beams.push((
-                        (i, j),
-                        match d {
-                            Direction::Right => Direction::Down,
-                            Direction::Up => Direction::Left,
-                            Direction::Left => Direction::Up,
-                            Direction::Down => Direction::Right,
-                        },
-                    ));
-                }
-                _ => beams.push(((i, j), direction)),
+            for d in direction.next_directions(self.contraption[i][j]) {
+                beams.push(((i, j), d));
             }
         }
-        seen.iter()
-            .map(|((i, j), _)| (i, j))
-            .collect::<HashSet<_>>()
-            .len()
+        seen.iter().map(|((i, j), _)| (i, j)).unique().count()
     }
 }
 
@@ -90,18 +85,10 @@ impl Solve for Solution {
     fn part2(&self) -> Self::Answer2 {
         let (rows, cols) = (self.contraption.len(), self.contraption[0].len());
         [
-            (0..cols)
-                .map(|j| ((!0, j), Direction::Down))
-                .collect::<Vec<_>>(),
-            (0..cols)
-                .map(|j| ((rows, j), Direction::Up))
-                .collect::<Vec<_>>(),
-            (0..rows)
-                .map(|i| ((i, !0), Direction::Right))
-                .collect::<Vec<_>>(),
-            (0..rows)
-                .map(|i| ((i, cols), Direction::Left))
-                .collect::<Vec<_>>(),
+            (0..cols).map(|j| ((!0, j), Direction::Down)).collect_vec(),
+            (0..cols).map(|j| ((rows, j), Direction::Up)).collect(),
+            (0..rows).map(|i| ((i, !0), Direction::Right)).collect(),
+            (0..rows).map(|i| ((i, cols), Direction::Left)).collect(),
         ]
         .concat()
         .iter()
