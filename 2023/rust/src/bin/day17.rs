@@ -1,38 +1,14 @@
 use aoc2023::Solve;
 use std::cmp::Reverse;
-use std::collections::{BinaryHeap, HashMap};
+use std::collections::BinaryHeap;
 use std::io::{BufRead, BufReader, Read};
 
-#[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum Direction {
-    N,
-    E,
-    S,
-    W,
-}
-
-impl Direction {
-    fn next_directions(&self) -> [Self; 3] {
-        match self {
-            Self::N => [Self::W, Self::N, Self::E],
-            Self::E => [Self::N, Self::E, Self::S],
-            Self::S => [Self::E, Self::S, Self::W],
-            Self::W => [Self::S, Self::W, Self::N],
-        }
-    }
-    fn next_positions(&self, (mut i, mut j): (usize, usize), steps: usize) -> Vec<(usize, usize)> {
-        let mut ret = Vec::new();
-        for _ in 0..steps {
-            (i, j) = match self {
-                Self::N => (i.wrapping_sub(1), j),
-                Self::E => (i, j.wrapping_add(1)),
-                Self::S => (i.wrapping_add(1), j),
-                Self::W => (i, j.wrapping_sub(1)),
-            };
-            ret.push((i, j));
-        }
-        ret
-    }
+    N = 0,
+    E = 1,
+    S = 2,
+    W = 3,
 }
 
 struct Solution {
@@ -42,30 +18,38 @@ struct Solution {
 impl Solution {
     fn minimum_heat_loss(&self, ultra: bool) -> u32 {
         let (rows, cols) = (self.map.len(), self.map[0].len());
-        let mut mins = vec![vec![HashMap::new(); cols]; rows];
+        let mut mins = vec![vec![[None; 4]; cols]; rows];
         let mut bh = BinaryHeap::from([
-            (Reverse(0), (0, 0), (Direction::N, 0)),
-            (Reverse(0), (0, 0), (Direction::W, 0)),
+            (Reverse(0), (0, 0), Direction::E),
+            (Reverse(0), (0, 0), Direction::S),
         ]);
-        while let Some((Reverse(loss), (i, j), (direction, count))) = bh.pop() {
+        while let Some((Reverse(loss), (i, j), direction)) = bh.pop() {
             if i == rows - 1 && j == cols - 1 {
                 return loss;
             }
-            for d in direction.next_directions() {
-                if d == direction && count == if ultra { 10 } else { 3 } {
-                    continue;
-                }
-                let steps = if ultra && d != direction { 4 } else { 1 };
-                let positions = d.next_positions((i, j), steps);
-                let &(i, j) = positions.last().expect("should have at least one position");
-                if !(0..rows).contains(&i) || !(0..cols).contains(&j) {
-                    continue;
-                }
-                let l = loss + positions.iter().map(|&(i, j)| self.map[i][j]).sum::<u32>();
-                let c = if d == direction { count + 1 } else { steps };
-                if mins[i][j].get(&(d, c)).map_or(true, |&min| l < min) {
-                    mins[i][j].insert((d, c), l);
-                    bh.push((Reverse(l), (i, j), (d, c)));
+            for d in match direction {
+                Direction::N | Direction::S => [Direction::E, Direction::W],
+                Direction::E | Direction::W => [Direction::N, Direction::S],
+            } {
+                let mut loss = loss;
+                let (mut i, mut j) = (i, j);
+                for blocks in 1..=10 {
+                    (i, j) = match d {
+                        Direction::N => (i.wrapping_sub(1), j),
+                        Direction::E => (i, j.wrapping_add(1)),
+                        Direction::S => (i.wrapping_add(1), j),
+                        Direction::W => (i, j.wrapping_sub(1)),
+                    };
+                    if !(0..rows).contains(&i) || !(0..cols).contains(&j) {
+                        break;
+                    }
+                    loss += self.map[i][j];
+                    if (if ultra { 4..11 } else { 1..4 }).contains(&blocks)
+                        && mins[i][j][d as usize].map_or(true, |min| loss < min)
+                    {
+                        mins[i][j][d as usize] = Some(loss);
+                        bh.push((Reverse(loss), (i, j), d));
+                    }
                 }
             }
         }
