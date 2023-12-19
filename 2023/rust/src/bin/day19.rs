@@ -5,22 +5,22 @@ use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Read};
 use std::str::FromStr;
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Copy)]
 enum Category {
-    X,
-    M,
-    A,
-    S,
+    X = 0,
+    M = 1,
+    A = 2,
+    S = 3,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 struct Condition {
     category: Category,
     ord: Ordering,
     value: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 enum SendTo {
     Accept,
     Reject,
@@ -39,7 +39,7 @@ impl FromStr for SendTo {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 struct Rule {
     condition: Option<Condition>,
     send_to: SendTo,
@@ -79,7 +79,6 @@ impl FromStr for Rule {
     }
 }
 
-#[derive(Debug)]
 struct Workflow {
     name: String,
     rules: Vec<Rule>,
@@ -127,27 +126,30 @@ impl FromStr for Part {
 }
 
 struct Solution {
-    workflows: Vec<Workflow>,
+    workflows: HashMap<String, Vec<Rule>>,
     parts: Vec<Part>,
 }
 
 impl Solve for Solution {
     type Answer1 = u32;
-    type Answer2 = u32;
+    type Answer2 = u64;
 
     fn new(r: impl Read) -> Self {
         let lines = BufReader::new(r)
             .lines()
             .map_while(Result::ok)
             .collect::<Vec<_>>();
-        let (workflows, parts) = lines.split(String::is_empty).collect_tuple().expect(
-            "
-        should be two parts",
-        );
+        let (workflows, parts) = lines
+            .split(String::is_empty)
+            .collect_tuple()
+            .expect("should be two parts");
         Self {
             workflows: workflows
                 .iter()
-                .map(|line| line.parse().expect("should be valid workflow"))
+                .map(|line| {
+                    let workflow = line.parse::<Workflow>().expect("should be valid workflow");
+                    (workflow.name.clone(), workflow.rules.clone())
+                })
                 .collect(),
             parts: parts
                 .iter()
@@ -156,40 +158,85 @@ impl Solve for Solution {
         }
     }
     fn part1(&self) -> Self::Answer1 {
-        let map = self
-            .workflows
+        self.parts
             .iter()
-            .map(|w| (w.name.clone(), w.rules.clone()))
-            .collect::<HashMap<_, _>>();
-        let mut ret = 0;
-        for part in &self.parts {
-            let mut current = SendTo::Other("in".into());
-            while let SendTo::Other(next) = &current {
-                for rule in &map[next] {
-                    if let Some(condition) = &rule.condition {
-                        let v = match condition.category {
-                            Category::X => part.x,
-                            Category::M => part.m,
-                            Category::A => part.a,
-                            Category::S => part.s,
-                        };
-                        if v.cmp(&condition.value) == condition.ord {
+            .filter_map(|part| {
+                let mut current = SendTo::Other("in".into());
+                while let SendTo::Other(next) = &current {
+                    for rule in &self.workflows[next] {
+                        if let Some(condition) = &rule.condition {
+                            let v = match condition.category {
+                                Category::X => part.x,
+                                Category::M => part.m,
+                                Category::A => part.a,
+                                Category::S => part.s,
+                            };
+                            if v.cmp(&condition.value) == condition.ord {
+                                current = rule.send_to.clone();
+                                break;
+                            }
+                        } else {
                             current = rule.send_to.clone();
-                            break;
                         }
-                    } else {
-                        current = rule.send_to.clone();
                     }
                 }
+                if current == SendTo::Accept {
+                    Some(part.x + part.m + part.a + part.s)
+                } else {
+                    None
+                }
+            })
+            .sum()
+    }
+    fn part2(&self) -> Self::Answer2 {
+        #[derive(Clone, Copy)]
+        struct Ranges([(u32, u32); 4]);
+        impl Ranges {
+            fn possible_count(&self) -> u64 {
+                self.0
+                    .iter()
+                    .filter_map(|(min, max)| {
+                        if max >= min {
+                            Some(u64::from(max - min + 1))
+                        } else {
+                            None
+                        }
+                    })
+                    .product()
             }
-            if current == SendTo::Accept {
-                ret += part.x + part.m + part.a + part.s;
+            fn split(&self, condition: &Condition) -> (Self, Self) {
+                let i = condition.category as usize;
+                let (min, max) = self.0[i];
+                let (t, f) = match condition.ord {
+                    Ordering::Less => ((min, condition.value - 1), (condition.value, max)),
+                    Ordering::Greater => ((condition.value + 1, max), (min, condition.value)),
+                    _ => unreachable!(),
+                };
+                let (mut range_t, mut range_f) = (*self, *self);
+                range_t.0[i] = t;
+                range_f.0[i] = f;
+                (range_t, range_f)
+            }
+        }
+        let mut ret = 0;
+        let mut stack = vec![(String::from("in"), Ranges([(1, 4000); 4]))];
+        while let Some((name, mut ranges)) = stack.pop() {
+            for rule in &self.workflows[&name] {
+                let r = if let Some(condition) = &rule.condition {
+                    let (t, f) = ranges.split(condition);
+                    ranges = f;
+                    t
+                } else {
+                    ranges
+                };
+                match &rule.send_to {
+                    SendTo::Accept => ret += r.possible_count(),
+                    SendTo::Other(next) => stack.push((next.clone(), r)),
+                    _ => {}
+                }
             }
         }
         ret
-    }
-    fn part2(&self) -> Self::Answer2 {
-        todo!()
     }
 }
 
@@ -229,5 +276,10 @@ hdj{m>838:A,pv}
     #[test]
     fn part1() {
         assert_eq!(Solution::new(example_input()).part1(), 19114);
+    }
+
+    #[test]
+    fn part2() {
+        assert_eq!(Solution::new(example_input()).part2(), 167_409_079_868_000);
     }
 }
