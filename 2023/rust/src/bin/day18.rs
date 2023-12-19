@@ -194,12 +194,12 @@ U 2 (#7a21e3)
     }
 
     #[test]
-    fn test_part1() {
+    fn part1() {
         assert_eq!(Solution::new(example_input()).part1(), 62);
     }
 
     #[test]
-    fn test_part2() {
+    fn part2() {
         assert_eq!(Solution::new(example_input()).part2(), 952_408_144_115);
     }
 }
