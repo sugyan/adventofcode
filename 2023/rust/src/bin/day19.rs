@@ -219,9 +219,9 @@ impl Solve for Solution {
             }
         }
         let mut ret = 0;
-        let mut stack = vec![(String::from("in"), Ranges([(1, 4000); 4]))];
+        let mut stack = vec![("in", Ranges([(1, 4000); 4]))];
         while let Some((name, mut ranges)) = stack.pop() {
-            for rule in &self.workflows[&name] {
+            for rule in &self.workflows[name] {
                 let r = if let Some(condition) = &rule.condition {
                     let (t, f) = ranges.split(condition);
                     ranges = f;
@@ -231,7 +231,7 @@ impl Solve for Solution {
                 };
                 match &rule.send_to {
                     SendTo::Accept => ret += r.possible_count(),
-                    SendTo::Other(next) => stack.push((next.clone(), r)),
+                    SendTo::Other(next) => stack.push((next, r)),
                     _ => {}
                 }
             }
