@@ -21,10 +21,6 @@ struct Config {
     destinations: Vec<String>,
 }
 
-struct Solution {
-    configuration: HashMap<String, Config>,
-}
-
 #[derive(Debug)]
 enum Module {
     FlipFlop(bool),
@@ -34,33 +30,95 @@ enum Module {
 
 #[derive(Debug)]
 struct State {
-    modules: HashMap<String, Module>,
+    modules: HashMap<String, (Module, Vec<String>)>,
 }
 
 impl State {
     fn new(configurations: &HashMap<String, Config>) -> Self {
         let mut modules = configurations
             .iter()
-            .map(|(name, config)| match config.module_type {
-                ModuleType::FlipFlop => (name.clone(), Module::FlipFlop(false)),
-                ModuleType::Conjunction => (name.clone(), Module::Conjunction(HashMap::new())),
-                ModuleType::Broadcast => (name.clone(), Module::Broadcast),
+            .map(|(name, config)| {
+                (
+                    name.clone(),
+                    (
+                        match config.module_type {
+                            ModuleType::FlipFlop => Module::FlipFlop(false),
+                            ModuleType::Conjunction => Module::Conjunction(HashMap::new()),
+                            ModuleType::Broadcast => Module::Broadcast,
+                        },
+                        config.destinations.clone(),
+                    ),
+                )
             })
             .collect::<HashMap<_, _>>();
+        // collect inputs for conjunction modules
         for (name, config) in configurations {
             for destination in &config.destinations {
-                if let Some(Module::Conjunction(module)) = modules.get_mut(destination) {
+                if let Some((Module::Conjunction(module), _)) = modules.get_mut(destination) {
                     module.insert(name.clone(), Pulse::Low);
                 }
             }
         }
         Self { modules }
     }
+    fn push_button(&mut self) -> HashMap<String, [u32; 2]> {
+        let mut counts = HashMap::new();
+        let mut vd = VecDeque::from([(String::from("broadcaster"), Pulse::Low)]);
+        while let Some((name, pulse)) = vd.pop_front() {
+            counts.entry(name.clone()).or_insert([0, 0])[pulse as usize] += 1;
+            if let Some((module, destinations)) = self.modules.get_mut(&name) {
+                let pulse = match module {
+                    Module::FlipFlop(on) if pulse == Pulse::Low => {
+                        *on = !*on;
+                        if *on {
+                            Pulse::High
+                        } else {
+                            Pulse::Low
+                        }
+                    }
+                    Module::Conjunction(inputs) => {
+                        if inputs.values().all(|&p| p == Pulse::High) {
+                            Pulse::Low
+                        } else {
+                            Pulse::High
+                        }
+                    }
+                    Module::Broadcast => pulse,
+                    _ => continue,
+                };
+                for destination in destinations.clone() {
+                    vd.push_back((destination.clone(), pulse));
+                    if let Some((Module::Conjunction(inputs), _)) =
+                        self.modules.get_mut(&destination)
+                    {
+                        inputs.insert(name.clone(), pulse);
+                    }
+                }
+            }
+        }
+        counts
+    }
+}
+
+struct Solution {
+    configuration: HashMap<String, Config>,
+}
+
+impl Solution {
+    fn find_cycle(&self, target: &str) -> u64 {
+        let mut state = State::new(&self.configuration);
+        for i in 1.. {
+            if state.push_button()[target][1] != 0 {
+                return i;
+            }
+        }
+        unreachable!()
+    }
 }
 
 impl Solve for Solution {
     type Answer1 = u32;
-    type Answer2 = u32;
+    type Answer2 = u64;
 
     fn new(r: impl Read) -> Self {
         Self {
@@ -92,46 +150,29 @@ impl Solve for Solution {
     }
     fn part1(&self) -> Self::Answer1 {
         let mut state = State::new(&self.configuration);
-        let mut counts = [0, 0];
-        for _ in 0..1000 {
-            let mut vd = VecDeque::from([(String::from("broadcaster"), Pulse::Low)]);
-            while let Some((name, pulse)) = vd.pop_front() {
-                counts[pulse as usize] += 1;
-                if let Some(module) = state.modules.get_mut(&name) {
-                    let pulse = match module {
-                        Module::FlipFlop(on) if pulse == Pulse::Low => {
-                            *on = !*on;
-                            if *on {
-                                Pulse::High
-                            } else {
-                                Pulse::Low
-                            }
-                        }
-                        Module::Conjunction(inputs) => {
-                            if inputs.values().all(|&p| p == Pulse::High) {
-                                Pulse::Low
-                            } else {
-                                Pulse::High
-                            }
-                        }
-                        Module::Broadcast => pulse,
-                        _ => continue,
-                    };
-                    for destination in &self.configuration[&name].destinations {
-                        vd.push_back((destination.clone(), pulse));
-                        if let Some(Module::Conjunction(inputs)) =
-                            state.modules.get_mut(destination)
-                        {
-                            inputs.insert(name.clone(), pulse);
-                        }
-                    }
-                }
-            }
-        }
-        counts[0] * counts[1]
+        let total = (0..1000).fold([0, 0], |acc, _| {
+            state.push_button().iter().fold(acc, |acc, (_, counts)| {
+                [acc[0] + counts[0], acc[1] + counts[1]]
+            })
+        });
+        total[0] * total[1]
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        State::new(&self.configuration)
+            .modules
+            .iter()
+            .find_map(|(_, (module, destinations))| {
+                if destinations == &["rx"] {
+                    if let Module::Conjunction(inputs) = module {
+                        return Some(inputs.keys().cloned().collect::<Vec<_>>());
+                    }
+                }
+                None
+            })
+            .expect("should have a module with `rx` as single destination")
+            .iter()
+            .map(|target| self.find_cycle(target))
+            .product()
     }
 }
 
