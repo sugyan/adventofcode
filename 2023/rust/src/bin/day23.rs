@@ -58,16 +58,41 @@ impl Solution {
         }
         paths
     }
-    fn longest_steps(paths: &HashMap<Position, Vec<(Position, u32)>>, src: Position) -> u32 {
-        let mut max = 0;
-        if let Some(v) = paths.get(&src) {
-            for (dst, steps) in v {
-                max = max.max(steps + Self::longest_steps(paths, *dst));
+    fn longest_steps(&self, paths: &HashMap<Position, Vec<(Position, u32)>>) -> u32 {
+        fn dfs(
+            paths: &HashMap<Position, Vec<(Position, u32)>>,
+            src: Position,
+            end: Position,
+            used: &mut HashSet<Position>,
+        ) -> Option<u32> {
+            let mut max = None;
+            if let Some(v) = paths.get(&src) {
+                for (dst, steps) in v {
+                    if used.contains(dst) {
+                        continue;
+                    }
+                    used.insert(*dst);
+                    if let Some(ret) = dfs(paths, *dst, end, used) {
+                        max = Some(max.map_or(steps + ret, |m: u32| m.max(steps + ret)));
+                    }
+                    used.remove(dst);
+                }
+            } else if src == end {
+                return Some(0);
+            } else {
+                return None;
             }
-        } else {
-            return 0;
+            max
         }
-        max
+
+        let (rows, cols) = (self.map.len(), self.map[0].len());
+        dfs(
+            paths,
+            (0, 1),
+            (rows - 1, cols - 2),
+            &mut HashSet::from([(0, 1)]),
+        )
+        .expect("should have a longest path")
     }
 }
 
@@ -86,10 +111,26 @@ impl Solve for Solution {
     }
     fn part1(&self) -> Self::Answer1 {
         let paths = self.calculate_paths();
-        Self::longest_steps(&paths, (0, 1))
+        self.longest_steps(&paths)
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        let (rows, cols) = (self.map.len(), self.map[0].len());
+        let mut paths = self.calculate_paths();
+        let entries = paths
+            .iter()
+            .map(|(&k, v)| (k, v.clone()))
+            .collect::<Vec<_>>();
+        for (src, v) in &entries {
+            for &(dst, steps) in v {
+                if dst == (rows - 1, cols - 2) {
+                    continue;
+                }
+                if let Some(v) = paths.get_mut(&dst) {
+                    v.push((*src, steps));
+                }
+            }
+        }
+        self.longest_steps(&paths)
     }
 }
 
@@ -135,5 +176,10 @@ mod tests {
     #[test]
     fn part1() {
         assert_eq!(Solution::new(example_input()).part1(), 94);
+    }
+
+    #[test]
+    fn part2() {
+        assert_eq!(Solution::new(example_input()).part2(), 154);
     }
 }
