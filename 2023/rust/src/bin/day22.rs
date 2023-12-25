@@ -1,6 +1,7 @@
 use aoc2023::Solve;
 use itertools::{iproduct, Itertools};
-use std::collections::{HashMap, HashSet};
+use std::cmp::Ordering;
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::io::{BufRead, BufReader, Read};
 
 type Coordinate = (usize, usize, usize);
@@ -9,9 +10,60 @@ struct Solution {
     snapshots: Vec<(Coordinate, Coordinate)>,
 }
 
+impl Solution {
+    fn drop_counts(&self) -> Vec<usize> {
+        let (mut supportings, mut rev) = (HashMap::new(), HashMap::new());
+        let mut grid = HashMap::new();
+        for (i, &((x0, y0, z0), (x1, y1, z1))) in self
+            .snapshots
+            .iter()
+            .sorted_by_cached_key(|((_, _, z0), (_, _, z1))| z0.min(z1))
+            .enumerate()
+        {
+            let (mut m, mut v) = (0, Vec::new());
+            for (x, y) in iproduct!(x0..=x1, y0..=y1) {
+                if let Some(&(z, j)) = grid.get(&(x, y)) {
+                    match m.cmp(&z) {
+                        Ordering::Less => {
+                            m = z;
+                            v = vec![j];
+                        }
+                        Ordering::Equal => {
+                            v.push(j);
+                        }
+                        Ordering::Greater => {}
+                    }
+                }
+            }
+            for (x, y, z) in iproduct!(x0..=x1, y0..=y1, z0..=z1) {
+                grid.insert((x, y), (m + 1 + z - z0, i));
+            }
+            supportings.insert(i, v.iter().cloned().collect::<HashSet<_>>());
+            for j in v {
+                rev.entry(j).or_insert_with(BTreeSet::new).insert(i);
+            }
+        }
+        (0..self.snapshots.len())
+            .map(|i| {
+                let mut drops = HashSet::from([i]);
+                let mut bts = rev.get(&i).cloned().unwrap_or_default();
+                while let Some(j) = bts.pop_first() {
+                    if supportings[&j].is_subset(&drops) {
+                        drops.insert(j);
+                        if let Some(hs) = rev.get(&j) {
+                            bts.extend(hs.iter().cloned());
+                        }
+                    }
+                }
+                drops.len() - 1
+            })
+            .collect()
+    }
+}
+
 impl Solve for Solution {
     type Answer1 = usize;
-    type Answer2 = u32;
+    type Answer2 = usize;
 
     fn new(r: impl Read) -> Self {
         Self {
@@ -32,49 +84,10 @@ impl Solve for Solution {
         }
     }
     fn part1(&self) -> Self::Answer1 {
-        let mut grid = HashMap::new();
-        for (i, &((x0, y0, z0), (x1, y1, z1))) in self
-            .snapshots
-            .iter()
-            .sorted_by_cached_key(|((_, _, z0), (_, _, z1))| z0.min(z1))
-            .enumerate()
-        {
-            let mut brick = iproduct!(x0..=x1, y0..=y1, z0..=z1).collect_vec();
-            while brick
-                .iter()
-                .all(|&(x, y, z)| z > 0 && !grid.contains_key(&(x, y, z - 1)))
-            {
-                brick.iter_mut().for_each(|(_, _, z)| *z -= 1);
-            }
-            for &(x, y, z) in &brick {
-                grid.insert((x, y, z), i);
-            }
-        }
-        let mut supported = HashMap::new();
-        for (&(x, y, z), i) in &grid {
-            if let Some(&j) = grid.get(&(x, y, z + 1)) {
-                if j != *i {
-                    supported.entry(j).or_insert_with(HashSet::new).insert(*i);
-                }
-            }
-        }
-        let exclude = supported
-            .values()
-            .filter_map(|s| {
-                if s.len() == 1 {
-                    Some(s.iter().next().unwrap())
-                } else {
-                    None
-                }
-            })
-            .collect::<HashSet<_>>();
-        grid.values()
-            .filter(|i| !exclude.contains(i))
-            .unique()
-            .count()
+        self.drop_counts().iter().filter(|&c| *c == 0).count()
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        self.drop_counts().iter().sum()
     }
 }
 
@@ -104,5 +117,10 @@ mod tests {
     #[test]
     fn part1() {
         assert_eq!(Solution::new(example_input()).part1(), 5);
+    }
+
+    #[test]
+    fn part2() {
+        assert_eq!(Solution::new(example_input()).part2(), 7);
     }
 }
