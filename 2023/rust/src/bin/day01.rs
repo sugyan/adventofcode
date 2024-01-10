@@ -115,7 +115,7 @@ mod solution {
     }
 
     impl Solution {
-        const LETTERS: [&str; 9] = [
+        const LETTERS: [&'static str; 9] = [
             "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
         ];
 
