@@ -1,12 +1,18 @@
-from typing import Any, Protocol, TextIO
+from abc import ABC, abstractmethod
+from typing import TextIO
+
+Answer = int | str
 
 
-class Solve(Protocol):
+class Solve(ABC):
+    @abstractmethod
     def __init__(self, _: TextIO) -> None:
         pass
 
-    def part1(self) -> Any:
+    @abstractmethod
+    def part1(self) -> Answer:
         pass
 
-    def part2(self) -> Any:
+    @abstractmethod
+    def part2(self) -> Answer:
         pass
