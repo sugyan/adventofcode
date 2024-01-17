@@ -13,12 +13,13 @@ on:
     paths:
       - "2023/python/**"
 
+defaults:
+  run:
+    working-directory: ./2023/python
+
 jobs:
   test:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./2023/python
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12"]

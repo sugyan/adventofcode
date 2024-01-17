@@ -23,12 +23,9 @@ module Solution : Solve = struct
   let calibration_value include_spelled line =
     let rec f = function
       | [] -> []
-      | hd :: tl -> (
-          find_digit include_spelled (hd :: tl) |> function
-          | Some x -> x :: f tl
-          | None -> f tl)
+      | hd :: tl -> find_digit include_spelled (hd :: tl) :: f tl
     in
-    let digits = f line in
+    let digits = f line |> List.filter_map ~f:Fn.id in
     List.((10 * hd_exn digits) + last_exn digits)
 
   let parse input = In_channel.input_lines input |> List.map ~f:String.to_list
