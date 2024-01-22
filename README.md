@@ -6,8 +6,12 @@ My solutions for [Advent of Code](https://adventofcode.com/)
 ### 2023
 
 [![Rust 2023](https://github.com/sugyan/adventofcode/actions/workflows/rust_2023.yml/badge.svg?branch=main)](https://github.com/sugyan/adventofcode/actions/workflows/rust_2023.yml)
+[![Python 2023](https://github.com/sugyan/adventofcode/actions/workflows/python_2023.yml/badge.svg?branch=main)](https://github.com/sugyan/adventofcode/actions/workflows/python_2023.yml)
+[![Ocaml 2023](https://github.com/sugyan/adventofcode/actions/workflows/ocaml_2023.yml/badge.svg?branch=main)](https://github.com/sugyan/adventofcode/actions/workflows/ocaml_2023.yml)
 
 - :white_check_mark: Rust
+- :construction: Python
+- :construction: OCaml
 
 
 ### 2022
