@@ -1,6 +1,5 @@
-use aoc2023::Solve;
+use aoc2023::{run, Solve};
 use std::io::{BufRead, BufReader, Read};
-use std::num::ParseIntError;
 use std::str::FromStr;
 
 struct Game {
@@ -9,12 +8,16 @@ struct Game {
 }
 
 impl FromStr for Game {
-    type Err = ParseIntError;
+    type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (l, r) = s.split_once(": ").unwrap();
-        let id = l[5..].parse()?;
-        let subsets = r.split("; ").filter_map(|s| s.parse().ok()).collect();
+        let (l, r) = s.split_once(": ").ok_or(())?;
+        let id = l[5..].parse().map_err(|_| ())?;
+        let subsets = r
+            .split("; ")
+            .map(str::parse)
+            .collect::<Result<_, _>>()
+            .map_err(|_| ())?;
         Ok(Self { id, subsets })
     }
 }
@@ -26,13 +29,13 @@ struct Cubes {
 }
 
 impl FromStr for Cubes {
-    type Err = ParseIntError;
+    type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let (mut red, mut green, mut blue) = (0, 0, 0);
         for part in s.split(", ") {
-            let (n, color) = part.split_once(' ').unwrap();
-            let n = n.parse()?;
+            let (n, color) = part.split_once(' ').ok_or(())?;
+            let n = n.parse().map_err(|_| ())?;
             match color {
                 "red" => red = n,
                 "green" => green = n,
@@ -56,7 +59,7 @@ impl Solve for Solution {
         let games = BufReader::new(r)
             .lines()
             .map_while(Result::ok)
-            .map(|s| s.parse().unwrap())
+            .map(|s| s.parse().expect("invalid line"))
             .collect();
         Self { games }
     }
@@ -90,9 +93,7 @@ impl Solve for Solution {
 }
 
 fn main() {
-    let solution = Solution::new(std::io::stdin().lock());
-    println!("Part 1: {}", solution.part1());
-    println!("Part 2: {}", solution.part2());
+    run(&Solution::new(std::io::stdin().lock()));
 }
 
 #[cfg(test)]
