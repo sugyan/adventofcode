@@ -19,7 +19,7 @@
  (name aoc2023)
  (synopsis "Advent of Code 2023")
  (description "OCaml solutions for Advent of Code 2023")
- (depends ocaml dune base)
+ (depends ocaml dune base core)
  (tags
   (advent-of-code aoc2023)))
 
