@@ -1,4 +1,4 @@
-use aoc2023::Solve;
+use aoc2023::{run, Solve};
 use itertools::{iproduct, Itertools};
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Read};
@@ -78,9 +78,7 @@ impl Solve for Solution {
 }
 
 fn main() {
-    let solution = Solution::new(std::io::stdin().lock());
-    println!("Part 1: {}", solution.part1());
-    println!("Part 2: {}", solution.part2());
+    run(&Solution::new(std::io::stdin().lock()));
 }
 
 #[cfg(test)]

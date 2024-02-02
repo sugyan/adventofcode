@@ -27,7 +27,7 @@ module Solution : Solve = struct
     |> List.iter ~f:(fun ((i, j), s) ->
            let f (i, j) =
              Hashtbl.change part_numbers (i, j)
-               ~f:(Option.map ~f:(List.cons (Int.of_string s)))
+               ~f:(Option.map ~f:(List.cons @@ Int.of_string s))
            in
            List.cartesian_product
              (List.range (i - 1) (i + 2))
