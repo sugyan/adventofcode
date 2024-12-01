@@ -1,6 +1,9 @@
 use aoc2024::{run, Solve};
 use itertools::Itertools;
-use std::io::{BufRead, BufReader, Read};
+use std::{
+    collections::HashMap,
+    io::{BufRead, BufReader, Read},
+};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -44,7 +47,14 @@ impl Solve for Solution {
         l.into_iter().zip(r).map(|(l, r)| (r - l).abs()).sum()
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        let mut counts = HashMap::<_, i32>::new();
+        for (_, r) in &self.pairs {
+            *counts.entry(r).or_default() += 1;
+        }
+        self.pairs
+            .iter()
+            .map(|(l, _)| l * counts.get(l).copied().unwrap_or_default())
+            .sum()
     }
 }
 
@@ -71,6 +81,12 @@ mod tests {
     #[test]
     fn part1() -> Result<(), Error> {
         assert_eq!(Solution::new(example_input())?.part1(), 11);
+        Ok(())
+    }
+
+    #[test]
+    fn part2() -> Result<(), Error> {
+        assert_eq!(Solution::new(example_input())?.part2(), 31);
         Ok(())
     }
 }
