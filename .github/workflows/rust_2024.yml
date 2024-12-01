@@ -1,0 +1,37 @@
+name: Rust 2024
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "2024/rust/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "2024/rust/**"
+
+defaults:
+  run:
+    working-directory: ./2024/rust
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: cargo build --verbose
+      - name: Run tests
+        run: cargo test --verbose
+
+  clippy:
+    env:
+      RUSTFLAGS: "-Dwarnings"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Clippy
+        run: cargo clippy --all-targets --all-features
