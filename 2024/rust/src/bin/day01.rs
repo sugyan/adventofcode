@@ -25,7 +25,10 @@ impl Solve for Solution {
     type Answer2 = i32;
     type Error = Error;
 
-    fn new(r: impl Read) -> Result<Self, Self::Error> {
+    fn new<R>(r: R) -> Result<Self, Self::Error>
+    where
+        R: Read,
+    {
         Ok(Self {
             pairs: BufReader::new(r)
                 .lines()
@@ -58,8 +61,8 @@ impl Solve for Solution {
     }
 }
 
-fn main() {
-    run::<Solution>();
+fn main() -> Result<(), Error> {
+    run::<Solution>()
 }
 
 #[cfg(test)]
