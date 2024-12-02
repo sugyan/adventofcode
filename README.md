@@ -3,6 +3,11 @@
 My solutions for [Advent of Code](https://adventofcode.com/)
 
 
+### 2024
+
+[![Rust 2024](https://github.com/sugyan/adventofcode/actions/workflows/rust_2024.yml/badge.svg?branch=main)](https://github.com/sugyan/adventofcode/actions/workflows/rust_2024.yml)
+
+
 ### 2023
 
 [![Rust 2023](https://github.com/sugyan/adventofcode/actions/workflows/rust_2023.yml/badge.svg?branch=main)](https://github.com/sugyan/adventofcode/actions/workflows/rust_2023.yml)
