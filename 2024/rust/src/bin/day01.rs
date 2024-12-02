@@ -1,62 +1,66 @@
 use aoc2024::{run, Solve};
 use itertools::Itertools;
-use std::{
-    collections::HashMap,
-    io::{BufRead, BufReader, Read},
-};
+use std::io::{BufRead, BufReader, Read};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 enum Error {
     #[error(transparent)]
     Io(#[from] std::io::Error),
+    #[error(transparent)]
+    Parse(#[from] std::num::ParseIntError),
     #[error("invalid input")]
     InvalidInput,
-    #[error("invalid number")]
-    Parse(#[from] std::num::ParseIntError),
 }
 
 struct Solution {
-    pairs: Vec<(i32, i32)>,
+    sorted_pairs: (Vec<u32>, Vec<u32>),
 }
 
 impl Solve for Solution {
-    type Answer1 = i32;
-    type Answer2 = i32;
+    type Answer1 = u32;
+    type Answer2 = u32;
     type Error = Error;
 
-    fn new<R>(r: R) -> Result<Self, Self::Error>
+    fn new<R>(r: R) -> Result<Self, Error>
     where
         R: Read,
     {
+        let transposed = BufReader::new(r)
+            .lines()
+            .map(|line| {
+                line.map_err(Error::Io)?
+                    .split_ascii_whitespace()
+                    .collect_tuple()
+                    .ok_or(Error::InvalidInput)
+                    .and_then(|(a, b)| Ok((a.parse()?, b.parse()?)))
+            })
+            .collect::<Result<Vec<(u32, u32)>, _>>()?
+            .into_iter()
+            .unzip::<_, _, Vec<_>, Vec<_>>();
         Ok(Self {
-            pairs: BufReader::new(r)
-                .lines()
-                .map(|line| {
-                    line.map_err(Error::Io)?
-                        .split_ascii_whitespace()
-                        .collect_tuple()
-                        .ok_or(Error::InvalidInput)
-                        .and_then(|(a, b)| Ok((a.parse()?, b.parse()?)))
-                })
-                .collect::<Result<_, _>>()?,
+            sorted_pairs: (
+                transposed.0.into_iter().sorted().collect(),
+                transposed.1.into_iter().sorted().collect(),
+            ),
         })
     }
     fn part1(&self) -> Self::Answer1 {
-        let mut l = self.pairs.iter().map(|(l, _)| l).collect::<Vec<_>>();
-        let mut r = self.pairs.iter().map(|(_, r)| r).collect::<Vec<_>>();
-        l.sort_unstable();
-        r.sort_unstable();
-        l.into_iter().zip(r).map(|(l, r)| (r - l).abs()).sum()
+        self.sorted_pairs
+            .0
+            .iter()
+            .zip(&self.sorted_pairs.1)
+            .map(|(l, r)| l.abs_diff(*r))
+            .sum()
     }
     fn part2(&self) -> Self::Answer2 {
-        let mut counts = HashMap::<_, i32>::new();
-        for (_, r) in &self.pairs {
-            *counts.entry(r).or_default() += 1;
-        }
-        self.pairs
+        let counts = self.sorted_pairs.1.iter().counts();
+        self.sorted_pairs
+            .0
             .iter()
-            .map(|(l, _)| l * counts.get(l).copied().unwrap_or_default())
+            .counts()
+            .iter()
+            .map(|(&k, v)| k * (v * counts.get(k).copied().unwrap_or_default()) as u32)
             .sum()
     }
 }
