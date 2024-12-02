@@ -1,4 +1,5 @@
 use aoc2024::{run, Solve};
+use itertools::Itertools;
 use std::io::{BufRead, BufReader, Read};
 use thiserror::Error;
 
@@ -16,8 +17,10 @@ struct Solution {
 
 impl Solution {
     fn is_safe(report: &[u32]) -> bool {
-        report.windows(2).all(|w| w[0] < w[1] && w[1] < w[0] + 4)
-            || report.windows(2).all(|w| w[1] < w[0] && w[0] < w[1] + 4)
+        report.windows(2).map(|w| w[0].cmp(&w[1])).all_equal()
+            && report
+                .windows(2)
+                .all(|w| (1..=3).contains(&w[0].abs_diff(w[1])))
     }
 }
 
