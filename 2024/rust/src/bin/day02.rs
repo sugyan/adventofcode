@@ -14,6 +14,13 @@ struct Solution {
     reports: Vec<Vec<u32>>,
 }
 
+impl Solution {
+    fn is_safe(report: &[u32]) -> bool {
+        report.windows(2).all(|w| w[0] < w[1] && w[1] < w[0] + 4)
+            || report.windows(2).all(|w| w[1] < w[0] && w[0] < w[1] + 4)
+    }
+}
+
 impl Solve for Solution {
     type Answer1 = usize;
     type Answer2 = usize;
@@ -36,16 +43,16 @@ impl Solve for Solution {
         })
     }
     fn part1(&self) -> Self::Answer1 {
-        self.reports
-            .iter()
-            .filter(|r: &&Vec<u32>| {
-                r.windows(2).all(|w| w[0] < w[1] && w[1] < w[0] + 4)
-                    || r.windows(2).all(|w| w[1] < w[0] && w[0] < w[1] + 4)
-            })
-            .count()
+        self.reports.iter().filter(|r| Self::is_safe(r)).count()
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        self.reports
+            .iter()
+            .filter(|r| {
+                Self::is_safe(r)
+                    || (0..r.len()).any(|i| Self::is_safe(&[&r[0..i], &r[i + 1..]].concat()))
+            })
+            .count()
     }
 }
 
@@ -73,6 +80,12 @@ mod tests {
     #[test]
     fn part1() -> Result<(), Error> {
         assert_eq!(Solution::new(example_input())?.part1(), 2);
+        Ok(())
+    }
+
+    #[test]
+    fn part2() -> Result<(), Error> {
+        assert_eq!(Solution::new(example_input())?.part2(), 4);
         Ok(())
     }
 }
