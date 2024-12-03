@@ -16,27 +16,30 @@ struct Solution {
 impl Solution {
     fn sum_of_multiplications(&self, conditional: bool) -> u32 {
         let (mut sum, mut enabled) = (0, true);
-        for i in 0..self.memory.len() {
-            if self.memory[i..].starts_with("mul(") {
-                if let Some(value) = self.memory[i + 4..].find(')').and_then(|j| {
-                    let (a, b) = self.memory[i + 4..i + 4 + j]
-                        .split(',')
-                        .map(|s| s.parse::<u32>().ok().filter(|n| *n < 1000))
-                        .collect::<Option<Vec<_>>>()?
-                        .into_iter()
-                        .collect_tuple()?;
-                    Some(a * b)
-                }) {
-                    if !conditional || enabled {
-                        sum += value;
-                    }
+        for i in 0..self.memory.len() - 4 {
+            let s = &self.memory[i..];
+            match &s[..4] {
+                "mul(" if !conditional || enabled => {
+                    sum += s
+                        .find(')')
+                        .and_then(|j| {
+                            s[4..j]
+                                .split(',')
+                                .map(|s| s.parse().ok())
+                                .collect::<Option<Vec<u32>>>()?
+                                .into_iter()
+                                .collect_tuple()
+                                .map(|(a, b)| a * b)
+                        })
+                        .unwrap_or_default()
                 }
-            }
-            if self.memory[i..].starts_with("do()") {
-                enabled = true;
-            }
-            if self.memory[i..].starts_with("don't()") {
-                enabled = false;
+                "do()" => {
+                    enabled = true;
+                }
+                "don'" if s.starts_with("don't()") => {
+                    enabled = false;
+                }
+                _ => {}
             }
         }
         sum
