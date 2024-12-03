@@ -1,6 +1,9 @@
 use aoc2024::{run, Solve};
 use itertools::Itertools;
-use std::io::{BufRead, BufReader, Read};
+use std::{
+    io::{BufRead, BufReader, Read},
+    iter,
+};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -46,14 +49,16 @@ impl Solve for Solution {
         })
     }
     fn part1(&self) -> Self::Answer1 {
-        self.reports.iter().filter(|r| Self::is_safe(r)).count()
+        self.reports.iter().filter(|&r| Self::is_safe(r)).count()
     }
     fn part2(&self) -> Self::Answer2 {
         self.reports
             .iter()
-            .filter(|r| {
-                Self::is_safe(r)
-                    || (0..r.len()).any(|i| Self::is_safe(&[&r[0..i], &r[i + 1..]].concat()))
+            .filter(|&r| {
+                (0..r.len())
+                    .map(|i| [&r[0..i], &r[i + 1..]].concat())
+                    .chain(iter::once(r.clone()))
+                    .any(|r| Self::is_safe(&r))
             })
             .count()
     }
