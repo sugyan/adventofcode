@@ -70,7 +70,27 @@ impl Solve for Solution {
         ret
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        let (rows, cols) = (self.letters.len(), self.letters[0].len());
+        let mut ret = 0;
+        for i in 1..rows - 1 {
+            for j in 1..cols - 1 {
+                if self.letters[i][j] == 'A'
+                    && [
+                        [self.letters[i - 1][j - 1], self.letters[i + 1][j + 1]]
+                            .into_iter()
+                            .collect::<String>(),
+                        [self.letters[i - 1][j + 1], self.letters[i + 1][j - 1]]
+                            .into_iter()
+                            .collect::<String>(),
+                    ]
+                    .iter()
+                    .all(|s| s == "MS" || s == "SM")
+                {
+                    ret += 1;
+                }
+            }
+        }
+        ret
     }
 }
 
@@ -101,6 +121,12 @@ MXMXAXMASX
     #[test]
     fn part1() -> Result<(), Error> {
         assert_eq!(Solution::new(example_input())?.part1(), 18);
+        Ok(())
+    }
+
+    #[test]
+    fn part2() -> Result<(), Error> {
+        assert_eq!(Solution::new(example_input())?.part2(), 9);
         Ok(())
     }
 }
