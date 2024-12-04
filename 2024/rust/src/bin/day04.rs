@@ -1,5 +1,8 @@
 use aoc2024::{run, Solve};
-use std::io::{BufRead, BufReader, Read};
+use std::{
+    collections::HashMap,
+    io::{BufRead, BufReader, Read},
+};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -9,7 +12,17 @@ enum Error {
 }
 
 struct Solution {
-    letters: Vec<Vec<char>>,
+    letters: HashMap<(i32, i32), u8>,
+}
+
+impl Solution {
+    fn search_word(&self, (i, j): (i32, i32), checks: &[((i32, i32), u8)]) -> bool {
+        checks.iter().all(|((di, dj), u)| {
+            self.letters
+                .get(&(i + di, j + dj))
+                .map_or(false, |v| v == u)
+        })
+    }
 }
 
 impl Solve for Solution {
@@ -21,76 +34,65 @@ impl Solve for Solution {
     where
         R: Read,
     {
+        let grid = BufReader::new(r)
+            .lines()
+            .map(|line| {
+                line.map_err(Error::Io)
+                    .map(|line| line.bytes().collect::<Vec<_>>())
+            })
+            .collect::<Result<Vec<_>, _>>()?;
         Ok(Self {
-            letters: BufReader::new(r)
-                .lines()
-                .map(|line| line.map_err(Error::Io).map(|line| line.chars().collect()))
-                .collect::<Result<_, _>>()?,
+            letters: grid
+                .iter()
+                .enumerate()
+                .flat_map(|(i, row)| {
+                    row.iter()
+                        .enumerate()
+                        .map(move |(j, &c)| ((i as i32, j as i32), c))
+                })
+                .collect(),
         })
     }
     fn part1(&self) -> Self::Answer1 {
-        let (rows, cols) = (self.letters.len(), self.letters[0].len());
-        let mut ret = 0;
-        for i in 0..rows {
-            for j in 0..cols - 3 {
-                let s = (0..4).map(|k| self.letters[i][j + k]).collect::<String>();
-                if s == "XMAS" || s == "SAMX" {
-                    ret += 1;
+        let directions = [
+            [((1, 0), b'M'), ((2, 0), b'A'), ((3, 0), b'S')],
+            [((1, 1), b'M'), ((2, 2), b'A'), ((3, 3), b'S')],
+            [((0, 1), b'M'), ((0, 2), b'A'), ((0, 3), b'S')],
+            [((-1, 1), b'M'), ((-2, 2), b'A'), ((-3, 3), b'S')],
+            [((-1, 0), b'M'), ((-2, 0), b'A'), ((-3, 0), b'S')],
+            [((-1, -1), b'M'), ((-2, -2), b'A'), ((-3, -3), b'S')],
+            [((0, -1), b'M'), ((0, -2), b'A'), ((0, -3), b'S')],
+            [((1, -1), b'M'), ((2, -2), b'A'), ((3, -3), b'S')],
+        ];
+        self.letters
+            .iter()
+            .filter_map(|(&p, u)| {
+                if *u == b'X' {
+                    Some(
+                        directions
+                            .into_iter()
+                            .filter(|checks| self.search_word(p, checks))
+                            .count(),
+                    )
+                } else {
+                    None
                 }
-            }
-        }
-        for i in 0..rows - 3 {
-            for j in 0..cols {
-                let s = (0..4).map(|k| self.letters[i + k][j]).collect::<String>();
-                if s == "XMAS" || s == "SAMX" {
-                    ret += 1;
-                }
-            }
-        }
-        for i in 0..rows - 3 {
-            for j in 0..cols - 3 {
-                let s = (0..4)
-                    .map(|k| self.letters[i + k][j + k])
-                    .collect::<String>();
-                if s == "XMAS" || s == "SAMX" {
-                    ret += 1;
-                }
-            }
-        }
-        for i in 3..rows {
-            for j in 0..cols - 3 {
-                let s = (0..4)
-                    .map(|k| self.letters[i - k][j + k])
-                    .collect::<String>();
-                if s == "XMAS" || s == "SAMX" {
-                    ret += 1;
-                }
-            }
-        }
-        ret
+            })
+            .sum()
     }
     fn part2(&self) -> Self::Answer2 {
-        let (rows, cols) = (self.letters.len(), self.letters[0].len());
-        let mut ret = 0;
-        for i in 1..rows - 1 {
-            for j in 1..cols - 1 {
-                if self.letters[i][j] == 'A'
-                    && [
-                        [self.letters[i - 1][j - 1], self.letters[i + 1][j + 1]]
-                            .into_iter()
-                            .collect::<String>(),
-                        [self.letters[i - 1][j + 1], self.letters[i + 1][j - 1]]
-                            .into_iter()
-                            .collect::<String>(),
-                    ]
-                    .iter()
-                    .all(|s| s == "MS" || s == "SM")
-                {
-                    ret += 1;
-                }
-            }
-        }
-        ret
+        let ms0 = [((-1, -1), b'M'), ((1, 1), b'S')];
+        let sm0 = [((-1, -1), b'S'), ((1, 1), b'M')];
+        let ms1 = [((1, -1), b'M'), ((-1, 1), b'S')];
+        let sm1 = [((1, -1), b'S'), ((-1, 1), b'M')];
+        self.letters
+            .iter()
+            .filter(|&(&p, u)| {
+                *u == b'A'
+                    && (self.search_word(p, &ms0) || self.search_word(p, &sm0))
+                    && (self.search_word(p, &ms1) || self.search_word(p, &sm1))
+            })
+            .count()
     }
 }
 
