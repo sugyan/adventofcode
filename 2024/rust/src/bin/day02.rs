@@ -69,7 +69,6 @@ fn main() -> Result<(), Error> {
 }
 
 #[cfg(test)]
-
 mod tests {
     use super::*;
 

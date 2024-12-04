@@ -29,7 +29,7 @@ impl Solution {
                                 .collect::<Option<Vec<u32>>>()?
                                 .into_iter()
                                 .collect_tuple()
-                                .map(|(a, b)| a * b)
+                                .map(|(x, y)| x * y)
                         })
                         .unwrap_or_default()
                 }
