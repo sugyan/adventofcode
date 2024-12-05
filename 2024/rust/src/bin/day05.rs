@@ -1,6 +1,7 @@
 use aoc2024::{run, Solve};
 use itertools::Itertools;
 use std::{
+    cmp::Reverse,
     collections::{HashMap, HashSet},
     io::{BufRead, BufReader, Read},
 };
@@ -24,19 +25,12 @@ struct Solution {
 }
 
 impl Solution {
-    fn is_correctly_ordered(&self, update: &[u32]) -> bool {
-        for i in 0..update.len() {
-            for j in i + 1..update.len() {
-                if self
-                    .rules
-                    .get(&update[j])
-                    .map_or(false, |set| set.contains(&update[i]))
-                {
-                    return false;
-                }
-            }
-        }
-        true
+    fn correctly_ordered(&self, update: &[u32]) -> Vec<u32> {
+        let mut result = update.to_vec();
+        result.sort_by_cached_key(|v| {
+            Reverse(update.iter().filter(|u| self.rules[v].contains(u)).count())
+        });
+        result
     }
 }
 
@@ -62,10 +56,8 @@ impl Solve for Solution {
                 .and_then(|v| v.into_iter().collect_tuple().ok_or(Error::InvalidLine))
         }) {
             let (before, after) = rule?;
-            rules
-                .entry(before)
-                .or_insert_with(HashSet::new)
-                .insert(after);
+            rules.entry(after).or_insert_with(HashSet::new);
+            rules.entry(before).or_default().insert(after);
         }
         Ok(Self {
             rules,
@@ -83,7 +75,7 @@ impl Solve for Solution {
         self.updates
             .iter()
             .filter_map(|update| {
-                if self.is_correctly_ordered(update) {
+                if &self.correctly_ordered(update) == update {
                     Some(update[update.len() / 2])
                 } else {
                     None
@@ -92,7 +84,17 @@ impl Solve for Solution {
             .sum()
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        self.updates
+            .iter()
+            .filter_map(|update| {
+                let ordered = self.correctly_ordered(update);
+                if &ordered != update {
+                    Some(ordered[ordered.len() / 2])
+                } else {
+                    None
+                }
+            })
+            .sum()
     }
 }
 
@@ -141,6 +143,12 @@ mod tests {
     #[test]
     fn part1() -> Result<(), Error> {
         assert_eq!(Solution::new(example_input())?.part1(), 143);
+        Ok(())
+    }
+
+    #[test]
+    fn part2() -> Result<(), Error> {
+        assert_eq!(Solution::new(example_input())?.part2(), 123);
         Ok(())
     }
 }
