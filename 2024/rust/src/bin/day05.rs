@@ -21,7 +21,7 @@ enum Error {
 
 struct Solution {
     rules: HashMap<u32, HashSet<u32>>,
-    updates: Vec<Vec<u32>>,
+    updates: Vec<(Vec<u32>, bool)>,
 }
 
 impl Solve for Solution {
@@ -51,37 +51,36 @@ impl Solve for Solution {
                 .or_insert_with(HashSet::new)
                 .insert(after);
         }
-        Ok(Self {
-            rules,
-            updates: update_lines
-                .iter()
-                .map(|line| {
-                    line.split(',')
-                        .map(|s| s.parse().map_err(Error::Parse))
-                        .collect()
-                })
-                .collect::<Result<_, _>>()?,
-        })
+        let updates = update_lines
+            .iter()
+            .map(|line| {
+                line.split(',')
+                    .map(|s| s.parse().map_err(Error::Parse))
+                    .collect()
+            })
+            .collect::<Result<Vec<Vec<_>>, _>>()?
+            .into_iter()
+            .map(|update| {
+                let sorted =
+                    update.is_sorted_by(|a, b| rules.get(a).map_or(false, |set| set.contains(b)));
+                (update, sorted)
+            })
+            .collect();
+        Ok(Self { rules, updates })
     }
     fn part1(&self) -> Self::Answer1 {
         self.updates
             .iter()
-            .filter_map(|update| {
-                if update
-                    .is_sorted_by(|a, b| self.rules.get(a).map_or(false, |set| set.contains(b)))
-                {
-                    Some(update[update.len() / 2])
-                } else {
-                    None
-                }
-            })
+            .filter(|(_, sorted)| *sorted)
+            .map(|(update, _)| update[update.len() / 2])
             .sum()
     }
     fn part2(&self) -> Self::Answer2 {
         self.updates
             .iter()
-            .filter_map(|update| {
-                let ordered = update
+            .filter(|(_, sorted)| !*sorted)
+            .map(|(update, _)| {
+                update
                     .iter()
                     .cloned()
                     .sorted_by(|a, b| {
@@ -91,12 +90,7 @@ impl Solve for Solution {
                             Ordering::Greater
                         }
                     })
-                    .collect_vec();
-                if &ordered != update {
-                    Some(ordered[ordered.len() / 2])
-                } else {
-                    None
-                }
+                    .collect_vec()[update.len() / 2]
             })
             .sum()
     }
