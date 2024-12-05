@@ -1,7 +1,7 @@
 use aoc2024::{run, Solve};
 use itertools::Itertools;
 use std::{
-    cmp::Reverse,
+    cmp::Ordering,
     collections::{HashMap, HashSet},
     io::{BufRead, BufReader, Read},
 };
@@ -22,16 +22,6 @@ enum Error {
 struct Solution {
     rules: HashMap<u32, HashSet<u32>>,
     updates: Vec<Vec<u32>>,
-}
-
-impl Solution {
-    fn correctly_ordered(&self, update: &[u32]) -> Vec<u32> {
-        let mut result = update.to_vec();
-        result.sort_by_cached_key(|v| {
-            Reverse(update.iter().filter(|u| self.rules[v].contains(u)).count())
-        });
-        result
-    }
 }
 
 impl Solve for Solution {
@@ -56,8 +46,10 @@ impl Solve for Solution {
                 .and_then(|v| v.into_iter().collect_tuple().ok_or(Error::InvalidLine))
         }) {
             let (before, after) = rule?;
-            rules.entry(after).or_insert_with(HashSet::new);
-            rules.entry(before).or_default().insert(after);
+            rules
+                .entry(before)
+                .or_insert_with(HashSet::new)
+                .insert(after);
         }
         Ok(Self {
             rules,
@@ -75,7 +67,9 @@ impl Solve for Solution {
         self.updates
             .iter()
             .filter_map(|update| {
-                if &self.correctly_ordered(update) == update {
+                if update
+                    .is_sorted_by(|a, b| self.rules.get(a).map_or(false, |set| set.contains(b)))
+                {
                     Some(update[update.len() / 2])
                 } else {
                     None
@@ -87,7 +81,17 @@ impl Solve for Solution {
         self.updates
             .iter()
             .filter_map(|update| {
-                let ordered = self.correctly_ordered(update);
+                let ordered = update
+                    .iter()
+                    .cloned()
+                    .sorted_by(|a, b| {
+                        if self.rules.get(a).map_or(false, |set| set.contains(b)) {
+                            Ordering::Less
+                        } else {
+                            Ordering::Greater
+                        }
+                    })
+                    .collect_vec();
                 if &ordered != update {
                     Some(ordered[ordered.len() / 2])
                 } else {
