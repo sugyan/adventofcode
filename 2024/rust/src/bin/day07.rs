@@ -23,12 +23,25 @@ struct CalibrationEquation {
 }
 
 impl CalibrationEquation {
-    fn is_possible(&self) -> bool {
+    fn calibration_result(&self, third_operator: bool) -> Option<u64> {
+        if self.is_possible(third_operator) {
+            Some(self.test_value)
+        } else {
+            None
+        }
+    }
+    fn is_possible(&self, third_operator: bool) -> bool {
         self.numbers
             .iter()
             .fold(HashSet::<u64>::from_iter([0]), |acc, &n| {
                 acc.iter()
-                    .flat_map(|val| vec![val + n, val * n])
+                    .flat_map(|val| {
+                        let mut v = vec![val + n, val * n];
+                        if third_operator {
+                            v.push(val * 10_u64.pow(n.ilog10() + 1) + n);
+                        }
+                        v
+                    })
                     .filter(|val| *val > 0)
                     .collect()
             })
@@ -79,12 +92,14 @@ impl Solve for Solution {
     fn part1(&self) -> Self::Answer1 {
         self.calibration_equations
             .iter()
-            .filter(|eq| eq.is_possible())
-            .map(|eq| eq.test_value)
+            .filter_map(|eq| eq.calibration_result(false))
             .sum()
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        self.calibration_equations
+            .iter()
+            .filter_map(|eq| eq.calibration_result(true))
+            .sum()
     }
 }
 
@@ -114,6 +129,12 @@ mod tests {
     #[test]
     fn part1() -> Result<(), Error> {
         assert_eq!(Solution::new(example_input())?.part1(), 3749);
+        Ok(())
+    }
+
+    #[test]
+    fn part2() -> Result<(), Error> {
+        assert_eq!(Solution::new(example_input())?.part2(), 11387);
         Ok(())
     }
 }
