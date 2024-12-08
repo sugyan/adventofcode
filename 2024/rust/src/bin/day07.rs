@@ -71,8 +71,6 @@ struct Solution {
     calibration_equations: Vec<CalibrationEquation>,
 }
 
-impl Solution {}
-
 impl Solve for Solution {
     type Answer1 = u64;
     type Answer2 = u64;
