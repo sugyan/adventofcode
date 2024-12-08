@@ -3,6 +3,7 @@ use itertools::Itertools;
 use std::{
     collections::HashMap,
     io::{BufRead, BufReader, Read},
+    iter,
 };
 use thiserror::Error;
 
@@ -13,7 +14,37 @@ enum Error {
 }
 
 struct Solution {
-    map: Vec<Vec<u8>>,
+    map_size: (usize, usize),
+    antennas: HashMap<u8, Vec<(usize, usize)>>,
+}
+
+impl Solution {
+    fn count_antinodes(&self, update: bool) -> usize {
+        self.antennas
+            .values()
+            .flat_map(|v| {
+                v.iter().combinations(2).flat_map(|c| {
+                    let (di, dj) = (c[1].0.wrapping_sub(c[0].0), c[1].1.wrapping_sub(c[0].1));
+                    let it0 = iter::successors(Some(*c[0]), move |(i, j)| {
+                        Some((i.wrapping_sub(di), j.wrapping_sub(dj))).filter(|(i, j)| {
+                            (0..self.map_size.0).contains(i) && (0..self.map_size.1).contains(j)
+                        })
+                    });
+                    let it1 = iter::successors(Some(*c[1]), move |(i, j)| {
+                        Some((i.wrapping_add(di), j.wrapping_add(dj))).filter(|(i, j)| {
+                            (0..self.map_size.0).contains(i) && (0..self.map_size.1).contains(j)
+                        })
+                    });
+                    if update {
+                        it0.chain(it1).collect_vec()
+                    } else {
+                        it0.skip(1).take(1).chain(it1.skip(1).take(1)).collect_vec()
+                    }
+                })
+            })
+            .unique()
+            .count()
+    }
 }
 
 impl Solve for Solution {
@@ -25,39 +56,28 @@ impl Solve for Solution {
     where
         R: Read,
     {
-        Ok(Self {
-            map: BufReader::new(r)
-                .lines()
-                .map(|line| line.map(|line| line.bytes().collect()))
-                .collect::<Result<Vec<_>, _>>()?,
-        })
-    }
-    fn part1(&self) -> Self::Answer1 {
-        let (row, col) = (self.map.len(), self.map[0].len());
-        let mut hm = HashMap::new();
-        for (i, row) in self.map.iter().enumerate() {
+        let map = BufReader::new(r)
+            .lines()
+            .map(|line| line.map(|line| line.bytes().collect()))
+            .collect::<Result<Vec<Vec<_>>, _>>()?;
+        let mut antennas = HashMap::new();
+        for (i, row) in map.iter().enumerate() {
             for (j, col) in row.iter().enumerate() {
                 if col != &b'.' {
-                    hm.entry(col).or_insert_with(Vec::new).push((i, j));
+                    antennas.entry(*col).or_insert_with(Vec::new).push((i, j));
                 }
             }
         }
-        hm.values()
-            .flat_map(|v| {
-                v.iter().combinations(2).flat_map(|c| {
-                    let (di, dj) = (c[0].0.wrapping_sub(c[1].0), c[0].1.wrapping_sub(c[1].1));
-                    vec![
-                        (c[0].0.wrapping_add(di), c[0].1.wrapping_add(dj)),
-                        (c[1].0.wrapping_sub(di), c[1].1.wrapping_sub(dj)),
-                    ]
-                })
-            })
-            .unique()
-            .filter(|(i, j)| (0..row).contains(i) && (0..col).contains(j))
-            .count()
+        Ok(Self {
+            map_size: (map.len(), map[0].len()),
+            antennas,
+        })
+    }
+    fn part1(&self) -> Self::Answer1 {
+        self.count_antinodes(false)
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        self.count_antinodes(true)
     }
 }
 
@@ -90,6 +110,12 @@ mod tests {
     #[test]
     fn part1() -> Result<(), Error> {
         assert_eq!(Solution::new(example_input())?.part1(), 14);
+        Ok(())
+    }
+
+    #[test]
+    fn part2() -> Result<(), Error> {
+        assert_eq!(Solution::new(example_input())?.part2(), 34);
         Ok(())
     }
 }
