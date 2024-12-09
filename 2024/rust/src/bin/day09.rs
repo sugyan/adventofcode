@@ -9,7 +9,7 @@ enum Error {
 }
 
 struct Solution {
-    disk_map: Vec<u8>,
+    disk_map: Vec<usize>,
 }
 
 impl Solve for Solution {
@@ -24,21 +24,21 @@ impl Solve for Solution {
         let mut buf = String::new();
         BufReader::new(r).read_to_string(&mut buf)?;
         Ok(Self {
-            disk_map: buf.trim().bytes().map(|u| u - b'0').collect(),
+            disk_map: buf.trim().bytes().map(|u| usize::from(u - b'0')).collect(),
         })
     }
     fn part1(&self) -> Self::Answer1 {
-        let size = self.disk_map.iter().map(|u| *u as usize).sum::<usize>();
+        let size = self.disk_map.iter().sum::<usize>();
         let mut disk = vec![None; size];
 
         let mut offset = 0;
         for (i, len) in self.disk_map.iter().enumerate() {
             if i % 2 == 0 {
-                for j in 0..*len as usize {
+                for j in 0..*len {
                     disk[offset + j] = Some(i / 2);
                 }
             }
-            offset += *len as usize;
+            offset += *len;
         }
         while let Some(i) = disk.iter().position(|u| u.is_none()) {
             while let Some(last) = disk.pop() {
@@ -60,7 +60,30 @@ impl Solve for Solution {
             .sum()
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        let mut disk_map = self.disk_map.clone();
+        let mut offsets = vec![0; disk_map.len()];
+        for i in 1..disk_map.len() {
+            offsets[i] = offsets[i - 1] + disk_map[i - 1];
+        }
+
+        let mut sum = 0;
+        for i in (0..disk_map.len()).step_by(2).rev() {
+            let mut s = i / 2 * (2 * offsets[i] + disk_map[i] - 1) * disk_map[i] / 2;
+            let len = disk_map[i];
+            if let Some((j, space)) = disk_map
+                .iter_mut()
+                .enumerate()
+                .skip(1)
+                .step_by(2)
+                .find(|(j, u)| *j < i && **u >= len)
+            {
+                *space -= len;
+                s -= i / 2 * (offsets[i] - offsets[j]) * len;
+                offsets[j] += len;
+            }
+            sum += s;
+        }
+        sum
     }
 }
 
@@ -81,6 +104,12 @@ mod tests {
     #[test]
     fn part1() -> Result<(), Error> {
         assert_eq!(Solution::new(example_input())?.part1(), 1928);
+        Ok(())
+    }
+
+    #[test]
+    fn part2() -> Result<(), Error> {
+        assert_eq!(Solution::new(example_input())?.part2(), 2858);
         Ok(())
     }
 }
