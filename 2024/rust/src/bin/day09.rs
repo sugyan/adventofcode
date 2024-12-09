@@ -21,24 +21,22 @@ impl Solution {
         }
         let mut sum = 0;
         for i in (0..self.disk_map.len()).step_by(2).rev() {
-            sum += i / 2 * (2 * offsets[i] + disk_map[i] - 1) * disk_map[i] / 2;
-            let mut len = disk_map[i];
-            while let Some((j, space)) = disk_map
-                .iter_mut()
-                .enumerate()
-                .skip(1)
+            while let Some(j) = (1..i)
                 .step_by(2)
-                .find(|(j, space)| *j < i && **space > (if move_whole { len - 1 } else { 0 }))
+                .find(|j| disk_map[*j] > if move_whole { disk_map[i] - 1 } else { 0 })
             {
-                for _ in 0..len.min(*space) {
-                    sum -= i / 2 * (offsets[i] - offsets[j] + len - 1);
-                    *space -= 1;
+                for _ in 0..disk_map[i].min(disk_map[j]) {
+                    sum += i / 2 * offsets[j];
                     offsets[j] += 1;
-                    len -= 1;
+                    disk_map[i] -= 1;
+                    disk_map[j] -= 1;
                 }
-                if len == 0 {
+                if disk_map[i] == 0 {
                     break;
                 }
+            }
+            for j in 0..disk_map[i] {
+                sum += i / 2 * (offsets[i] + j);
             }
         }
         sum

@@ -1,6 +1,5 @@
 use aoc2024::{run, Solve};
 use std::{
-    collections::HashSet,
     io::{BufRead, BufReader, Read},
     str::FromStr,
 };
@@ -24,28 +23,26 @@ struct CalibrationEquation {
 
 impl CalibrationEquation {
     fn calibration_result(&self, third_operator: bool) -> Option<u64> {
-        if self.is_possible(third_operator) {
+        if self.is_possible(self.numbers[0], &self.numbers[1..], third_operator) {
             Some(self.test_value)
         } else {
             None
         }
     }
-    fn is_possible(&self, third_operator: bool) -> bool {
-        self.numbers
-            .iter()
-            .fold(HashSet::<u64>::from_iter([0]), |acc, &n| {
-                acc.iter()
-                    .flat_map(|val| {
-                        let mut v = vec![val + n, val * n];
-                        if third_operator {
-                            v.push(val * 10_u64.pow(n.ilog10() + 1) + n);
-                        }
-                        v
-                    })
-                    .filter(|val| *val > 0)
-                    .collect()
-            })
-            .contains(&self.test_value)
+    fn is_possible(&self, current: u64, numbers: &[u64], third_operator: bool) -> bool {
+        match numbers {
+            [] => current == self.test_value,
+            [n, rest @ ..] => {
+                (third_operator
+                    && self.is_possible(
+                        current * 10_u64.pow(n.ilog10() + 1) + n,
+                        rest,
+                        third_operator,
+                    ))
+                    || self.is_possible(current + n, rest, third_operator)
+                    || self.is_possible(current * n, rest, third_operator)
+            }
+        }
     }
 }
 
