@@ -1,5 +1,8 @@
 use aoc2024::{run, Solve};
-use std::io::{BufReader, Read};
+use std::{
+    collections::HashMap,
+    io::{BufReader, Read},
+};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -12,6 +15,39 @@ enum Error {
 
 struct Solution {
     stones: Vec<u64>,
+}
+
+impl Solution {
+    fn count_stones(&self, blink: usize) -> usize {
+        let mut hm = HashMap::new();
+        for stone in &self.stones {
+            *hm.entry(*stone).or_insert(0) += 1;
+        }
+        for _ in 0..blink {
+            hm = hm
+                .iter()
+                .flat_map(|(k, v)| {
+                    (if *k == 0 {
+                        vec![1]
+                    } else {
+                        let digits = k.ilog10() + 1;
+                        if digits % 2 == 0 {
+                            let d = 10_u64.pow(digits / 2);
+                            vec![k / d, k % d]
+                        } else {
+                            vec![k * 2024]
+                        }
+                    })
+                    .into_iter()
+                    .map(|n| (n, *v))
+                })
+                .fold(HashMap::new(), |mut acc, (k, v)| {
+                    *acc.entry(k).or_insert(0) += v;
+                    acc
+                });
+        }
+        hm.values().sum()
+    }
 }
 
 impl Solve for Solution {
@@ -33,28 +69,10 @@ impl Solve for Solution {
         })
     }
     fn part1(&self) -> Self::Answer1 {
-        let mut stones = self.stones.clone();
-        for _ in 0..25 {
-            stones = stones
-                .iter()
-                .flat_map(|n| {
-                    if *n == 0 {
-                        return vec![1];
-                    }
-                    let digits = n.ilog10() + 1;
-                    if digits % 2 == 0 {
-                        let d = 10_u64.pow(digits / 2);
-                        vec![n / d, n % d]
-                    } else {
-                        vec![n * 2024]
-                    }
-                })
-                .collect();
-        }
-        stones.len()
+        self.count_stones(25)
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        self.count_stones(75)
     }
 }
 
