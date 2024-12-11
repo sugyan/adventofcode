@@ -17,9 +17,7 @@ struct Solution {
 }
 
 impl Solution {
-    fn hiking_trails(
-        &self,
-    ) -> impl Iterator<Item = std::collections::HashMap<(&usize, &usize), usize>> {
+    fn hiking_trails(&self) -> impl Iterator<Item = HashMap<(&usize, &usize), usize>> {
         let (rows, cols) = (self.topographic_map.len(), self.topographic_map[0].len());
         let mut trails = vec![vec![HashMap::new(); cols]; rows];
         for (i, j) in &self.heights[9] {
