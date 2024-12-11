@@ -1,8 +1,6 @@
 use aoc2024::{run, Solve};
-use std::{
-    collections::HashMap,
-    io::{BufReader, Read},
-};
+use itertools::Itertools;
+use std::io::{BufReader, Read};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -19,34 +17,28 @@ struct Solution {
 
 impl Solution {
     fn count_stones(&self, blink: usize) -> usize {
-        let mut hm = HashMap::new();
-        for stone in &self.stones {
-            *hm.entry(*stone).or_insert(0) += 1;
-        }
+        let mut hm = self.stones.iter().copied().counts();
         for _ in 0..blink {
             hm = hm
                 .iter()
-                .flat_map(|(k, v)| {
-                    (if *k == 0 {
-                        vec![1]
-                    } else {
-                        let digits = k.ilog10() + 1;
-                        if digits % 2 == 0 {
-                            let d = 10_u64.pow(digits / 2);
-                            vec![k / d, k % d]
-                        } else {
-                            vec![k * 2024]
-                        }
-                    })
-                    .into_iter()
-                    .map(|n| (n, *v))
-                })
-                .fold(HashMap::new(), |mut acc, (k, v)| {
-                    *acc.entry(k).or_insert(0) += v;
-                    acc
-                });
+                .flat_map(|(k, v)| Self::next_stones(*k).map(|n| (n, *v)))
+                .into_grouping_map()
+                .sum();
         }
         hm.values().sum()
+    }
+    fn next_stones(n: u64) -> impl Iterator<Item = u64> {
+        if n == 0 {
+            vec![1].into_iter()
+        } else {
+            match n.ilog10() + 1 {
+                digits if digits % 2 == 0 => {
+                    let d = 10_u64.pow(digits / 2);
+                    vec![n / d, n % d].into_iter()
+                }
+                _ => vec![n * 2024].into_iter(),
+            }
+        }
     }
 }
 
