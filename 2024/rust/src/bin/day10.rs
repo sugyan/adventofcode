@@ -1,6 +1,6 @@
 use aoc2024::{run, Solve};
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashSet,
     io::{BufRead, BufReader, Read},
 };
 use thiserror::Error;
@@ -11,38 +11,62 @@ enum Error {
     Io(#[from] std::io::Error),
 }
 
+trait Evaluate {
+    fn unit(_: (usize, usize)) -> Self;
+    fn value(&self) -> usize;
+    fn accumulate(self, rhs: Self) -> Self;
+}
+
+struct Score(HashSet<(usize, usize)>);
+
+impl Evaluate for Score {
+    fn unit(p: (usize, usize)) -> Self {
+        Self([p].into_iter().collect())
+    }
+    fn value(&self) -> usize {
+        self.0.len()
+    }
+    fn accumulate(self, rhs: Self) -> Self {
+        Self(self.0.union(&rhs.0).copied().collect())
+    }
+}
+
+struct Rating(usize);
+
+impl Evaluate for Rating {
+    fn unit(_: (usize, usize)) -> Self {
+        Self(1)
+    }
+    fn value(&self) -> usize {
+        self.0
+    }
+    fn accumulate(self, rhs: Self) -> Self {
+        Self(self.0 + rhs.0)
+    }
+}
+
 struct Solution {
-    topographic_map: Vec<Vec<usize>>,
-    heights: Vec<HashSet<(usize, usize)>>,
+    positions: Vec<HashSet<(usize, usize)>>,
 }
 
 impl Solution {
-    fn hiking_trails(&self) -> impl Iterator<Item = HashMap<(&usize, &usize), usize>> {
-        let (rows, cols) = (self.topographic_map.len(), self.topographic_map[0].len());
-        let mut trails = vec![vec![HashMap::new(); cols]; rows];
-        for (i, j) in &self.heights[9] {
-            trails[*i][*j].insert((i, j), 1);
+    fn dfs<E>(&self, (i, j): (usize, usize), height: usize) -> Option<E>
+    where
+        E: Evaluate,
+    {
+        if height == 9 {
+            return Some(E::unit((i, j)));
         }
-        for h in (0..9).rev() {
-            for (i, j) in &self.heights[h] {
-                trails[*i][*j] = [
-                    (i.wrapping_sub(1), *j),
-                    (i.wrapping_add(1), *j),
-                    (*i, j.wrapping_sub(1)),
-                    (*i, j.wrapping_add(1)),
-                ]
-                .iter()
-                .filter(|p| self.heights[h + 1].contains(p))
-                .flat_map(|(i, j)| &trails[*i][*j])
-                .fold(HashMap::new(), |mut acc, (k, v)| {
-                    *acc.entry(*k).or_default() += v;
-                    acc
-                });
-            }
-        }
-        self.heights[0]
-            .iter()
-            .map(move |(i, j)| trails[*i][*j].clone())
+        [
+            (i.wrapping_sub(1), j),
+            (i.wrapping_add(1), j),
+            (i, j.wrapping_sub(1)),
+            (i, j.wrapping_add(1)),
+        ]
+        .iter()
+        .filter(|p| self.positions[height + 1].contains(p))
+        .filter_map(|p| self.dfs(*p, height + 1))
+        .reduce(E::accumulate)
     }
 }
 
@@ -59,26 +83,27 @@ impl Solve for Solution {
             .lines()
             .map(|line| {
                 line.map_err(Error::Io)
-                    .map(|line| line.bytes().map(|u| (u - b'0') as usize).collect())
+                    .map(|line| line.bytes().map(|u| (u - b'0').into()).collect())
             })
-            .collect::<Result<Vec<Vec<_>>, _>>()?;
-        let mut heights = vec![HashSet::new(); 10];
+            .collect::<Result<Vec<Vec<usize>>, _>>()?;
+        let mut positions = vec![HashSet::new(); 10];
         for (i, row) in topographic_map.iter().enumerate() {
-            for (j, &h) in row.iter().enumerate() {
-                heights[h].insert((i, j));
+            for (j, height) in row.iter().enumerate() {
+                positions[*height].insert((i, j));
             }
         }
-        Ok(Self {
-            topographic_map,
-            heights,
-        })
+        Ok(Self { positions })
     }
     fn part1(&self) -> Self::Answer1 {
-        self.hiking_trails().map(|hm| hm.len()).sum()
+        self.positions[0]
+            .iter()
+            .filter_map(|p| self.dfs::<Score>(*p, 0).as_ref().map(Evaluate::value))
+            .sum()
     }
     fn part2(&self) -> Self::Answer2 {
-        self.hiking_trails()
-            .map(|hm| hm.values().sum::<usize>())
+        self.positions[0]
+            .iter()
+            .filter_map(|p| self.dfs::<Rating>(*p, 0).as_ref().map(Evaluate::value))
             .sum()
     }
 }
