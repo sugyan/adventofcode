@@ -17,26 +17,26 @@ struct Solution {
 
 impl Solution {
     fn count_stones(&self, blink: usize) -> usize {
-        let mut hm = self.stones.iter().copied().counts();
+        let mut counts = self.stones.iter().copied().counts();
         for _ in 0..blink {
-            hm = hm
+            counts = counts
                 .iter()
-                .flat_map(|(k, v)| Self::next_stones(*k).map(|n| (n, *v)))
+                .flat_map(|(k, v)| Self::next_stones(*k).into_iter().map(|n| (n, *v)))
                 .into_grouping_map()
                 .sum();
         }
-        hm.values().sum()
+        counts.values().sum()
     }
-    fn next_stones(n: u64) -> impl Iterator<Item = u64> {
+    fn next_stones(n: u64) -> Vec<u64> {
         if n == 0 {
-            vec![1].into_iter()
+            vec![1]
         } else {
             match n.ilog10() + 1 {
                 digits if digits % 2 == 0 => {
                     let d = 10_u64.pow(digits / 2);
-                    vec![n / d, n % d].into_iter()
+                    vec![n / d, n % d]
                 }
-                _ => vec![n * 2024].into_iter(),
+                _ => vec![n * 2024],
             }
         }
     }
