@@ -15,46 +15,51 @@ enum Error {
     InvalidInput,
 }
 
-fn parse_line(line: &str) -> Result<(usize, usize), Error> {
-    line.split_once(": ")
-        .and_then(|(_, s)| s.split_once(", "))
-        .ok_or(Error::InvalidInput)
-        .and_then(|(x, y)| Ok((x[2..].parse()?, y[2..].parse()?)))
-}
-
 #[derive(Debug)]
-struct Button {
-    x: usize,
-    y: usize,
+struct Position {
+    x: i64,
+    y: i64,
 }
 
-impl FromStr for Button {
+impl FromStr for Position {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        parse_line(s).map(|(x, y)| Self { x, y })
-    }
-}
-
-#[derive(Debug)]
-struct Prize {
-    x: usize,
-    y: usize,
-}
-
-impl FromStr for Prize {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        parse_line(s).map(|(x, y)| Self { x, y })
+        s.split_once(": ")
+            .and_then(|(_, s)| s.split_once(", "))
+            .ok_or(Error::InvalidInput)
+            .and_then(|(x, y)| {
+                Ok(Self {
+                    x: x[2..].parse()?,
+                    y: y[2..].parse()?,
+                })
+            })
     }
 }
 
 #[derive(Debug)]
 struct Machine {
-    a: Button,
-    b: Button,
-    prize: Prize,
+    a: Position,
+    b: Position,
+    prize: Position,
+}
+
+impl Machine {
+    fn tokens(&self, offset: i64) -> Option<i64> {
+        let y_num = self.a.x * (self.prize.y + offset) - self.a.y * (self.prize.x + offset);
+        let y_den = self.a.x * self.b.y - self.a.y * self.b.x;
+        if y_num % y_den != 0 {
+            return None;
+        }
+        let b = y_num / y_den;
+        let x_num = self.prize.x + offset - self.b.x * b;
+        let x_den = self.a.x;
+        if x_num % x_den != 0 {
+            return None;
+        }
+        let a = x_num / x_den;
+        Some(a * 3 + b)
+    }
 }
 
 impl TryFrom<&[String]> for Machine {
@@ -75,8 +80,8 @@ struct Solution {
 }
 
 impl Solve for Solution {
-    type Answer1 = usize;
-    type Answer2 = usize;
+    type Answer1 = i64;
+    type Answer2 = i64;
     type Error = Error;
 
     fn new<R>(r: R) -> Result<Self, Error>
@@ -95,22 +100,14 @@ impl Solve for Solution {
     fn part1(&self) -> Self::Answer1 {
         self.machines
             .iter()
-            .filter_map(|machine| {
-                for a in 0..100 {
-                    for b in 0..100 {
-                        if machine.a.x * a + machine.b.x * b == machine.prize.x
-                            && machine.a.y * a + machine.b.y * b == machine.prize.y
-                        {
-                            return Some(a * 3 + b);
-                        }
-                    }
-                }
-                None
-            })
+            .filter_map(|machine| machine.tokens(0))
             .sum()
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        self.machines
+            .iter()
+            .filter_map(|machine| machine.tokens(10_000_000_000_000))
+            .sum()
     }
 }
 
