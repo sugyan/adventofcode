@@ -1,7 +1,7 @@
 use aoc2024::{run, Solve};
 use itertools::Itertools;
 use std::{
-    collections::{BTreeSet, HashMap, VecDeque},
+    collections::{HashMap, HashSet, VecDeque},
     io::{BufRead, BufReader, Read},
 };
 use thiserror::Error;
@@ -12,80 +12,82 @@ enum Error {
     Io(#[from] std::io::Error),
 }
 
-#[derive(Hash, PartialEq, Eq)]
-enum Side {
-    Row(usize, usize),
-    Col(usize, usize),
-}
-
 struct Solution {
-    garden_plots: Vec<Vec<u8>>,
+    garden_plots: HashMap<(usize, usize), u8>,
 }
 
 impl Solution {
     fn total_price(&self, bulk_discount: bool) -> usize {
-        let (rows, cols) = (self.garden_plots.len(), self.garden_plots[0].len());
-        let mut seen = vec![vec![false; cols]; rows];
         let mut sum = 0;
-        for (i, j) in (0..rows).cartesian_product(0..cols) {
-            if seen[i][j] {
-                continue;
+        let mut seen = HashSet::new();
+        for (p, u) in &self.garden_plots {
+            if !seen.contains(p) {
+                let area = self.bfs(p, u, &mut seen);
+                sum += area.len()
+                    * if bulk_discount {
+                        self.count_corners(&area, u)
+                    } else {
+                        self.calculate_perimeter(&area, u)
+                    };
             }
-            let (area, sides) = self.bfs((i, j), &mut seen);
-            sum += area
-                * sides
-                    .values()
-                    .map(|v| {
-                        if bulk_discount {
-                            v.iter()
-                                .tuple_windows()
-                                .filter(|&(a, b)| *a + 1 < *b)
-                                .count()
-                                + 1
-                        } else {
-                            v.len()
-                        }
-                    })
-                    .sum::<usize>();
         }
         sum
     }
     fn bfs(
         &self,
-        (i, j): (usize, usize),
-        seen: &mut [Vec<bool>],
-    ) -> (usize, HashMap<Side, BTreeSet<usize>>) {
-        let (rows, cols) = (self.garden_plots.len(), self.garden_plots[0].len());
-        let (mut area, mut sides) = (0, HashMap::new());
-        let mut vd = [(i, j)].into_iter().collect::<VecDeque<_>>();
-        while let Some((i0, j0)) = vd.pop_front() {
-            if seen[i0][j0] {
-                continue;
-            }
-            seen[i0][j0] = true;
-            area += 1;
-            for &(i1, j1) in &[
-                (i0.wrapping_sub(1), j0),
-                (i0.wrapping_add(1), j0),
-                (i0, j0.wrapping_sub(1)),
-                (i0, j0.wrapping_add(1)),
-            ] {
-                if (0..rows).contains(&i1)
-                    && (0..cols).contains(&j1)
-                    && self.garden_plots[i1][j1] == self.garden_plots[i0][j0]
-                {
-                    vd.push_back((i1, j1));
-                } else {
-                    let (key, value) = if i0 != i1 {
-                        (Side::Row(i0, i1), j0)
-                    } else {
-                        (Side::Col(j0, j1), i0)
-                    };
-                    sides.entry(key).or_insert_with(BTreeSet::new).insert(value);
+        p: &(usize, usize),
+        u: &u8,
+        seen: &mut HashSet<(usize, usize)>,
+    ) -> Vec<(usize, usize)> {
+        let mut area = Vec::new();
+        let mut vd = [*p].into_iter().collect::<VecDeque<_>>();
+        seen.insert(*p);
+        while let Some(p) = vd.pop_front() {
+            area.push(p);
+            for w in [0, 1, 0, !0, 0].windows(2) {
+                let (i, j) = (p.0.wrapping_add(w[0]), p.1.wrapping_add(w[1]));
+                if self.garden_plots.get(&(i, j)) == Some(u) && !seen.contains(&(i, j)) {
+                    seen.insert((i, j));
+                    vd.push_back((i, j));
                 }
             }
         }
-        (area, sides)
+        area
+    }
+    fn calculate_perimeter(&self, area: &[(usize, usize)], u: &u8) -> usize {
+        area.iter()
+            .cartesian_product([(!0, 0), (1, 0), (0, !0), (0, 1)])
+            .filter(|&((i, j), (di, dj))| {
+                self.garden_plots
+                    .get(&(i.wrapping_add(di), j.wrapping_add(dj)))
+                    != Some(u)
+            })
+            .count()
+    }
+    fn count_corners(&self, area: &[(usize, usize)], u: &u8) -> usize {
+        area.iter()
+            .flat_map(|(i, j)| {
+                [
+                    (!0, 0),
+                    (!0, 1),
+                    (0, 1),
+                    (1, 1),
+                    (1, 0),
+                    (1, !0),
+                    (0, !0),
+                    (!0, !0),
+                ]
+                .iter()
+                .map(|&(di, dj)| {
+                    self.garden_plots
+                        .get(&(i.wrapping_add(di), j.wrapping_add(dj)))
+                        != Some(u)
+                })
+                .circular_tuple_windows()
+                .step_by(2)
+            })
+            .filter(|t| matches!(t, (true, _, true) | (false, true, false)))
+            .count()
     }
 }
 
@@ -98,11 +100,16 @@ impl Solve for Solution {
     where
         R: Read,
     {
+        let map = BufReader::new(r)
+            .lines()
+            .map(|line| line.map(|s| s.bytes().collect()))
+            .collect::<Result<Vec<Vec<u8>>, _>>()?;
         Ok(Self {
-            garden_plots: BufReader::new(r)
-                .lines()
-                .map(|line| line.map(|s| s.bytes().collect()))
-                .collect::<Result<_, _>>()?,
+            garden_plots: map
+                .iter()
+                .enumerate()
+                .flat_map(|(i, row)| row.iter().enumerate().map(move |(j, u)| ((i, j), *u)))
+                .collect(),
         })
     }
     fn part1(&self) -> Self::Answer1 {
