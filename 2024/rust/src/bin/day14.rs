@@ -1,6 +1,7 @@
 use aoc2024::{run, Solve};
 use std::{
     cmp::Ordering,
+    collections::HashSet,
     io::{BufRead, BufReader, Read},
     ops::{Add, Mul},
     str::FromStr,
@@ -22,7 +23,7 @@ enum Error {
     InvalidLine,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 struct XY {
     x: i64,
     y: i64,
@@ -65,7 +66,7 @@ impl Mul<i64> for XY {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Robot {
     position: XY,
     velocity: XY,
@@ -127,7 +128,28 @@ impl Solve for Solution {
         quadrants.iter().flatten().product()
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        let mut robots = self.robots.clone();
+        for i in 0.. {
+            let positions = robots.iter().map(|r| r.position).collect::<HashSet<_>>();
+            if positions.len() == robots.len() {
+                // for y in 0..SPACE.y {
+                //     for x in 0..SPACE.x {
+                //         let c = if positions.contains(&XY { x, y }) {
+                //             '#'
+                //         } else {
+                //             '.'
+                //         };
+                //         print!("{c}",);
+                //     }
+                //     println!();
+                // }
+                return i;
+            }
+            for robot in &mut robots {
+                robot.position = robot.position + robot.velocity;
+            }
+        }
+        unreachable!()
     }
 }
 
