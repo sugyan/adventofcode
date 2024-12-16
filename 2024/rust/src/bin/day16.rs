@@ -1,7 +1,7 @@
 use aoc2024::{run, Solve};
 use std::{
     cmp::Reverse,
-    collections::{BinaryHeap, HashMap},
+    collections::{BinaryHeap, HashMap, HashSet},
     io::{BufRead, BufReader, Read},
 };
 use thiserror::Error;
@@ -14,6 +14,8 @@ enum Error {
     InvalidInput,
 }
 
+type PosWithDir = ((usize, usize), Direction);
+
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 enum Direction {
     North,
@@ -23,28 +25,20 @@ enum Direction {
 }
 
 impl Direction {
-    fn next(&self, (i, j): (usize, usize)) -> Vec<((usize, usize), Direction)> {
+    fn next_pos(&self, (i, j): (usize, usize)) -> (usize, usize) {
         match self {
-            Self::North => vec![
-                ((i - 1, j), Self::North),
-                ((i, j), Self::West),
-                ((i, j), Self::East),
-            ],
-            Self::South => vec![
-                ((i + 1, j), Self::South),
-                ((i, j), Self::East),
-                ((i, j), Self::West),
-            ],
-            Self::West => vec![
-                ((i, j - 1), Self::West),
-                ((i, j), Self::South),
-                ((i, j), Self::North),
-            ],
-            Self::East => vec![
-                ((i, j + 1), Self::East),
-                ((i, j), Self::North),
-                ((i, j), Self::South),
-            ],
+            Self::North => (i - 1, j),
+            Self::South => (i + 1, j),
+            Self::West => (i, j - 1),
+            Self::East => (i, j + 1),
+        }
+    }
+    fn next_dirs(&self) -> [Self; 2] {
+        match self {
+            Self::North => [Self::East, Self::West],
+            Self::South => [Self::West, Self::East],
+            Self::West => [Self::North, Self::South],
+            Self::East => [Self::South, Self::North],
         }
     }
 }
@@ -55,9 +49,46 @@ struct Solution {
     end: (usize, usize),
 }
 
+impl Solution {
+    fn dijkstra(&self) -> HashMap<PosWithDir, Vec<PosWithDir>> {
+        let start = (self.start, Direction::East);
+        let mut prevs = [(start, Vec::new())].into_iter().collect::<HashMap<_, _>>();
+        let mut mins = [(start, 0)].into_iter().collect::<HashMap<_, _>>();
+        let mut bh = BinaryHeap::new();
+        bh.push((Reverse(0), (self.start, Direction::East)));
+        while let Some((Reverse(point), (p, dir))) = bh.pop() {
+            if p == self.end {
+                break;
+            }
+            let (i, j) = dir.next_pos(p);
+            let nexts = dir
+                .next_dirs()
+                .into_iter()
+                .map(|d| ((p, d), point + 1000))
+                .chain(if self.maze[i][j] {
+                    vec![(((i, j), dir), point + 1)]
+                } else {
+                    vec![]
+                });
+            for (next, point) in nexts {
+                if let Some(min) = mins.get_mut(&next) {
+                    if point == *min {
+                        prevs.entry(next).or_default().push((p, dir));
+                    }
+                } else {
+                    mins.insert(next, point);
+                    prevs.insert(next, vec![(p, dir)]);
+                    bh.push((Reverse(point), next));
+                }
+            }
+        }
+        prevs
+    }
+}
+
 impl Solve for Solution {
     type Answer1 = u32;
-    type Answer2 = u32;
+    type Answer2 = usize;
     type Error = Error;
 
     fn new<R>(r: R) -> Result<Self, Error>
@@ -83,29 +114,38 @@ impl Solve for Solution {
         })
     }
     fn part1(&self) -> Self::Answer1 {
-        let mut min = HashMap::new();
-        let mut bh = BinaryHeap::new();
-        bh.push((Reverse(0), (self.start, Direction::East)));
-        while let Some((Reverse(point), ((i, j), dir))) = bh.pop() {
-            if (i, j) == self.end {
-                return point;
+        let prevs = self.dijkstra();
+        let mut points = 0;
+        let mut curr = prevs.keys().find(|(p, _)| p == &self.end);
+        while let Some(p) = curr {
+            let prev = prevs.get(p).and_then(|v| v.first());
+            if let Some((_, dir)) = &prev {
+                points += if *dir == p.1 { 1 } else { 1000 };
             }
-            if min.contains_key(&(i, j, dir)) {
-                continue;
-            }
-            min.insert((i, j, dir), point);
-
-            for ((i, j), next_dir) in dir.next((i, j)) {
-                if self.maze[i][j] {
-                    let point = point + if next_dir == dir { 1 } else { 1000 };
-                    bh.push((Reverse(point), ((i, j), next_dir)));
+            curr = prev;
+        }
+        points
+    }
+    fn part2(&self) -> Self::Answer2 {
+        fn dfs(
+            p: PosWithDir,
+            prevs: &HashMap<PosWithDir, Vec<PosWithDir>>,
+            visited: &mut HashSet<(usize, usize)>,
+        ) {
+            visited.insert(p.0);
+            if let Some(nexts) = prevs.get(&p) {
+                for next in nexts {
+                    dfs(*next, prevs, visited);
                 }
             }
         }
-        unreachable!()
-    }
-    fn part2(&self) -> Self::Answer2 {
-        todo!()
+
+        let prevs = self.dijkstra();
+        let mut visited = HashSet::new();
+        for p in prevs.keys().filter(|(p, _)| p == &self.end) {
+            dfs(*p, &prevs, &mut visited);
+        }
+        visited.len()
     }
 }
 
@@ -165,6 +205,13 @@ mod tests {
     fn part1() -> Result<(), Error> {
         assert_eq!(Solution::new(example_input())?.part1(), 7036);
         assert_eq!(Solution::new(example_input_second())?.part1(), 11048);
+        Ok(())
+    }
+
+    #[test]
+    fn part2() -> Result<(), Error> {
+        assert_eq!(Solution::new(example_input())?.part2(), 45);
+        assert_eq!(Solution::new(example_input_second())?.part2(), 64);
         Ok(())
     }
 }
