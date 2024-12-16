@@ -1,9 +1,6 @@
 use aoc2024::{run, Solve};
 use itertools::Itertools;
-use std::{
-    io::{BufRead, BufReader, Read},
-    iter,
-};
+use std::io::{BufRead, BufReader, Read};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -18,6 +15,8 @@ enum Error {
 enum Cell {
     Empty,
     Box,
+    BoxLeft,
+    BoxRight,
     Robot,
     Wall,
 }
@@ -75,6 +74,77 @@ struct Solution {
     robot: (usize, usize),
 }
 
+impl Solution {
+    fn sum_of_coordinates(&self, double_width: bool) -> usize {
+        let mut warehouse = self
+            .warehouse
+            .iter()
+            .map(|row| {
+                row.iter()
+                    .flat_map(|c| match c {
+                        Cell::Box if double_width => vec![Cell::BoxLeft, Cell::BoxRight],
+                        _ if double_width => vec![*c, *c],
+                        _ => vec![*c],
+                    })
+                    .collect_vec()
+            })
+            .collect_vec();
+        let mut robot = (self.robot.0, self.robot.1 * (usize::from(double_width) + 1));
+        for movement in self.movements.iter() {
+            if Self::try_move(&[robot], movement, &mut warehouse) {
+                robot = movement.next(robot);
+            }
+        }
+        warehouse
+            .iter()
+            .enumerate()
+            .map(|(i, row)| {
+                row.iter()
+                    .enumerate()
+                    .filter_map(|(j, c)| match c {
+                        Cell::Box | Cell::BoxLeft => Some(i * 100 + j),
+                        _ => None,
+                    })
+                    .sum::<usize>()
+            })
+            .sum()
+    }
+    fn try_move(sources: &[(usize, usize)], movement: &Move, warehouse: &mut [Vec<Cell>]) -> bool {
+        let destinations = sources.iter().map(|p| movement.next(*p)).collect_vec();
+        let mut boxes = Vec::new();
+        for dst in &destinations {
+            match warehouse[dst.0][dst.1] {
+                Cell::Box | Cell::BoxLeft | Cell::BoxRight => boxes.push(*dst),
+                Cell::Wall => return false,
+                _ => {}
+            }
+        }
+        if boxes.is_empty()
+            || Self::try_move(
+                &destinations
+                    .iter()
+                    .flat_map(|(i, j)| match (warehouse[*i][*j], movement) {
+                        (Cell::BoxLeft, Move::Up | Move::Down) => vec![(*i, *j), (*i, j + 1)],
+                        (Cell::BoxRight, Move::Up | Move::Down) => vec![(*i, j - 1), (*i, *j)],
+                        (Cell::Box | Cell::BoxLeft | Cell::BoxRight, _) => vec![(*i, *j)],
+                        _ => vec![],
+                    })
+                    .unique()
+                    .collect_vec(),
+                movement,
+                warehouse,
+            )
+        {
+            for (src, dst) in sources.iter().zip(&destinations) {
+                warehouse[dst.0][dst.1] = warehouse[src.0][src.1];
+                warehouse[src.0][src.1] = Cell::Empty;
+            }
+            return true;
+        }
+        false
+    }
+}
+
 impl Solve for Solution {
     type Answer1 = usize;
     type Answer2 = usize;
@@ -122,39 +192,10 @@ impl Solve for Solution {
             })
     }
     fn part1(&self) -> Self::Answer1 {
-        let mut warehouse = self.warehouse.clone();
-        let mut robot = self.robot;
-        for movement in &self.movements {
-            if let Some((i, j)) = iter::successors(Some(robot), |(i, j)| {
-                Some(movement.next((*i, *j)))
-                    .filter(|&(i, j)| !matches!(warehouse[i][j], Cell::Wall))
-            })
-            .skip(1)
-            .find(|(i, j)| matches!(warehouse[*i][*j], Cell::Empty))
-            {
-                robot = movement.next(robot);
-                warehouse[robot.0][robot.1] = Cell::Empty;
-                if (i, j) != robot {
-                    warehouse[i][j] = Cell::Box;
-                }
-            }
-        }
-        warehouse
-            .iter()
-            .enumerate()
-            .map(|(i, row)| {
-                row.iter()
-                    .enumerate()
-                    .filter_map(|(j, c)| match c {
-                        Cell::Box => Some(i * 100 + j),
-                        _ => None,
-                    })
-                    .sum::<usize>()
-            })
-            .sum()
+        self.sum_of_coordinates(false)
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        self.sum_of_coordinates(true)
     }
 }
 
@@ -213,6 +254,12 @@ v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^
     fn part1() -> Result<(), Error> {
         assert_eq!(Solution::new(example_input())?.part1(), 10092);
         assert_eq!(Solution::new(example_input_small())?.part1(), 2028);
+        Ok(())
+    }
+
+    #[test]
+    fn part2() -> Result<(), Error> {
+        assert_eq!(Solution::new(example_input())?.part2(), 9021);
         Ok(())
     }
 }
