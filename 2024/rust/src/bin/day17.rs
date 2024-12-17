@@ -20,40 +20,39 @@ enum Error {
 
 #[derive(Debug, Default, Clone, Copy)]
 struct Registers {
-    a: u32,
-    b: u32,
-    c: u32,
+    a: u64,
+    b: u64,
+    c: u64,
 }
 
 impl Registers {
-    fn execute(&mut self, instructions: &[u8]) -> Vec<u32> {
+    fn execute(&mut self, instructions: &[u64]) -> Vec<u64> {
         let mut outputs = Vec::new();
         let mut i = 0;
         while i < instructions.len() - 1 {
-            let opcode = &instructions[i];
-            let operand = &instructions[i + 1];
+            let (opcode, operand) = (instructions[i], instructions[i + 1]);
             match opcode {
                 #[allow(clippy::assign_op_pattern)]
-                0 => self.a = self.a >> self.combo_operand(*operand),
-                1 => self.b ^= u32::from(*operand),
-                2 => self.b = self.combo_operand(*operand) % 8,
+                0 => self.a = self.a >> self.combo_operand(operand),
+                1 => self.b ^= operand,
+                2 => self.b = self.combo_operand(operand) % 8,
                 3 if self.a > 0 => {
-                    i = usize::from(*operand);
+                    i = operand as usize;
                     continue;
                 }
                 4 => self.b ^= self.c,
-                5 => outputs.push(self.combo_operand(*operand) % 8),
-                6 => self.b = self.a >> self.combo_operand(*operand),
-                7 => self.c = self.a >> self.combo_operand(*operand),
+                5 => outputs.push(self.combo_operand(operand) % 8),
+                6 => self.b = self.a >> self.combo_operand(operand),
+                7 => self.c = self.a >> self.combo_operand(operand),
                 _ => {}
             }
             i += 2;
         }
         outputs
     }
-    fn combo_operand(&self, u: u8) -> u32 {
+    fn combo_operand(&self, u: u64) -> u64 {
         match u {
-            0..=3 => u.into(),
+            0..=3 => u,
             4 => self.a,
             5 => self.b,
             6 => self.c,
@@ -80,7 +79,7 @@ impl TryFrom<&[String]> for Registers {
     }
 }
 
-struct Program(Vec<u8>);
+struct Program(Vec<u64>);
 
 impl FromStr for Program {
     type Err = Error;
@@ -91,7 +90,7 @@ impl FromStr for Program {
             .and_then(|(_, s)| {
                 Ok(Self(
                     s.split(',')
-                        .map(u8::from_str)
+                        .map(str::parse)
                         .collect::<Result<Vec<_>, _>>()?,
                 ))
             })
@@ -103,9 +102,29 @@ struct Solution {
     program: Program,
 }
 
+impl Solution {
+    fn dfs(&self, curr: u64, i: usize) -> Option<u64> {
+        for j in 0..8 {
+            let value = curr + j * (1 << (i * 3));
+            let mut registers = self.registers;
+            registers.a = value;
+            let outputs = registers.execute(&self.program.0);
+            if outputs.len() == self.program.0.len() && outputs[i] == self.program.0[i] {
+                if i == 0 {
+                    return Some(value);
+                }
+                if let Some(ret) = self.dfs(curr + j * (1 << (i * 3)), i - 1) {
+                    return Some(ret);
+                }
+            }
+        }
+        None
+    }
+}
+
 impl Solve for Solution {
     type Answer1 = String;
-    type Answer2 = String;
+    type Answer2 = u64;
     type Error = Error;
 
     fn new<R>(r: R) -> Result<Self, Error>
@@ -118,10 +137,10 @@ impl Solve for Solution {
             .split(String::is_empty)
             .collect_tuple()
             .ok_or(Error::InvalidInput)
-            .and_then(|(registers, program)| {
+            .and_then(|(lines0, lines1)| {
                 Ok(Self {
-                    registers: registers.try_into()?,
-                    program: program.first().ok_or(Error::InvalidInput)?.parse()?,
+                    registers: lines0.try_into()?,
+                    program: lines1.first().ok_or(Error::InvalidInput)?.parse()?,
                 })
             })
     }
@@ -130,7 +149,7 @@ impl Solve for Solution {
         registers.execute(&self.program.0).iter().join(",")
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        self.dfs(0, self.program.0.len() - 1).unwrap()
     }
 }
 
@@ -142,13 +161,24 @@ fn main() -> Result<(), Error> {
 mod tests {
     use super::*;
 
-    fn example_input() -> &'static [u8] {
+    fn example_input_1() -> &'static [u8] {
         r"
 Register A: 729
 Register B: 0
 Register C: 0
 
 Program: 0,1,5,4,3,0
+"[1..]
+            .as_bytes()
+    }
+
+    fn example_input_2() -> &'static [u8] {
+        r"
+Register A: 2024
+Register B: 0
+Register C: 0
+
+Program: 0,3,5,4,3,0
 "[1..]
             .as_bytes()
     }
@@ -203,9 +233,15 @@ Program: 0,1,5,4,3,0
     #[test]
     fn part1() -> Result<(), Error> {
         assert_eq!(
-            Solution::new(example_input())?.part1(),
+            Solution::new(example_input_1())?.part1(),
             "4,6,3,5,6,3,5,2,1,0"
         );
+        Ok(())
+    }
+
+    #[test]
+    fn part2() -> Result<(), Error> {
+        assert_eq!(Solution::new(example_input_2())?.part2(), 117440);
         Ok(())
     }
 }
