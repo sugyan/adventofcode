@@ -29,9 +29,31 @@ struct Solution {
     positions: Vec<(usize, usize)>,
 }
 
+impl Solution {
+    fn bfs(space: &[Vec<bool>]) -> Option<u32> {
+        let mut mins = vec![vec![None; SIZE]; SIZE];
+        let mut vd = [(0, 0)].into_iter().collect::<VecDeque<(usize, usize)>>();
+        mins[0][0] = Some(0);
+        while let Some((i, j)) = vd.pop_front() {
+            for (di, dj) in [0, 1, 0, !0, 0].iter().tuple_windows() {
+                let (ni, nj) = (i.wrapping_add(*di), j.wrapping_add(*dj));
+                if (0..SIZE).contains(&ni)
+                    && (0..SIZE).contains(&nj)
+                    && space[ni][nj]
+                    && mins[ni][nj].is_none()
+                {
+                    mins[ni][nj] = mins[i][j].map(|x| x + 1);
+                    vd.push_back((ni, nj));
+                }
+            }
+        }
+        mins[SIZE - 1][SIZE - 1]
+    }
+}
+
 impl Solve for Solution {
-    type Answer1 = usize;
-    type Answer2 = usize;
+    type Answer1 = u32;
+    type Answer2 = String;
     type Error = Error;
 
     fn new<R>(r: R) -> Result<Self, Error>
@@ -55,26 +77,17 @@ impl Solve for Solution {
         for (x, y) in self.positions.iter().take(FIRST_SOME_BYTES) {
             space[*y][*x] = false;
         }
-        let mut mins = vec![vec![None; SIZE]; SIZE];
-        let mut vd = [(0, 0)].into_iter().collect::<VecDeque<(usize, usize)>>();
-        mins[0][0] = Some(0);
-        while let Some((i, j)) = vd.pop_front() {
-            for (di, dj) in [0, 1, 0, !0, 0].iter().tuple_windows() {
-                let (ni, nj) = (i.wrapping_add(*di), j.wrapping_add(*dj));
-                if (0..SIZE).contains(&ni)
-                    && (0..SIZE).contains(&nj)
-                    && space[ni][nj]
-                    && mins[ni][nj].is_none()
-                {
-                    mins[ni][nj] = mins[i][j].map(|x| x + 1);
-                    vd.push_back((ni, nj));
-                }
-            }
-        }
-        mins[SIZE - 1][SIZE - 1].unwrap()
+        Solution::bfs(&space).unwrap()
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        let mut space = vec![vec![true; SIZE]; SIZE];
+        for (x, y) in &self.positions {
+            space[*y][*x] = false;
+            if Self::bfs(&space).is_none() {
+                return format!("{x},{y}");
+            }
+        }
+        unreachable!()
     }
 }
 
@@ -120,6 +133,12 @@ mod tests {
     #[test]
     fn part1() -> Result<(), Error> {
         assert_eq!(Solution::new(example_input())?.part1(), 22);
+        Ok(())
+    }
+
+    #[test]
+    fn part2() -> Result<(), Error> {
+        assert_eq!(Solution::new(example_input())?.part2(), "6,1");
         Ok(())
     }
 }
