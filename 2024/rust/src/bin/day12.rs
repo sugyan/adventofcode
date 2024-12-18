@@ -6,6 +6,8 @@ use std::{
 };
 use thiserror::Error;
 
+const ADJACENTS: [(usize, usize); 4] = [(!0, 0), (1, 0), (0, !0), (0, 1)];
+
 #[derive(Error, Debug)]
 enum Error {
     #[error(transparent)]
@@ -44,8 +46,8 @@ impl Solution {
         seen.insert(*p);
         while let Some(p) = vd.pop_front() {
             area.push(p);
-            for w in [0, 1, 0, !0, 0].windows(2) {
-                let (i, j) = (p.0.wrapping_add(w[0]), p.1.wrapping_add(w[1]));
+            for (di, dj) in ADJACENTS {
+                let (i, j) = (p.0.wrapping_add(di), p.1.wrapping_add(dj));
                 if self.garden_plots.get(&(i, j)) == Some(u) && !seen.contains(&(i, j)) {
                     seen.insert((i, j));
                     vd.push_back((i, j));
@@ -56,7 +58,7 @@ impl Solution {
     }
     fn calculate_perimeter(&self, area: &[(usize, usize)], u: &u8) -> usize {
         area.iter()
-            .cartesian_product([(!0, 0), (1, 0), (0, !0), (0, 1)])
+            .cartesian_product(ADJACENTS)
             .filter(|&((i, j), (di, dj))| {
                 self.garden_plots
                     .get(&(i.wrapping_add(di), j.wrapping_add(dj)))
