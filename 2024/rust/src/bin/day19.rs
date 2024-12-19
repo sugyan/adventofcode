@@ -12,6 +12,7 @@ enum Error {
     #[error("invalid input")]
     InvalidInput,
 }
+
 struct Solution {
     patterns: HashSet<String>,
     max_pattern_len: usize,
@@ -22,10 +23,10 @@ impl Solution {
     fn count_paths(&self, target: &str) -> usize {
         let mut counts = vec![0; target.len() + 1];
         counts[0] = 1;
-        for i in 1..=target.len() {
-            for j in 1..=self.max_pattern_len.min(i) {
-                if self.patterns.contains(&target[i - j..i]) {
-                    counts[i] += counts[i - j];
+        for i in 0..target.len() {
+            for j in i..=i + self.max_pattern_len {
+                if j <= target.len() && self.patterns.contains(&target[i..j]) {
+                    counts[j] += counts[i];
                 }
             }
         }
