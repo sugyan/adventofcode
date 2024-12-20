@@ -19,27 +19,23 @@ struct Solution {
 }
 
 impl Solution {
-    fn cheat_counts(&self, seconds: isize, threashold: isize) -> u32 {
+    fn cheat_counts(&self, seconds: isize, threashold: isize) -> usize {
         let mins = self.bfs();
-        let mut groups = HashMap::new();
+        let mut sum = 0;
         for (&(i, j), min_src) in &mins {
-            for (di, dj) in (-seconds..=seconds).flat_map(|di| {
-                let r = seconds - di.abs();
-                (-r..=r).map(move |dj| (di, dj))
-            }) {
-                if let Some(min_dst) = mins.get(&(i + di, j + dj)) {
-                    let d = di.abs() + dj.abs();
-                    if min_src + d < *min_dst {
-                        *groups.entry(min_dst - min_src - d).or_default() += 1;
-                    }
-                }
-            }
+            sum += (-seconds..=seconds)
+                .flat_map(|di| {
+                    let r = seconds - di.abs();
+                    (-r..=r).map(move |dj| (di, dj))
+                })
+                .filter(|(di, dj)| {
+                    mins.get(&(i + di, j + dj))
+                        .map(|min_dst| min_src + di.abs() + dj.abs() + threashold <= *min_dst)
+                        .unwrap_or_default()
+                })
+                .count();
         }
-        groups
-            .iter()
-            .filter(|(k, _)| **k >= threashold)
-            .map(|(_, v)| v)
-            .sum()
+        sum
     }
     fn bfs(&self) -> HashMap<(isize, isize), isize> {
         let mut mins = [(self.start, 0)].into_iter().collect::<HashMap<_, _>>();
@@ -58,8 +54,8 @@ impl Solution {
 }
 
 impl Solve for Solution {
-    type Answer1 = u32;
-    type Answer2 = u32;
+    type Answer1 = usize;
+    type Answer2 = usize;
     type Error = Error;
 
     fn new<R>(r: R) -> Result<Self, Error>
