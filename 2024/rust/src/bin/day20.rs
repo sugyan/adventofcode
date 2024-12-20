@@ -14,14 +14,34 @@ enum Error {
 }
 
 struct Solution {
-    racetrack: HashSet<(usize, usize)>,
-    start: (usize, usize),
-    #[allow(dead_code)]
-    end: (usize, usize),
+    racetrack: HashSet<(isize, isize)>,
+    start: (isize, isize),
 }
 
 impl Solution {
-    fn cheat_counts(&self, threashold: usize) -> usize {
+    fn cheat_counts(&self, seconds: isize, threashold: isize) -> u32 {
+        let mins = self.bfs();
+        let mut groups = HashMap::new();
+        for (&(i, j), min_src) in &mins {
+            for (di, dj) in (-seconds..=seconds).flat_map(|di| {
+                let r = seconds - di.abs();
+                (-r..=r).map(move |dj| (di, dj))
+            }) {
+                if let Some(min_dst) = mins.get(&(i + di, j + dj)) {
+                    let d = di.abs() + dj.abs();
+                    if min_src + d < *min_dst {
+                        *groups.entry(min_dst - min_src - d).or_default() += 1;
+                    }
+                }
+            }
+        }
+        groups
+            .iter()
+            .filter(|(k, _)| **k >= threashold)
+            .map(|(_, v)| v)
+            .sum()
+    }
+    fn bfs(&self) -> HashMap<(isize, isize), isize> {
         let mut mins = [(self.start, 0)].into_iter().collect::<HashMap<_, _>>();
         let mut vd = [(self.start, 0)].into_iter().collect::<VecDeque<_>>();
         while let Some((p, d)) = vd.pop_front() {
@@ -33,36 +53,13 @@ impl Solution {
                 }
             }
         }
-        let mut groups = HashMap::new();
-        for (&(i, j), min_src) in &mins {
-            for p in &[
-                (i.wrapping_sub(2), j),
-                (i.wrapping_sub(1), j.wrapping_sub(1)),
-                (i, j.wrapping_sub(2)),
-                (i.wrapping_add(1), j.wrapping_sub(1)),
-                (i.wrapping_add(2), j),
-                (i.wrapping_add(1), j.wrapping_add(1)),
-                (i, j.wrapping_add(2)),
-                (i.wrapping_sub(1), j.wrapping_add(1)),
-            ] {
-                if let Some(min_dst) = mins.get(p) {
-                    if min_src + 2 < *min_dst {
-                        *groups.entry(min_dst - min_src - 2).or_insert(0) += 1;
-                    }
-                }
-            }
-        }
-        groups
-            .iter()
-            .filter(|(k, _)| **k >= threashold)
-            .map(|(_, v)| v)
-            .sum()
+        mins
     }
 }
 
 impl Solve for Solution {
-    type Answer1 = usize;
-    type Answer2 = usize;
+    type Answer1 = u32;
+    type Answer2 = u32;
     type Error = Error;
 
     fn new<R>(r: R) -> Result<Self, Error>
@@ -71,32 +68,32 @@ impl Solve for Solution {
     {
         let lines = BufReader::new(r).lines().collect::<Result<Vec<_>, _>>()?;
         let mut racetrack = HashSet::new();
-        for (i, row) in lines.iter().enumerate() {
-            for (j, u) in row.bytes().enumerate() {
+        for (i, row) in (0..).zip(&lines) {
+            for (j, u) in (0..).zip(row.bytes()) {
                 if u != b'#' {
                     racetrack.insert((i, j));
                 }
             }
         }
-        let find = |target| {
-            lines.iter().enumerate().find_map(|(i, row)| {
-                row.bytes()
-                    .enumerate()
-                    .find(|(_, u)| *u == target)
-                    .map(|(j, _)| (i, j))
-            })
-        };
+
         Ok(Self {
             racetrack,
-            start: find(b'S').ok_or(Error::InvalidInput)?,
-            end: find(b'E').ok_or(Error::InvalidInput)?,
+            start: (0..)
+                .zip(lines)
+                .find_map(|(i, row)| {
+                    (0..)
+                        .zip(row.bytes())
+                        .find(|(_, u)| *u == b'S')
+                        .map(|(j, _)| (i, j))
+                })
+                .ok_or(Error::InvalidInput)?,
         })
     }
     fn part1(&self) -> Self::Answer1 {
-        self.cheat_counts(100)
+        self.cheat_counts(2, 100)
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        self.cheat_counts(20, 100)
     }
 }
 
@@ -131,23 +128,45 @@ mod tests {
 
     #[test]
     fn cheat_counts() -> Result<(), Error> {
-        assert_eq!(Solution::new(example_input())?.cheat_counts(64), 1);
-        assert_eq!(Solution::new(example_input())?.cheat_counts(40), 2);
-        assert_eq!(Solution::new(example_input())?.cheat_counts(38), 3);
-        assert_eq!(Solution::new(example_input())?.cheat_counts(36), 4);
-        assert_eq!(Solution::new(example_input())?.cheat_counts(20), 5);
-        assert_eq!(Solution::new(example_input())?.cheat_counts(12), 8);
-        assert_eq!(Solution::new(example_input())?.cheat_counts(10), 10);
-        assert_eq!(Solution::new(example_input())?.cheat_counts(8), 14);
-        assert_eq!(Solution::new(example_input())?.cheat_counts(6), 16);
-        assert_eq!(Solution::new(example_input())?.cheat_counts(4), 30);
-        assert_eq!(Solution::new(example_input())?.cheat_counts(2), 44);
+        // 2
+        assert_eq!(Solution::new(example_input())?.cheat_counts(2, 64), 1);
+        assert_eq!(Solution::new(example_input())?.cheat_counts(2, 40), 2);
+        assert_eq!(Solution::new(example_input())?.cheat_counts(2, 38), 3);
+        assert_eq!(Solution::new(example_input())?.cheat_counts(2, 36), 4);
+        assert_eq!(Solution::new(example_input())?.cheat_counts(2, 20), 5);
+        assert_eq!(Solution::new(example_input())?.cheat_counts(2, 12), 8);
+        assert_eq!(Solution::new(example_input())?.cheat_counts(2, 10), 10);
+        assert_eq!(Solution::new(example_input())?.cheat_counts(2, 8), 14);
+        assert_eq!(Solution::new(example_input())?.cheat_counts(2, 6), 16);
+        assert_eq!(Solution::new(example_input())?.cheat_counts(2, 4), 30);
+        assert_eq!(Solution::new(example_input())?.cheat_counts(2, 2), 44);
+        // 20
+        assert_eq!(Solution::new(example_input())?.cheat_counts(20, 76), 3);
+        assert_eq!(Solution::new(example_input())?.cheat_counts(20, 74), 7);
+        assert_eq!(Solution::new(example_input())?.cheat_counts(20, 72), 29);
+        assert_eq!(Solution::new(example_input())?.cheat_counts(20, 70), 41);
+        assert_eq!(Solution::new(example_input())?.cheat_counts(20, 68), 55);
+        assert_eq!(Solution::new(example_input())?.cheat_counts(20, 66), 67);
+        assert_eq!(Solution::new(example_input())?.cheat_counts(20, 64), 86);
+        assert_eq!(Solution::new(example_input())?.cheat_counts(20, 62), 106);
+        assert_eq!(Solution::new(example_input())?.cheat_counts(20, 60), 129);
+        assert_eq!(Solution::new(example_input())?.cheat_counts(20, 58), 154);
+        assert_eq!(Solution::new(example_input())?.cheat_counts(20, 56), 193);
+        assert_eq!(Solution::new(example_input())?.cheat_counts(20, 54), 222);
+        assert_eq!(Solution::new(example_input())?.cheat_counts(20, 52), 253);
+        assert_eq!(Solution::new(example_input())?.cheat_counts(20, 50), 285);
         Ok(())
     }
 
     #[test]
     fn part1() -> Result<(), Error> {
         assert_eq!(Solution::new(example_input())?.part1(), 0);
+        Ok(())
+    }
+
+    #[test]
+    fn part2() -> Result<(), Error> {
+        assert_eq!(Solution::new(example_input())?.part2(), 0);
         Ok(())
     }
 }
