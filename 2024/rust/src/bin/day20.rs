@@ -71,7 +71,6 @@ impl Solve for Solution {
                 }
             }
         }
-
         Ok(Self {
             racetrack,
             start: (0..)
