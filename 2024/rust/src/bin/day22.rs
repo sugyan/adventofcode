@@ -26,9 +26,9 @@ impl Iterator for Generator {
     type Item = i64;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.secret_number = ((self.secret_number * 64) ^ self.secret_number) % Self::MOD;
-        self.secret_number = ((self.secret_number / 32) ^ self.secret_number) % Self::MOD;
-        self.secret_number = ((self.secret_number * 2048) ^ self.secret_number) % Self::MOD;
+        self.secret_number = ((self.secret_number << 6) ^ self.secret_number) % Self::MOD;
+        self.secret_number = ((self.secret_number >> 5) ^ self.secret_number) % Self::MOD;
+        self.secret_number = ((self.secret_number << 11) ^ self.secret_number) % Self::MOD;
         Some(self.secret_number)
     }
 }

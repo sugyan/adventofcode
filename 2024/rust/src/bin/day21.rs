@@ -3,10 +3,37 @@ use itertools::Itertools;
 use std::{
     cmp::Ordering,
     collections::HashMap,
-    fmt::Display,
     io::{BufRead, BufReader, Read},
 };
 use thiserror::Error;
+
+const DIRECTIONALS: [((char, char), &str); 25] = [
+    (('A', 'A'), ""),
+    (('A', '^'), "<"),
+    (('A', '>'), "v"),
+    (('A', 'v'), "<v"),
+    (('A', '<'), "v<<"),
+    (('^', 'A'), ">"),
+    (('^', '^'), ""),
+    (('^', '>'), "v>"),
+    (('^', 'v'), "v"),
+    (('^', '<'), "v<"),
+    (('>', '^'), "<^"),
+    (('>', 'A'), "^"),
+    (('>', '>'), ""),
+    (('>', 'v'), "<"),
+    (('>', '<'), "<<"),
+    (('v', '^'), "^"),
+    (('v', 'A'), "^>"),
+    (('v', '>'), ">"),
+    (('v', 'v'), ""),
+    (('v', '<'), "<"),
+    (('<', '^'), ">^"),
+    (('<', 'A'), ">>^"),
+    (('<', '>'), ">>"),
+    (('<', 'v'), ">"),
+    (('<', '<'), ""),
+];
 
 #[derive(Error, Debug)]
 enum Error {
@@ -14,93 +41,114 @@ enum Error {
     Io(#[from] std::io::Error),
 }
 
-#[derive(Debug)]
-enum Sequence {
-    Up(usize),
-    Down(usize),
-    Left(usize),
-    Right(usize),
-}
-
-impl Display for Sequence {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Up(i) => write!(f, "{}", vec!["^"; *i].join("")),
-            Self::Down(i) => write!(f, "{}", vec!["v"; *i].join("")),
-            Self::Left(j) => write!(f, "{}", vec!["<"; *j].join("")),
-            Self::Right(j) => write!(f, "{}", vec![">"; *j].join("")),
-        }
-    }
-}
-
 struct Solution {
     codes: Vec<String>,
 }
 
 impl Solution {
-    fn build_patterns(
-        keys: HashMap<(usize, usize), Option<char>>,
-    ) -> HashMap<(char, char), Vec<Vec<Sequence>>> {
-        let mut patterns = HashMap::new();
-        for ((i0, j0), src) in keys.iter() {
-            for ((i1, j1), dst) in keys.iter() {
+    fn sum_of_complexities(&self, robots: usize) -> usize {
+        let paths = Self::build_paths();
+        let directional_map = DIRECTIONALS.into_iter().collect::<HashMap<_, _>>();
+        let mut sum = 0;
+        for code in &self.codes {
+            if let Some(min) = Self::candidates(code, &paths)
+                .iter()
+                .map(|keys| {
+                    let mut counts = format!("A{keys}")
+                        .chars()
+                        .tuple_windows::<(_, _)>()
+                        .counts();
+                    for _ in 0..robots {
+                        counts = counts
+                            .iter()
+                            .flat_map(|(key, count)| {
+                                format!("A{}A", directional_map[key])
+                                    .chars()
+                                    .tuple_windows::<(_, _)>()
+                                    .counts()
+                                    .into_iter()
+                                    .map(|(k, v)| (k, v * *count))
+                            })
+                            .into_grouping_map()
+                            .sum();
+                    }
+                    counts.values().sum::<usize>()
+                })
+                .min()
+            {
+                sum += min
+                    * code
+                        .strip_suffix('A')
+                        .and_then(|s| s.parse::<usize>().ok())
+                        .expect("invalid code");
+            }
+        }
+        sum
+    }
+    fn build_paths() -> HashMap<(char, char), Vec<String>> {
+        let positions = [
+            vec![Some('7'), Some('8'), Some('9')],
+            vec![Some('4'), Some('5'), Some('6')],
+            vec![Some('1'), Some('2'), Some('3')],
+            vec![None, Some('0'), Some('A')],
+        ]
+        .iter()
+        .enumerate()
+        .flat_map(|(i, row)| row.iter().enumerate().map(move |(j, &c)| ((i, j), c)))
+        .collect::<HashMap<_, _>>();
+        let mut paths = HashMap::new();
+        for ((i0, j0), src) in positions.iter() {
+            for ((i1, j1), dst) in positions.iter() {
                 let (Some(src), Some(dst)) = (src, dst) else {
                     continue;
                 };
-                use Sequence::*;
-                let candidates = match (i0.cmp(i1), j0.cmp(j1)) {
-                    (Ordering::Less, Ordering::Less) => vec![
-                        vec![Down(i1 - i0), Right(j1 - j0)],
-                        vec![Right(j1 - j0), Down(i1 - i0)],
-                    ],
-                    (Ordering::Less, Ordering::Equal) => vec![vec![Down(i1 - i0)]],
-                    (Ordering::Less, Ordering::Greater) => vec![
-                        vec![Down(i1 - i0), Left(j0 - j1)],
-                        vec![Left(j0 - j1), Down(i1 - i0)],
-                    ],
-                    (Ordering::Equal, Ordering::Less) => vec![vec![Right(j1 - j0)]],
-                    (Ordering::Equal, Ordering::Equal) => vec![Vec::new()],
-                    (Ordering::Equal, Ordering::Greater) => vec![vec![Left(j0 - j1)]],
-                    (Ordering::Greater, Ordering::Less) => vec![
-                        vec![Up(i0 - i1), Right(j1 - j0)],
-                        vec![Right(j1 - j0), Up(i0 - i1)],
-                    ],
-                    (Ordering::Greater, Ordering::Equal) => vec![vec![Up(i0 - i1)]],
-                    (Ordering::Greater, Ordering::Greater) => vec![
-                        vec![Up(i0 - i1), Left(j0 - j1)],
-                        vec![Left(j0 - j1), Up(i0 - i1)],
-                    ],
+                if src == dst {
+                    continue;
+                }
+                let v = if i0 == i1 || j0 == j1 {
+                    vec![vec![(i0, j0), (i1, j1)]]
+                } else {
+                    let mut ret = Vec::new();
+                    if positions[&(*i0, *j1)].is_some() {
+                        ret.push(vec![(i0, j0), (i0, j1), (i1, j1)]);
+                    }
+                    if positions[&(*i1, *j0)].is_some() {
+                        ret.push(vec![(i0, j0), (i1, j0), (i1, j1)]);
+                    }
+                    ret
                 };
-                patterns.insert(
+                paths.insert(
                     (*src, *dst),
-                    candidates
-                        .into_iter()
-                        .filter(|sequences| {
-                            sequences.first().map_or(true, |s| {
-                                let (i, j) = match s {
-                                    Up(i) => (i0 - i, *j0),
-                                    Down(i) => (i0 + i, *j0),
-                                    Left(j) => (*i0, j0 - j),
-                                    Right(j) => (*i0, j0 + j),
-                                };
-                                keys.get(&(i, j)).map_or(true, |c| c.is_some())
-                            })
+                    v.iter()
+                        .map(|ps| {
+                            ps.windows(2)
+                                .map(|w| {
+                                    use Ordering::*;
+                                    match (w[0].0.cmp(w[1].0), w[0].1.cmp(w[1].1)) {
+                                        (Less, _) => vec!["v"; w[1].0 - w[0].0].join(""),
+                                        (Greater, _) => vec!["^"; w[0].0 - w[1].0].join(""),
+                                        (_, Less) => vec![">"; w[1].1 - w[0].1].join(""),
+                                        (_, Greater) => vec!["<"; w[0].1 - w[1].1].join(""),
+                                        _ => unreachable!(),
+                                    }
+                                })
+                                .join("")
                         })
-                        .collect(),
+                        .collect_vec(),
                 );
             }
         }
-        patterns
+        paths
     }
-    fn translate(s: &str, patterns: &HashMap<(char, char), Vec<Vec<Sequence>>>) -> Vec<String> {
+    fn candidates(s: &str, paths: &HashMap<(char, char), Vec<String>>) -> Vec<String> {
         let mut v = vec![String::new()];
         for cs in format!("A{s}").chars().tuple_windows() {
             v = v
                 .into_iter()
                 .flat_map(|s| {
-                    patterns[&cs]
+                    paths[&cs]
                         .iter()
-                        .map(|seq| format!("{s}{}", seq.iter().map(ToString::to_string).join("")))
+                        .map(|seq| format!("{s}{seq}"))
                         .collect::<Vec<_>>()
                 })
                 .map(|s| format!("{s}A"))
@@ -112,7 +160,7 @@ impl Solution {
 
 impl Solve for Solution {
     type Answer1 = usize;
-    type Answer2 = u32;
+    type Answer2 = usize;
     type Error = Error;
 
     fn new<R>(r: R) -> Result<Self, Error>
@@ -124,46 +172,10 @@ impl Solve for Solution {
         })
     }
     fn part1(&self) -> Self::Answer1 {
-        let key_map = |map: &[Vec<Option<char>>]| {
-            map.iter()
-                .enumerate()
-                .flat_map(|(i, row)| row.iter().enumerate().map(move |(j, &c)| ((i, j), c)))
-                .collect()
-        };
-        let patterns = Self::build_patterns(key_map(&[
-            vec![Some('7'), Some('8'), Some('9')],
-            vec![Some('4'), Some('5'), Some('6')],
-            vec![Some('1'), Some('2'), Some('3')],
-            vec![None, Some('0'), Some('A')],
-        ]))
-        .into_iter()
-        .chain(Self::build_patterns(key_map(&[
-            vec![None, Some('^'), Some('A')],
-            vec![Some('<'), Some('v'), Some('>')],
-        ])))
-        .collect::<HashMap<_, _>>();
-        let mut sum = 0;
-        for code in &self.codes {
-            let mut counts = HashMap::new();
-            for keys in Self::translate(code, &patterns)
-                .iter()
-                .flat_map(|keys| Self::translate(keys, &patterns))
-                .flat_map(|keys| Self::translate(&keys, &patterns))
-            {
-                *counts.entry(keys.len()).or_insert(0) += 1;
-            }
-            if let Some(min) = counts.keys().min() {
-                sum += min
-                    * code
-                        .strip_suffix('A')
-                        .and_then(|s| s.parse::<usize>().ok())
-                        .expect("invalid code");
-            }
-        }
-        sum
+        self.sum_of_complexities(2)
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        self.sum_of_complexities(25)
     }
 }
 
