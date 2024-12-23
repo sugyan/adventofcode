@@ -18,9 +18,43 @@ struct Solution {
     graph: HashMap<String, HashSet<String>>,
 }
 
+impl Solution {
+    fn all_cliques(&self) -> Vec<Vec<String>> {
+        let mut ret = Vec::new();
+        self.bron_kerbosch(
+            Vec::new(),
+            &mut self.graph.keys().cloned().collect(),
+            &mut HashSet::new(),
+            &mut ret,
+        );
+        ret
+    }
+    fn bron_kerbosch(
+        &self,
+        r: Vec<String>,
+        p: &mut HashSet<String>,
+        x: &mut HashSet<String>,
+        results: &mut Vec<Vec<String>>,
+    ) {
+        if p.is_empty() && x.is_empty() {
+            return results.push(r);
+        }
+        for v in p.clone() {
+            self.bron_kerbosch(
+                r.iter().cloned().chain([v.clone()]).collect(),
+                &mut p.intersection(&self.graph[&v]).cloned().collect(),
+                &mut x.intersection(&self.graph[&v]).cloned().collect(),
+                results,
+            );
+            p.remove(&v);
+            x.insert(v);
+        }
+    }
+}
+
 impl Solve for Solution {
     type Answer1 = usize;
-    type Answer2 = usize;
+    type Answer2 = String;
     type Error = Error;
 
     fn new<R>(r: R) -> Result<Self, Error>
@@ -43,18 +77,26 @@ impl Solve for Solution {
         Ok(Self { graph })
     }
     fn part1(&self) -> Self::Answer1 {
-        let mut hs = HashSet::new();
-        for (k, v) in self.graph.iter().filter(|(k, _)| k.starts_with('t')) {
-            for e0 in v {
-                for e1 in self.graph[e0].intersection(v) {
-                    hs.insert([k, e0, e1].into_iter().sorted().collect_vec());
-                }
-            }
-        }
-        hs.len()
+        self.all_cliques()
+            .iter()
+            .flat_map(|clique| {
+                clique
+                    .iter()
+                    .combinations(3)
+                    .filter(|c| c.iter().any(|s| s.starts_with('t')))
+                    .map(|c| c.iter().cloned().sorted().collect_vec())
+            })
+            .unique()
+            .count()
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        self.all_cliques()
+            .iter()
+            .max_by_key(|v| v.len())
+            .expect("no answer")
+            .iter()
+            .sorted()
+            .join(",")
     }
 }
 
@@ -107,6 +149,12 @@ td-yn
     #[test]
     fn part1() -> Result<(), Error> {
         assert_eq!(Solution::new(example_input())?.part1(), 7);
+        Ok(())
+    }
+
+    #[test]
+    fn part2() -> Result<(), Error> {
+        assert_eq!(Solution::new(example_input())?.part2(), "co,de,ka,ta");
         Ok(())
     }
 }
