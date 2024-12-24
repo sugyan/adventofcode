@@ -46,7 +46,7 @@ impl Solution {
 
 impl Solve for Solution {
     type Answer1 = u64;
-    type Answer2 = u64;
+    type Answer2 = String;
     type Error = Error;
 
     fn new<R>(r: R) -> Result<Self, Error>
@@ -91,11 +91,54 @@ impl Solve for Solution {
             .filter(|s| s.starts_with('z'))
             .sorted()
             .enumerate()
-            .map(|(i, key)| (1 << i) * if self.get_value(key) > 0 { 1 } else { 0 })
+            .map(|(i, name)| (1 << i) * if self.get_value(name) > 0 { 1 } else { 0 })
             .sum()
     }
     fn part2(&self) -> Self::Answer2 {
-        todo!()
+        let mut incorrect = Vec::new();
+        for (name, gate) in &self.connections {
+            if name.starts_with('z') && name != "z00" {
+                match gate {
+                    Gate::And(_, _) => incorrect.push(name),
+                    Gate::Or(_, _) => {
+                        if name != "z45" {
+                            incorrect.push(name);
+                        }
+                    }
+                    Gate::Xor(lhs, rhs) => match (&self.connections[lhs], &self.connections[rhs]) {
+                        (Gate::Xor(_, _), Gate::Or(_, _)) | (Gate::Or(_, _), Gate::Xor(_, _)) => {}
+                        (Gate::Xor(_, _), Gate::And(_, _)) | (Gate::And(_, _), Gate::Xor(_, _))
+                            if name == "z01" => {}
+                        (Gate::And(_, _), _) => {
+                            incorrect.push(lhs);
+                        }
+                        (_, Gate::And(_, _)) => {
+                            incorrect.push(rhs);
+                        }
+                        _ => {
+                            if let Gate::Xor(l, r) = &self.connections[lhs] {
+                                if l.starts_with(['x', 'y']) && r.starts_with(['x', 'y']) {
+                                    incorrect.push(rhs);
+                                }
+                            }
+                            if let Gate::Xor(l, r) = &self.connections[rhs] {
+                                if l.starts_with(['x', 'y']) && r.starts_with(['x', 'y']) {
+                                    incorrect.push(lhs);
+                                }
+                            }
+                        }
+                    },
+                }
+            } else if let Gate::Or(lhs, rhs) = gate {
+                if !matches!(&self.connections[lhs], Gate::And(_, _)) {
+                    incorrect.push(lhs);
+                }
+                if !matches!(&self.connections[rhs], Gate::And(_, _)) {
+                    incorrect.push(rhs);
+                }
+            }
+        }
+        incorrect.iter().sorted().join(",")
     }
 }
 
