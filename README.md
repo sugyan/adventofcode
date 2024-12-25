@@ -7,6 +7,8 @@ My solutions for [Advent of Code](https://adventofcode.com/)
 
 [![Rust 2024](https://github.com/sugyan/adventofcode/actions/workflows/rust_2024.yml/badge.svg?branch=main)](https://github.com/sugyan/adventofcode/actions/workflows/rust_2024.yml)
 
+- :white_check_mark: Rust
+
 
 ### 2023
 
