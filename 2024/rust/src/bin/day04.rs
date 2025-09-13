@@ -1,4 +1,4 @@
-use aoc2024::{run, Solve};
+use aoc2024::{Solve, run};
 use std::{
     collections::HashMap,
     io::{BufRead, BufReader, Read},
@@ -17,11 +17,9 @@ struct Solution {
 
 impl Solution {
     fn search_word(&self, (i, j): (i32, i32), checks: &[((i32, i32), u8)]) -> bool {
-        checks.iter().all(|((di, dj), u)| {
-            self.letters
-                .get(&(i + di, j + dj))
-                .map_or(false, |v| v == u)
-        })
+        checks
+            .iter()
+            .all(|((di, dj), u)| self.letters.get(&(i + di, j + dj)) == Some(u))
     }
 }
 

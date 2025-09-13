@@ -1,4 +1,4 @@
-use aoc2024::{run, Solve};
+use aoc2024::{Solve, run};
 use itertools::Itertools;
 use std::{
     collections::HashMap,
@@ -112,17 +112,17 @@ mod tests {
 
     #[test]
     fn generator() {
-        let mut gen = Generator { secret_number: 123 };
-        assert_eq!(gen.next(), Some(15887950));
-        assert_eq!(gen.next(), Some(16495136));
-        assert_eq!(gen.next(), Some(527345));
-        assert_eq!(gen.next(), Some(704524));
-        assert_eq!(gen.next(), Some(1553684));
-        assert_eq!(gen.next(), Some(12683156));
-        assert_eq!(gen.next(), Some(11100544));
-        assert_eq!(gen.next(), Some(12249484));
-        assert_eq!(gen.next(), Some(7753432));
-        assert_eq!(gen.next(), Some(5908254));
+        let mut generator = Generator { secret_number: 123 };
+        assert_eq!(generator.next(), Some(15887950));
+        assert_eq!(generator.next(), Some(16495136));
+        assert_eq!(generator.next(), Some(527345));
+        assert_eq!(generator.next(), Some(704524));
+        assert_eq!(generator.next(), Some(1553684));
+        assert_eq!(generator.next(), Some(12683156));
+        assert_eq!(generator.next(), Some(11100544));
+        assert_eq!(generator.next(), Some(12249484));
+        assert_eq!(generator.next(), Some(7753432));
+        assert_eq!(generator.next(), Some(5908254));
     }
 
     #[test]

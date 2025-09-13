@@ -1,4 +1,4 @@
-use aoc2024::{run, Solve};
+use aoc2024::{Solve, run};
 use itertools::Itertools;
 use std::{
     cmp::Ordering,
@@ -62,7 +62,7 @@ impl Solve for Solution {
             .into_iter()
             .map(|update| {
                 let sorted =
-                    update.is_sorted_by(|a, b| rules.get(a).map_or(false, |set| set.contains(b)));
+                    update.is_sorted_by(|a, b| rules.get(a).is_some_and(|set| set.contains(b)));
                 (update, sorted)
             })
             .collect();
@@ -84,7 +84,7 @@ impl Solve for Solution {
                     .iter()
                     .cloned()
                     .sorted_by(|a, b| {
-                        if self.rules.get(a).map_or(false, |set| set.contains(b)) {
+                        if self.rules.get(a).is_some_and(|set| set.contains(b)) {
                             Ordering::Less
                         } else {
                             Ordering::Greater

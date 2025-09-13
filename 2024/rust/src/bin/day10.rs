@@ -1,4 +1,4 @@
-use aoc2024::{run, Solve};
+use aoc2024::{Solve, run};
 use std::{
     collections::HashSet,
     io::{BufRead, BufReader, Read},

@@ -1,4 +1,4 @@
-use aoc2024::{run, Solve};
+use aoc2024::{Solve, run};
 use std::{
     io::{BufRead, BufReader, Read},
     str::FromStr,

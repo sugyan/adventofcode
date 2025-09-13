@@ -1,7 +1,7 @@
 use std::{
     error::Error,
     fmt::Display,
-    io::{stdin, Read},
+    io::{Read, stdin},
 };
 
 pub trait Solve: Sized {

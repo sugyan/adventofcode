@@ -1,4 +1,4 @@
-use aoc2024::{run, Solve};
+use aoc2024::{Solve, run};
 use itertools::Itertools;
 use std::{
     collections::HashMap,
@@ -116,15 +116,17 @@ impl Solve for Solution {
                             incorrect.push(rhs);
                         }
                         _ => {
-                            if let Gate::Xor(l, r) = &self.connections[lhs] {
-                                if l.starts_with(['x', 'y']) && r.starts_with(['x', 'y']) {
-                                    incorrect.push(rhs);
-                                }
+                            if let Gate::Xor(l, r) = &self.connections[lhs]
+                                && l.starts_with(['x', 'y'])
+                                && r.starts_with(['x', 'y'])
+                            {
+                                incorrect.push(rhs);
                             }
-                            if let Gate::Xor(l, r) = &self.connections[rhs] {
-                                if l.starts_with(['x', 'y']) && r.starts_with(['x', 'y']) {
-                                    incorrect.push(lhs);
-                                }
+                            if let Gate::Xor(l, r) = &self.connections[rhs]
+                                && l.starts_with(['x', 'y'])
+                                && r.starts_with(['x', 'y'])
+                            {
+                                incorrect.push(lhs);
                             }
                         }
                     },

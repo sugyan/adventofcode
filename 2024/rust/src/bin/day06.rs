@@ -1,6 +1,6 @@
-use aoc2024::{run, Solve};
+use aoc2024::{Solve, run};
 use std::{
-    collections::{hash_map::Entry, HashMap, HashSet},
+    collections::{HashMap, HashSet, hash_map::Entry},
     io::{BufRead, BufReader, Read},
 };
 use thiserror::Error;
