@@ -131,28 +131,28 @@ mod tests {
     use super::*;
 
     fn example_input_1() -> &'static [u8] {
-        r"
+        &r"
 AAAA
 BBCD
 BBCC
 EEEC
-"[1..]
-            .as_bytes()
+"
+        .as_bytes()[1..]
     }
 
     fn example_input_2() -> &'static [u8] {
-        r"
+        &r"
 OOOOO
 OXOXO
 OOOOO
 OXOXO
 OOOOO
-"[1..]
-            .as_bytes()
+"
+        .as_bytes()[1..]
     }
 
     fn example_input_3() -> &'static [u8] {
-        r"
+        &r"
 RRRRIICCFF
 RRRRIICCCF
 VVRRRCCFFF
@@ -163,8 +163,8 @@ VVIIICJJEE
 MIIIIIJJEE
 MIIISIJEEE
 MMMISSJEEE
-"[1..]
-            .as_bytes()
+"
+        .as_bytes()[1..]
     }
 
     #[test]
@@ -182,29 +182,29 @@ MMMISSJEEE
         assert_eq!(Solution::new(example_input_3())?.part2(), 1206);
         assert_eq!(
             Solution::new(
-                r"
+                &r"
 EEEEE
 EXXXX
 EEEEE
 EXXXX
 EEEEE
-"[1..]
-                    .as_bytes()
+"
+                .as_bytes()[1..]
             )?
             .part2(),
             236
         );
         assert_eq!(
             Solution::new(
-                r"
+                &r"
 AAAAAA
 AAABBA
 AAABBA
 ABBAAA
 ABBAAA
 AAAAAA
-"[1..]
-                    .as_bytes()
+"
+                .as_bytes()[1..]
             )?
             .part2(),
             368

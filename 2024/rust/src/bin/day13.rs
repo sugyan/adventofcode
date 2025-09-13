@@ -120,7 +120,7 @@ mod tests {
     use super::*;
 
     fn example_input() -> &'static [u8] {
-        r"
+        &r"
 Button A: X+94, Y+34
 Button B: X+22, Y+67
 Prize: X=8400, Y=5400
@@ -136,8 +136,8 @@ Prize: X=7870, Y=6450
 Button A: X+69, Y+23
 Button B: X+27, Y+71
 Prize: X=18641, Y=10279
-"[1..]
-            .as_bytes()
+"
+        .as_bytes()[1..]
     }
 
     #[test]

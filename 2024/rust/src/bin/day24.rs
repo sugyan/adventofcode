@@ -153,7 +153,7 @@ mod tests {
     use super::*;
 
     fn example_input_1() -> &'static [u8] {
-        r"
+        &r"
 x00: 1
 x01: 1
 x02: 1
@@ -164,12 +164,12 @@ y02: 0
 x00 AND y00 -> z00
 x01 XOR y01 -> z01
 x02 OR y02 -> z02
-"[1..]
-            .as_bytes()
+"
+        .as_bytes()[1..]
     }
 
     fn example_input_2() -> &'static [u8] {
-        r"
+        &r"
 x00: 1
 x01: 0
 x02: 1
@@ -217,8 +217,8 @@ y03 OR x01 -> nrd
 hwm AND bqk -> z03
 tgd XOR rvg -> z12
 tnw OR pbm -> gnj
-"[1..]
-            .as_bytes()
+"
+        .as_bytes()[1..]
     }
 
     #[test]

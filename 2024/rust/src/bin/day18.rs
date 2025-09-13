@@ -100,7 +100,7 @@ mod tests {
     use super::*;
 
     fn example_input() -> &'static [u8] {
-        r"
+        &r"
 5,4
 4,2
 4,5
@@ -126,8 +126,8 @@ mod tests {
 0,5
 1,6
 2,0
-"[1..]
-            .as_bytes()
+"
+        .as_bytes()[1..]
     }
 
     #[test]

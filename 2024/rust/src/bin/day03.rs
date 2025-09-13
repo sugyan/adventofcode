@@ -81,10 +81,9 @@ mod tests {
     fn part1() -> Result<(), Error> {
         assert_eq!(
             Solution::new(
-                r"
-xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))
-"[1..]
-                    .as_bytes()
+                &r"
+xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))"
+                    .as_bytes()[1..]
             )?
             .part1(),
             161
@@ -96,8 +95,9 @@ xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))
     fn part2() -> Result<(), Error> {
         assert_eq!(
             Solution::new(
-                r"xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))"
-                    .as_bytes()
+                &r"
+xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))"
+                    .as_bytes()[1..]
             )?
             .part2(),
             48

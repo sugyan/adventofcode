@@ -162,25 +162,25 @@ mod tests {
     use super::*;
 
     fn example_input_1() -> &'static [u8] {
-        r"
+        &r"
 Register A: 729
 Register B: 0
 Register C: 0
 
 Program: 0,1,5,4,3,0
-"[1..]
-            .as_bytes()
+"
+        .as_bytes()[1..]
     }
 
     fn example_input_2() -> &'static [u8] {
-        r"
+        &r"
 Register A: 2024
 Register B: 0
 Register C: 0
 
 Program: 0,3,5,4,3,0
-"[1..]
-            .as_bytes()
+"
+        .as_bytes()[1..]
     }
 
     #[test]

@@ -134,13 +134,13 @@ mod tests {
     fn part1() -> Result<(), Error> {
         assert_eq!(
             Solution::new(
-                r"
+                &r"
 1
 10
 100
 2024
-"[1..]
-                    .as_bytes()
+"
+                .as_bytes()[1..]
             )?
             .part1(),
             37327623
@@ -152,13 +152,13 @@ mod tests {
     fn part2() -> Result<(), Error> {
         assert_eq!(
             Solution::new(
-                r"
+                &r"
 1
 2
 3
 2024
-"[1..]
-                    .as_bytes()
+"
+                .as_bytes()[1..]
             )?
             .part2(),
             23
