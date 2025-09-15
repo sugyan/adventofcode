@@ -1,12 +1,10 @@
 use aoc2024::{Day, run_day};
 use itertools::Itertools;
-use std::io::BufRead;
+use std::str::FromStr;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 enum Error {
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
     #[error(transparent)]
     Parse(#[from] std::num::ParseIntError),
     #[error("invalid input")]
@@ -18,20 +16,14 @@ struct Input {
     r: Vec<u32>,
 }
 
-struct Solution;
+impl FromStr for Input {
+    type Err = Error;
 
-impl Day for Solution {
-    type Input = Input;
-    type Answer1 = u32;
-    type Answer2 = u32;
-    type Error = Error;
-
-    fn parse<R: BufRead>(r: R) -> Result<Self::Input, Self::Error> {
-        let transposed = r
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let transposed = s
             .lines()
             .map(|line| {
-                line.map_err(Error::Io)?
-                    .split_ascii_whitespace()
+                line.split_ascii_whitespace()
                     .collect_tuple()
                     .ok_or(Error::InvalidInput)
                     .and_then(|(a, b)| Ok((a.parse()?, b.parse()?)))
@@ -39,11 +31,20 @@ impl Day for Solution {
             .collect::<Result<Vec<(u32, u32)>, _>>()?
             .into_iter()
             .unzip::<_, _, Vec<_>, Vec<_>>();
-        Ok(Input {
+        Ok(Self {
             l: transposed.0.into_iter().sorted().collect(),
             r: transposed.1.into_iter().sorted().collect(),
         })
     }
+}
+
+struct Solution;
+
+impl Day for Solution {
+    type Input = Input;
+    type Error = Error;
+    type Answer1 = u32;
+    type Answer2 = u32;
 
     fn part1(input: &Self::Input) -> Self::Answer1 {
         input
@@ -66,7 +67,7 @@ impl Day for Solution {
     }
 }
 
-fn main() -> Result<(), Error> {
+fn main() -> Result<(), aoc2024::Error<Error>> {
     run_day::<Solution>()
 }
 
@@ -75,17 +76,15 @@ mod tests {
     use super::*;
 
     fn example_input() -> Result<Input, Error> {
-        Solution::parse(
-            &r"
+        r"
 3   4
 4   3
 2   5
 1   3
 3   9
 3   3
-"
-            .as_bytes()[1..],
-        )
+"[1..]
+            .parse()
     }
 
     #[test]
