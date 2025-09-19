@@ -9,5 +9,5 @@ $day =~ /\Aday(\d{2})\z/ or die "Invalid day format. Use dayXX.\n";
 
 require "Day$1.pm";
 my $solution = Solution->new( fh => *STDIN );
-say "Part1: ", $solution->part1();
-say "Part2: ", $solution->part2();
+say "Part 1: ", $solution->part1();
+say "Part 2: ", $solution->part2();
