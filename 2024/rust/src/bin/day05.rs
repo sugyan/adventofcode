@@ -1,16 +1,15 @@
-use aoc2024::{Solve, run};
+use aoc2024::{Day, run_day};
 use itertools::Itertools;
 use std::{
+    cell::OnceCell,
     cmp::Ordering,
     collections::{HashMap, HashSet},
-    io::{BufRead, BufReader, Read},
+    str::FromStr,
 };
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 enum Error {
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
     #[error(transparent)]
     Parse(#[from] std::num::ParseIntError),
     #[error("invalid input")]
@@ -19,23 +18,45 @@ enum Error {
     InvalidLine,
 }
 
-struct Solution {
+type AnalyzedResult = Vec<(bool, Vec<u32>)>;
+
+struct Input {
     rules: HashMap<u32, HashSet<u32>>,
-    updates: Vec<(Vec<u32>, bool)>,
+    updates: Vec<Vec<u32>>,
+    cell: OnceCell<AnalyzedResult>,
 }
 
-impl Solve for Solution {
-    type Answer1 = u32;
-    type Answer2 = u32;
-    type Error = Error;
+impl Input {
+    fn analyzed(&self) -> &AnalyzedResult {
+        self.cell.get_or_init(|| {
+            self.updates
+                .iter()
+                .map(|update| {
+                    let sorted = update
+                        .iter()
+                        .copied()
+                        .sorted_by(|a, b| {
+                            if self.rules.get(a).is_some_and(|set| set.contains(b)) {
+                                Ordering::Less
+                            } else {
+                                Ordering::Greater
+                            }
+                        })
+                        .collect_vec();
+                    (sorted == *update, sorted)
+                })
+                .collect()
+        })
+    }
+}
 
-    fn new<R>(r: R) -> Result<Self, Error>
-    where
-        R: Read,
-    {
-        let lines = BufReader::new(r).lines().collect::<Result<Vec<_>, _>>()?;
+impl FromStr for Input {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let lines = s.lines().collect_vec();
         let (rule_lines, update_lines) = lines
-            .split(String::is_empty)
+            .split(|s| s.is_empty())
             .collect_tuple()
             .ok_or(Error::InvalidInput)?;
         let mut rules = HashMap::new();
@@ -60,52 +81,57 @@ impl Solve for Solution {
             })
             .collect::<Result<Vec<Vec<_>>, _>>()?
             .into_iter()
-            .map(|update| {
-                let sorted =
-                    update.is_sorted_by(|a, b| rules.get(a).is_some_and(|set| set.contains(b)));
-                (update, sorted)
-            })
             .collect();
-        Ok(Self { rules, updates })
+        Ok(Self {
+            rules,
+            updates,
+            cell: OnceCell::new(),
+        })
     }
-    fn part1(&self) -> Self::Answer1 {
-        self.updates
+}
+
+struct Solution;
+
+impl Solution {
+    fn sum_of_middle_page_numbers(input: &Input, condition: bool) -> u32 {
+        input
+            .analyzed()
             .iter()
-            .filter(|(_, sorted)| *sorted)
-            .map(|(update, _)| update[update.len() / 2])
-            .sum()
-    }
-    fn part2(&self) -> Self::Answer2 {
-        self.updates
-            .iter()
-            .filter(|(_, sorted)| !*sorted)
-            .map(|(update, _)| {
-                update
-                    .iter()
-                    .cloned()
-                    .sorted_by(|a, b| {
-                        if self.rules.get(a).is_some_and(|set| set.contains(b)) {
-                            Ordering::Less
-                        } else {
-                            Ordering::Greater
-                        }
-                    })
-                    .collect_vec()[update.len() / 2]
+            .filter_map(|(is_sorted, sorted)| {
+                if *is_sorted == condition {
+                    Some(sorted[sorted.len() / 2])
+                } else {
+                    None
+                }
             })
             .sum()
     }
 }
 
-fn main() -> Result<(), Error> {
-    run::<Solution>()
+impl Day for Solution {
+    type Input = Input;
+    type Error = Error;
+    type Answer1 = u32;
+    type Answer2 = u32;
+
+    fn part1(input: &Self::Input) -> Self::Answer1 {
+        Self::sum_of_middle_page_numbers(input, true)
+    }
+    fn part2(input: &Self::Input) -> Self::Answer2 {
+        Self::sum_of_middle_page_numbers(input, false)
+    }
+}
+
+fn main() -> Result<(), aoc2024::Error<Error>> {
+    run_day::<Solution>()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn example_input() -> &'static [u8] {
-        &r"
+    fn example_input() -> Result<Input, Error> {
+        r"
 47|53
 97|13
 97|61
@@ -134,19 +160,19 @@ mod tests {
 75,97,47,61,53
 61,13,29
 97,13,75,29,47
-"
-        .as_bytes()[1..]
+"[1..]
+            .parse()
     }
 
     #[test]
     fn part1() -> Result<(), Error> {
-        assert_eq!(Solution::new(example_input())?.part1(), 143);
+        assert_eq!(Solution::part1(&example_input()?), 143);
         Ok(())
     }
 
     #[test]
     fn part2() -> Result<(), Error> {
-        assert_eq!(Solution::new(example_input())?.part2(), 123);
+        assert_eq!(Solution::part2(&example_input()?), 123);
         Ok(())
     }
 }
