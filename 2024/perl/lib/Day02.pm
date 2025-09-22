@@ -14,7 +14,7 @@ class Solution : isa(Base) {
 
     method part1() {
         my $input = $self->input();
-        return scalar grep { $self->is_safe($_) } $input->@*;
+        return scalar grep { is_safe($_) } $input->@*;
     }
 
     method part2() {
@@ -24,12 +24,12 @@ class Solution : isa(Base) {
             any {
                 my @copied = @$report;
                 splice( @copied, $_, 1 );
-                $self->is_safe( \@copied )
+                is_safe( \@copied )
             } 0 .. $#$report
         } $input->@*;
     }
 
-    method is_safe ($report) {
+    sub is_safe ($report) {
         my @diffs = map { $report->[$_] - $report->[ $_ - 1 ] } 1 .. $#$report;
         my $increasing = all { $_ > 0 } @diffs;
         my $decreasing = all { $_ < 0 } @diffs;
