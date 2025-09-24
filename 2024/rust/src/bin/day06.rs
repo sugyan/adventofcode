@@ -1,14 +1,10 @@
-use aoc2024::{Solve, run};
-use std::{
-    collections::{HashMap, HashSet, hash_map::Entry},
-    io::{BufRead, BufReader, Read},
-};
+use aoc2024::{Day, run_day};
+use itertools::Itertools;
+use std::{collections::HashSet, str::FromStr};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 enum Error {
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
     #[error("invalid input")]
     InvalidInput,
 }
@@ -30,104 +26,129 @@ impl Direction {
             Self::Left => Self::Up,
         }
     }
-    fn next_position(&self, (i, j): (usize, usize)) -> (usize, usize) {
-        match self {
-            Self::Up => (i.wrapping_sub(1), j),
-            Self::Right => (i, j.wrapping_add(1)),
-            Self::Down => (i.wrapping_add(1), j),
-            Self::Left => (i, j.wrapping_sub(1)),
-        }
-    }
 }
 
-struct Solution {
+type Position = ((usize, usize), Direction);
+
+#[derive(Clone)]
+struct Area {
     map: Vec<Vec<bool>>,
-    guard: (usize, usize),
+    rows: usize,
+    cols: usize,
 }
 
-impl Solution {
-    fn simulate_patrol(
-        &self,
-        map: &[Vec<bool>],
-    ) -> Option<HashMap<(usize, usize), HashSet<Direction>>> {
-        let (rows, cols) = (map.len(), map[0].len());
-        let ((mut i, mut j), mut dir) = (self.guard, Direction::Up);
-        let mut hm = HashMap::<(usize, usize), HashSet<Direction>>::new();
-        while (0..rows).contains(&i) && (0..cols).contains(&j) {
-            match hm.entry((i, j)) {
-                Entry::Occupied(mut oe) => {
-                    if oe.get().contains(&dir) {
-                        return None;
-                    }
-                    oe.get_mut().insert(dir);
-                }
-                Entry::Vacant(ve) => {
-                    ve.insert(HashSet::new());
-                }
-            }
-            let (ii, jj) = dir.next_position((i, j));
-            if (0..rows).contains(&ii) && (0..cols).contains(&jj) && map[ii][jj] {
-                dir = dir.turn_right();
-            } else {
-                (i, j) = (ii, jj);
-            }
+impl Area {
+    fn distinct_positions(&self, start: Position) -> HashSet<(usize, usize)> {
+        let mut path = vec![start];
+        let mut p = start;
+        while let Some(next) = self.next_position(p) {
+            path.push(next);
+            p = next;
         }
-        Some(hm)
+        path.iter().map(|(p, _)| *p).collect()
+    }
+    fn will_stack_in_loop(&self, start: Position) -> bool {
+        let mut seen = HashSet::new();
+        let mut p = start;
+        while let Some(next) = self.next_position(p) {
+            if next.1 != p.1 && !seen.insert(next) {
+                return true;
+            }
+            p = next;
+        }
+        false
+    }
+    fn next_position(&self, ((i, j), d): Position) -> Option<Position> {
+        let (next_i, next_j) = match d {
+            Direction::Up => (i.checked_sub(1)?, j),
+            Direction::Right => (i, j + 1),
+            Direction::Down => (i + 1, j),
+            Direction::Left => (i, j.checked_sub(1)?),
+        };
+        if next_i < self.rows && next_j < self.cols {
+            Some(if self.map[next_i][next_j] {
+                ((i, j), d.turn_right())
+            } else {
+                ((next_i, next_j), d)
+            })
+        } else {
+            None
+        }
     }
 }
 
-impl Solve for Solution {
-    type Answer1 = usize;
-    type Answer2 = usize;
-    type Error = Error;
+impl FromStr for Area {
+    type Err = Error;
 
-    fn new<R>(r: R) -> Result<Self, Error>
-    where
-        R: Read,
-    {
-        let lines = BufReader::new(r).lines().collect::<Result<Vec<_>, _>>()?;
-        let guard = lines
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let map = s
+            .lines()
+            .map(|line| line.bytes().map(|u| u == b'#').collect_vec())
+            .collect_vec();
+        let (rows, cols) = (map.len(), map[0].len());
+        Ok(Self { map, rows, cols })
+    }
+}
+
+struct Input {
+    area: Area,
+    start: ((usize, usize), Direction),
+}
+
+impl FromStr for Input {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let lines = s.lines().collect::<Vec<_>>();
+        let guard_pos = lines
             .iter()
             .enumerate()
             .find_map(|(i, line)| line.bytes().position(|u| u == b'^').map(|j| (i, j)))
             .ok_or(Error::InvalidInput)?;
         Ok(Self {
-            map: lines
-                .iter()
-                .map(|line| line.bytes().map(|u| u == b'#').collect())
-                .collect(),
-            guard,
+            area: s.parse()?,
+            start: (guard_pos, Direction::Up),
         })
     }
-    fn part1(&self) -> Self::Answer1 {
-        self.simulate_patrol(&self.map).unwrap().len()
+}
+
+struct Solution;
+
+impl Day for Solution {
+    type Input = Input;
+    type Error = Error;
+    type Answer1 = usize;
+    type Answer2 = usize;
+
+    fn part1(input: &Self::Input) -> Self::Answer1 {
+        input.area.distinct_positions(input.start).len()
     }
-    fn part2(&self) -> Self::Answer2 {
-        self.simulate_patrol(&self.map)
-            .unwrap()
-            .keys()
+    fn part2(input: &Self::Input) -> Self::Answer2 {
+        let mut area = input.area.clone();
+        input
+            .area
+            .distinct_positions(input.start)
+            .iter()
             .filter(|(i, j)| {
-                if (*i, *j) == self.guard {
-                    return false;
-                }
-                let mut map = self.map.clone();
-                map[*i][*j] = true;
-                self.simulate_patrol(&map).is_none()
+                area.map[*i][*j] = true;
+                let result = area.will_stack_in_loop(input.start);
+                area.map[*i][*j] = false;
+                result
             })
             .count()
     }
 }
 
-fn main() -> Result<(), Error> {
-    run::<Solution>()
+fn main() -> Result<(), aoc2024::Error<Error>> {
+    run_day::<Solution>()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn example_input() -> &'static [u8] {
-        &r"
+    fn example_input() -> Result<Input, Error> {
+        r"
 ....#.....
 .........#
 ..........
@@ -138,19 +159,19 @@ mod tests {
 ........#.
 #.........
 ......#...
-"
-        .as_bytes()[1..]
+"[1..]
+            .parse()
     }
 
     #[test]
     fn part1() -> Result<(), Error> {
-        assert_eq!(Solution::new(example_input())?.part1(), 41);
+        assert_eq!(Solution::part1(&example_input()?), 41);
         Ok(())
     }
 
     #[test]
     fn part2() -> Result<(), Error> {
-        assert_eq!(Solution::new(example_input())?.part2(), 6);
+        assert_eq!(Solution::part2(&example_input()?), 6);
         Ok(())
     }
 }
