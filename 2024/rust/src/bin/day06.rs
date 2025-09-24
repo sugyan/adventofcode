@@ -39,15 +39,15 @@ struct Area {
 
 impl Area {
     fn distinct_positions(&self, start: Position) -> HashSet<(usize, usize)> {
-        let mut path = vec![start];
+        let mut path = HashSet::from_iter([start.0]);
         let mut p = start;
         while let Some(next) = self.next_position(p) {
-            path.push(next);
+            path.insert(next.0);
             p = next;
         }
-        path.iter().map(|(p, _)| *p).collect()
+        path
     }
-    fn will_stack_in_loop(&self, start: Position) -> bool {
+    fn will_stuck_in_loop(&self, start: Position) -> bool {
         let mut seen = HashSet::new();
         let mut p = start;
         while let Some(next) = self.next_position(p) {
@@ -131,7 +131,7 @@ impl Day for Solution {
             .iter()
             .filter(|(i, j)| {
                 area.map[*i][*j] = true;
-                let result = area.will_stack_in_loop(input.start);
+                let result = area.will_stuck_in_loop(input.start);
                 area.map[*i][*j] = false;
                 result
             })
