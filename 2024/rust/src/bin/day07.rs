@@ -1,14 +1,9 @@
-use aoc2024::{Solve, run};
-use std::{
-    io::{BufRead, BufReader, Read},
-    str::FromStr,
-};
+use aoc2024::{Day, run_day};
+use std::str::FromStr;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 enum Error {
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
     #[error(transparent)]
     Parse(#[from] std::num::ParseIntError),
     #[error("invalid line")]
@@ -64,50 +59,53 @@ impl FromStr for CalibrationEquation {
     }
 }
 
-struct Solution {
-    calibration_equations: Vec<CalibrationEquation>,
+struct Input(Vec<CalibrationEquation>);
+
+impl FromStr for Input {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        s.lines()
+            .map(str::parse)
+            .collect::<Result<Vec<_>, _>>()
+            .map(Self)
+    }
 }
 
-impl Solve for Solution {
+struct Solution;
+
+impl Day for Solution {
+    type Input = Input;
+    type Error = Error;
     type Answer1 = u64;
     type Answer2 = u64;
-    type Error = Error;
 
-    fn new<R>(r: R) -> Result<Self, Error>
-    where
-        R: Read,
-    {
-        Ok(Self {
-            calibration_equations: BufReader::new(r)
-                .lines()
-                .map(|line| line?.parse())
-                .collect::<Result<_, _>>()?,
-        })
-    }
-    fn part1(&self) -> Self::Answer1 {
-        self.calibration_equations
+    fn part1(input: &Self::Input) -> Self::Answer1 {
+        input
+            .0
             .iter()
             .filter_map(|eq| eq.calibration_result(false))
             .sum()
     }
-    fn part2(&self) -> Self::Answer2 {
-        self.calibration_equations
+    fn part2(input: &Self::Input) -> Self::Answer2 {
+        input
+            .0
             .iter()
             .filter_map(|eq| eq.calibration_result(true))
             .sum()
     }
 }
 
-fn main() -> Result<(), Error> {
-    run::<Solution>()
+fn main() -> Result<(), aoc2024::Error<Error>> {
+    run_day::<Solution>()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn example_input() -> &'static [u8] {
-        &r"
+    fn example_input() -> Result<Input, Error> {
+        r"
 190: 10 19
 3267: 81 40 27
 83: 17 5
@@ -117,19 +115,19 @@ mod tests {
 192: 17 8 14
 21037: 9 7 18 13
 292: 11 6 16 20
-"
-        .as_bytes()[1..]
+"[1..]
+            .parse()
     }
 
     #[test]
     fn part1() -> Result<(), Error> {
-        assert_eq!(Solution::new(example_input())?.part1(), 3749);
+        assert_eq!(Solution::part1(&example_input()?), 3749);
         Ok(())
     }
 
     #[test]
     fn part2() -> Result<(), Error> {
-        assert_eq!(Solution::new(example_input())?.part2(), 11387);
+        assert_eq!(Solution::part2(&example_input()?), 11387);
         Ok(())
     }
 }
