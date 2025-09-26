@@ -83,8 +83,9 @@ mod tests {
 1   3
 3   9
 3   3
-"[1..]
-            .parse()
+"
+        .trim_start()
+        .parse()
     }
 
     #[test]

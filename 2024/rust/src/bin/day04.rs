@@ -109,8 +109,9 @@ SMSMSASXSS
 SAXAMASAAA
 MAMMMXMMMM
 MXMXAXMASX
-"[1..]
-            .parse()
+"
+        .trim_start()
+        .parse()
     }
 
     #[test]

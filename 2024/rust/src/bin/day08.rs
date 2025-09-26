@@ -1,65 +1,24 @@
-use aoc2024::{Solve, run};
-use itertools::Itertools;
-use std::{
-    collections::HashMap,
-    io::{BufRead, BufReader, Read},
-    iter,
-};
+use aoc2024::{Day, run_day};
+use itertools::{Either, Itertools};
+use std::{collections::HashMap, iter, str::FromStr};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-enum Error {
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
-}
+enum Error {}
 
-struct Solution {
+struct Input {
     map_size: (usize, usize),
     antennas: HashMap<u8, Vec<(usize, usize)>>,
 }
 
-impl Solution {
-    fn count_antinodes(&self, update: bool) -> usize {
-        self.antennas
-            .values()
-            .flat_map(|v| {
-                v.iter().combinations(2).flat_map(|c| {
-                    let (di, dj) = (c[1].0.wrapping_sub(c[0].0), c[1].1.wrapping_sub(c[0].1));
-                    let it0 = iter::successors(Some(*c[0]), move |(i, j)| {
-                        Some((i.wrapping_sub(di), j.wrapping_sub(dj))).filter(|(i, j)| {
-                            (0..self.map_size.0).contains(i) && (0..self.map_size.1).contains(j)
-                        })
-                    });
-                    let it1 = iter::successors(Some(*c[1]), move |(i, j)| {
-                        Some((i.wrapping_add(di), j.wrapping_add(dj))).filter(|(i, j)| {
-                            (0..self.map_size.0).contains(i) && (0..self.map_size.1).contains(j)
-                        })
-                    });
-                    if update {
-                        it0.chain(it1).collect_vec()
-                    } else {
-                        it0.skip(1).take(1).chain(it1.skip(1).take(1)).collect_vec()
-                    }
-                })
-            })
-            .unique()
-            .count()
-    }
-}
+impl FromStr for Input {
+    type Err = Error;
 
-impl Solve for Solution {
-    type Answer1 = usize;
-    type Answer2 = usize;
-    type Error = Error;
-
-    fn new<R>(r: R) -> Result<Self, Error>
-    where
-        R: Read,
-    {
-        let map = BufReader::new(r)
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let map = s
             .lines()
-            .map(|line| line.map(|line| line.bytes().collect()))
-            .collect::<Result<Vec<Vec<_>>, _>>()?;
+            .map(|line| line.bytes().collect_vec())
+            .collect_vec();
         let mut antennas = HashMap::new();
         for (i, row) in map.iter().enumerate() {
             for (j, col) in row.iter().enumerate() {
@@ -73,24 +32,59 @@ impl Solve for Solution {
             antennas,
         })
     }
-    fn part1(&self) -> Self::Answer1 {
-        self.count_antinodes(false)
-    }
-    fn part2(&self) -> Self::Answer2 {
-        self.count_antinodes(true)
+}
+
+struct Solution;
+
+impl Solution {
+    fn count_antinodes(input: &Input, all_harmonics: bool) -> usize {
+        input
+            .antennas
+            .values()
+            .flat_map(|v| {
+                v.iter().permutations(2).flat_map(|c| {
+                    let (di, dj) = (c[1].0.wrapping_sub(c[0].0), c[1].1.wrapping_sub(c[0].1));
+                    let step = move |(i, j): (usize, usize)| {
+                        let (ni, nj) = (i.wrapping_add(di), j.wrapping_add(dj));
+                        (ni < input.map_size.0 && nj < input.map_size.1).then_some((ni, nj))
+                    };
+                    let it = iter::successors(Some(*c[1]), move |p| step(*p));
+                    if all_harmonics {
+                        Either::Left(it)
+                    } else {
+                        Either::Right(step(*c[1]).into_iter())
+                    }
+                })
+            })
+            .unique()
+            .count()
     }
 }
 
-fn main() -> Result<(), Error> {
-    run::<Solution>()
+impl Day for Solution {
+    type Input = Input;
+    type Error = Error;
+    type Answer1 = usize;
+    type Answer2 = usize;
+
+    fn part1(input: &Self::Input) -> Self::Answer1 {
+        Self::count_antinodes(input, false)
+    }
+    fn part2(input: &Self::Input) -> Self::Answer2 {
+        Self::count_antinodes(input, true)
+    }
+}
+
+fn main() -> Result<(), aoc2024::Error<Error>> {
+    run_day::<Solution>()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn example_input() -> &'static [u8] {
-        &r"
+    fn example_input() -> Result<Input, Error> {
+        r"
 ............
 ........0...
 .....0......
@@ -104,18 +98,19 @@ mod tests {
 ............
 ............
 "
-        .as_bytes()[1..]
+        .trim_start()
+        .parse()
     }
 
     #[test]
     fn part1() -> Result<(), Error> {
-        assert_eq!(Solution::new(example_input())?.part1(), 14);
+        assert_eq!(Solution::part1(&example_input()?), 14);
         Ok(())
     }
 
     #[test]
     fn part2() -> Result<(), Error> {
-        assert_eq!(Solution::new(example_input())?.part2(), 34);
+        assert_eq!(Solution::part2(&example_input()?), 34);
         Ok(())
     }
 }
