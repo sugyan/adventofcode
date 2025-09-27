@@ -21,13 +21,13 @@ class Solution : isa(Base) {
         my $input = $self->input();
         my $l     = [ sort { $a <=> $b } $input->{l}->@* ];
         my $r     = [ sort { $a <=> $b } $input->{r}->@* ];
-        return sum( map { abs( $_->[0] - $_->[1] ) } zip( $l, $r ) );
+        return sum map { abs( $_->[0] - $_->[1] ) } zip( $l, $r );
     }
 
     method part2() {
         my $input = $self->input();
         my %counts;
         $counts{$_}++ for $input->{r}->@*;
-        return sum( map { $_ * ( $counts{$_} // 0 ) } $input->{l}->@* );
+        return sum map { $_ * ( $counts{$_} // 0 ) } $input->{l}->@*;
     }
 }

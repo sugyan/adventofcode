@@ -26,7 +26,7 @@ class Solution : isa(Base) {
     }
 
     sub analyze( $rules, $updates ) {
-        my $sum = {
+        my $sums = {
             part1 => 0,
             part2 => 0,
         };
@@ -34,13 +34,13 @@ class Solution : isa(Base) {
             my @sorted = sort { $rules->{"$a|$b"} ? -1 : 1 } $update->@*;
             my $middle = $sorted[ int( @sorted / 2 ) ];
             if ( all { $_->[0] == $_->[1] } zip $update, \@sorted ) {
-                $sum->{part1} += $middle;
+                $sums->{part1} += $middle;
             }
             else {
-                $sum->{part2} += $middle;
+                $sums->{part2} += $middle;
 
             }
         }
-        return $sum;
+        return $sums;
     }
 }

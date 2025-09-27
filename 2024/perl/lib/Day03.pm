@@ -13,12 +13,12 @@ class Solution : isa(Base) {
 
     method part1() {
         my $input = $self->input();
-        return sum( pairmap { $a * $b } $input =~ /mul\((\d+),(\d+)\)/g );
+        return sum pairmap { $a * $b } $input =~ /mul\((\d+),(\d+)\)/g;
     }
 
     method part2() {
         my $input = $self->input();
         $input =~ s/don't\(\).*?(do\(\)|\z)//g;
-        return sum( pairmap { $a * $b } $input =~ /mul\((\d+),(\d+)\)/g );
+        return sum pairmap { $a * $b } $input =~ /mul\((\d+),(\d+)\)/g;
     }
 }

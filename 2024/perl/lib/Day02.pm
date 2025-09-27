@@ -23,7 +23,7 @@ class Solution : isa(Base) {
             my $report = $_;
             any {
                 my @copied = @$report;
-                splice( @copied, $_, 1 );
+                splice @copied, $_, 1;
                 is_safe( \@copied )
             } 0 .. $#$report
         } $input->@*;

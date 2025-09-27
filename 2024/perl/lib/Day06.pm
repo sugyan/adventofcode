@@ -10,8 +10,8 @@ class Solution : isa(Base) {
     method parse($lines) {
         my $area = [ map { [ split // ] } $lines->@* ];
         my ( $map, $guard ) = ( {}, [] );
-        for my $i ( 0 .. $#$area ) {
-            for my $j ( 0 .. $#{ $area->[$i] } ) {
+        for my $i ( 0 .. $area->$#* ) {
+            for my $j ( 0 .. $area->[$i]->$#* ) {
                 $map->{"$i,$j"} = $area->[$i][$j] eq '#';
                 if ( $area->[$i][$j] eq '^' ) {
                     $guard = [ $i, $j, 0 ];
