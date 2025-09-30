@@ -15,7 +15,7 @@ class Base {
     }
 
     method input() {
-        return $input // $self->parse($lines);
+        return $input //= $self->parse($lines);
     }
 
     method parse($lines) {
