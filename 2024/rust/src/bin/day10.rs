@@ -1,15 +1,9 @@
-use aoc2024::{Solve, run};
-use std::{
-    collections::HashSet,
-    io::{BufRead, BufReader, Read},
-};
+use aoc2024::{Day, run_day};
+use std::{collections::HashSet, str::FromStr};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-enum Error {
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
-}
+enum Error {}
 
 trait Evaluate {
     fn unit(_: (usize, usize)) -> Self;
@@ -45,12 +39,39 @@ impl Evaluate for Rating {
     }
 }
 
-struct Solution {
-    positions: Vec<HashSet<(usize, usize)>>,
+struct Input(Vec<HashSet<(usize, usize)>>);
+
+impl FromStr for Input {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let topographic_map = s
+            .lines()
+            .map(|line| line.bytes().map(|u| (u - b'0').into()).collect())
+            .collect::<Vec<Vec<usize>>>();
+        let mut positions = vec![HashSet::new(); 10];
+        for (i, row) in topographic_map.iter().enumerate() {
+            for (j, height) in row.iter().enumerate() {
+                positions[*height].insert((i, j));
+            }
+        }
+        Ok(Self(positions))
+    }
 }
 
+struct Solution;
+
 impl Solution {
-    fn dfs<E>(&self, (i, j): (usize, usize), height: usize) -> Option<E>
+    fn evaluate_trailhead<E>(input: &Input) -> usize
+    where
+        E: Evaluate,
+    {
+        input.0[0]
+            .iter()
+            .filter_map(|p| Self::dfs(input, *p, 0).as_ref().map(E::value))
+            .sum()
+    }
+    fn dfs<E>(input: &Input, (i, j): (usize, usize), height: usize) -> Option<E>
     where
         E: Evaluate,
     {
@@ -64,60 +85,36 @@ impl Solution {
             (i, j.wrapping_add(1)),
         ]
         .iter()
-        .filter(|p| self.positions[height + 1].contains(p))
-        .filter_map(|p| self.dfs(*p, height + 1))
+        .filter(|p| input.0[height + 1].contains(p))
+        .filter_map(|p| Self::dfs(input, *p, height + 1))
         .reduce(E::accumulate)
     }
 }
 
-impl Solve for Solution {
+impl Day for Solution {
+    type Input = Input;
+    type Error = Error;
     type Answer1 = usize;
     type Answer2 = usize;
-    type Error = Error;
 
-    fn new<R>(r: R) -> Result<Self, Error>
-    where
-        R: Read,
-    {
-        let topographic_map = BufReader::new(r)
-            .lines()
-            .map(|line| {
-                line.map_err(Error::Io)
-                    .map(|line| line.bytes().map(|u| (u - b'0').into()).collect())
-            })
-            .collect::<Result<Vec<Vec<usize>>, _>>()?;
-        let mut positions = vec![HashSet::new(); 10];
-        for (i, row) in topographic_map.iter().enumerate() {
-            for (j, height) in row.iter().enumerate() {
-                positions[*height].insert((i, j));
-            }
-        }
-        Ok(Self { positions })
+    fn part1(input: &Self::Input) -> Self::Answer1 {
+        Self::evaluate_trailhead::<Score>(input)
     }
-    fn part1(&self) -> Self::Answer1 {
-        self.positions[0]
-            .iter()
-            .filter_map(|p| self.dfs::<Score>(*p, 0).as_ref().map(Evaluate::value))
-            .sum()
-    }
-    fn part2(&self) -> Self::Answer2 {
-        self.positions[0]
-            .iter()
-            .filter_map(|p| self.dfs::<Rating>(*p, 0).as_ref().map(Evaluate::value))
-            .sum()
+    fn part2(input: &Self::Input) -> Self::Answer2 {
+        Self::evaluate_trailhead::<Rating>(input)
     }
 }
 
-fn main() -> Result<(), Error> {
-    run::<Solution>()
+fn main() -> Result<(), aoc2024::Error<Error>> {
+    run_day::<Solution>()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn example_input() -> &'static [u8] {
-        &r"
+    fn example_input() -> Result<Input, Error> {
+        r"
 89010123
 78121874
 87430965
@@ -127,18 +124,19 @@ mod tests {
 01329801
 10456732
 "
-        .as_bytes()[1..]
+        .trim_start()
+        .parse()
     }
 
     #[test]
     fn part1() -> Result<(), Error> {
-        assert_eq!(Solution::new(example_input())?.part1(), 36);
+        assert_eq!(Solution::part1(&example_input()?), 36);
         Ok(())
     }
 
     #[test]
     fn part2() -> Result<(), Error> {
-        assert_eq!(Solution::new(example_input())?.part2(), 81);
+        assert_eq!(Solution::part2(&example_input()?), 81);
         Ok(())
     }
 }

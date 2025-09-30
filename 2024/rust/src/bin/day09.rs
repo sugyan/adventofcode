@@ -17,7 +17,7 @@ impl FromStr for Input {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 struct File {
     id: usize,
     position: usize,
