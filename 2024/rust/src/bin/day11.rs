@@ -1,91 +1,90 @@
-use aoc2024::{Solve, run};
-use itertools::Itertools;
-use std::io::{BufReader, Read};
+use aoc2024::{Day, run_day};
+use itertools::{Either, Itertools};
+use std::{iter, str::FromStr};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 enum Error {
     #[error(transparent)]
-    Io(#[from] std::io::Error),
-    #[error(transparent)]
     Parse(#[from] std::num::ParseIntError),
 }
 
-struct Solution {
-    stones: Vec<u64>,
+struct Input(Vec<u64>);
+
+impl FromStr for Input {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(
+            s.split_whitespace()
+                .map(str::parse)
+                .collect::<Result<_, _>>()?,
+        ))
+    }
 }
 
+struct Solution;
+
 impl Solution {
-    fn count_stones(&self, blink: usize) -> usize {
-        let mut counts = self.stones.iter().copied().counts();
+    fn count_stones(input: &Input, blink: usize) -> usize {
+        let mut counts = input.0.iter().copied().counts();
         for _ in 0..blink {
             counts = counts
                 .iter()
-                .flat_map(|(k, v)| Self::next_stones(*k).into_iter().map(|n| (n, *v)))
+                .flat_map(|(k, v)| Self::next_stones(*k).map(|n| (n, *v)))
                 .into_grouping_map()
                 .sum();
         }
         counts.values().sum()
     }
-    fn next_stones(n: u64) -> Vec<u64> {
+    fn next_stones(n: u64) -> impl Iterator<Item = u64> {
         if n == 0 {
-            vec![1]
+            Either::Left(iter::once(1))
         } else {
             match n.ilog10() + 1 {
                 digits if digits % 2 == 0 => {
                     let d = 10_u64.pow(digits / 2);
-                    vec![n / d, n % d]
+                    Either::Right([n / d, n % d].into_iter())
                 }
-                _ => vec![n * 2024],
+                _ => Either::Left(iter::once(n * 2024)),
             }
         }
     }
 }
 
-impl Solve for Solution {
+impl Day for Solution {
+    type Input = Input;
+    type Error = Error;
     type Answer1 = usize;
     type Answer2 = usize;
-    type Error = Error;
 
-    fn new<R>(r: R) -> Result<Self, Error>
-    where
-        R: Read,
-    {
-        let mut buf = String::new();
-        BufReader::new(r).read_to_string(&mut buf)?;
-        Ok(Self {
-            stones: buf
-                .split_whitespace()
-                .map(str::parse)
-                .collect::<Result<_, _>>()?,
-        })
+    fn part1(input: &Self::Input) -> Self::Answer1 {
+        Self::count_stones(input, 25)
     }
-    fn part1(&self) -> Self::Answer1 {
-        self.count_stones(25)
-    }
-    fn part2(&self) -> Self::Answer2 {
-        self.count_stones(75)
+    fn part2(input: &Self::Input) -> Self::Answer2 {
+        Self::count_stones(input, 75)
     }
 }
 
-fn main() -> Result<(), Error> {
-    run::<Solution>()
+fn main() -> Result<(), aoc2024::Error<Error>> {
+    run_day::<Solution>()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn example_input() -> &'static [u8] {
-        &r"
+    fn example_input() -> Result<Input, Error> {
+        r"
 125 17
 "
-        .as_bytes()[1..]
+        .trim_start()
+        .parse()
     }
 
     #[test]
     fn part1() -> Result<(), Error> {
-        assert_eq!(Solution::new(example_input())?.part1(), 55312);
+        assert_eq!(Solution::part1(&example_input()?), 55312);
         Ok(())
     }
 }
