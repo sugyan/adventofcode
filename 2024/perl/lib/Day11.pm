@@ -39,8 +39,9 @@ class Solution : isa(Base) {
 
     sub blink( $n, $count ) {
         my $l = length($n);
+        my $h = $l / 2;
         return
           map { $_ => $count }
-          $l % 2 ? ( $n * 2024 || 1 ) : $n =~ /(.{@{[$l>>1]}})(.+)/;
+          $l % 2 ? ( $n * 2024 || 1 ) : $n =~ /(.{$h})(.+)/;
     }
 }
