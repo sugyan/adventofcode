@@ -1,14 +1,9 @@
-use aoc2024::{Solve, run};
-use std::{
-    io::{BufRead, BufReader, Read},
-    str::FromStr,
-};
+use aoc2024::{Day, run_day};
+use std::str::FromStr;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 enum Error {
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
     #[error(transparent)]
     Parse(#[from] std::num::ParseIntError),
     #[error("invalid input")]
@@ -16,12 +11,12 @@ enum Error {
 }
 
 #[derive(Debug)]
-struct Position {
+struct XY {
     x: i64,
     y: i64,
 }
 
-impl FromStr for Position {
+impl FromStr for XY {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -39,26 +34,32 @@ impl FromStr for Position {
 
 #[derive(Debug)]
 struct Machine {
-    a: Position,
-    b: Position,
-    prize: Position,
+    a: XY,
+    b: XY,
+    prize: XY,
 }
 
 impl Machine {
     fn tokens(&self, offset: i64) -> Option<i64> {
-        let y_num = self.a.x * (self.prize.y + offset) - self.a.y * (self.prize.x + offset);
-        let y_den = self.a.x * self.b.y - self.a.y * self.b.x;
-        if y_num % y_den != 0 {
+        let det = |[[a, b], [c, d]]: [[i64; 2]; 2]| a * d - b * c;
+        let d = det([[self.a.x, self.b.x], [self.a.y, self.b.y]]);
+        if d == 0 {
             return None;
         }
-        let b = y_num / y_den;
-        let x_num = self.prize.x + offset - self.b.x * b;
-        let x_den = self.a.x;
-        if x_num % x_den != 0 {
-            return None;
+        let d_a = det([
+            [self.prize.x + offset, self.b.x],
+            [self.prize.y + offset, self.b.y],
+        ]);
+        let d_b = det([
+            [self.a.x, self.prize.x + offset],
+            [self.a.y, self.prize.y + offset],
+        ]);
+        if d_a % d == 0 && d_b % d == 0 {
+            let (a, b) = (d_a / d, d_b / d);
+            Some(a * 3 + b)
+        } else {
+            None
         }
-        let a = x_num / x_den;
-        Some(a * 3 + b)
     }
 }
 
@@ -75,52 +76,53 @@ impl TryFrom<&[String]> for Machine {
     }
 }
 
-struct Solution {
-    machines: Vec<Machine>,
-}
+struct Input(Vec<Machine>);
 
-impl Solve for Solution {
-    type Answer1 = i64;
-    type Answer2 = i64;
-    type Error = Error;
+impl FromStr for Input {
+    type Err = Error;
 
-    fn new<R>(r: R) -> Result<Self, Error>
-    where
-        R: Read,
-    {
-        Ok(Self {
-            machines: BufReader::new(r)
-                .lines()
-                .collect::<Result<Vec<_>, _>>()?
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(
+            s.lines()
+                .map(String::from)
+                .collect::<Vec<_>>()
                 .split(String::is_empty)
                 .map(Machine::try_from)
                 .collect::<Result<_, _>>()?,
-        })
+        ))
     }
-    fn part1(&self) -> Self::Answer1 {
-        self.machines
-            .iter()
-            .filter_map(|machine| machine.tokens(0))
-            .sum()
+}
+
+struct Solution;
+
+impl Day for Solution {
+    type Input = Input;
+    type Error = Error;
+    type Answer1 = i64;
+    type Answer2 = i64;
+
+    fn part1(input: &Self::Input) -> Self::Answer1 {
+        input.0.iter().filter_map(|machine| machine.tokens(0)).sum()
     }
-    fn part2(&self) -> Self::Answer2 {
-        self.machines
+    fn part2(input: &Self::Input) -> Self::Answer2 {
+        input
+            .0
             .iter()
             .filter_map(|machine| machine.tokens(10_000_000_000_000))
             .sum()
     }
 }
 
-fn main() -> Result<(), Error> {
-    run::<Solution>()
+fn main() -> Result<(), aoc2024::Error<Error>> {
+    run_day::<Solution>()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn example_input() -> &'static [u8] {
-        &r"
+    fn example_input() -> Result<Input, Error> {
+        r"
 Button A: X+94, Y+34
 Button B: X+22, Y+67
 Prize: X=8400, Y=5400
@@ -137,12 +139,13 @@ Button A: X+69, Y+23
 Button B: X+27, Y+71
 Prize: X=18641, Y=10279
 "
-        .as_bytes()[1..]
+        .trim_start()
+        .parse()
     }
 
     #[test]
     fn part1() -> Result<(), Error> {
-        assert_eq!(Solution::new(example_input())?.part1(), 480);
+        assert_eq!(Solution::part1(&example_input()?), 480);
         Ok(())
     }
 }
