@@ -1,11 +1,5 @@
-use aoc2024::{Solve, run};
-use std::{
-    cmp::Ordering,
-    collections::HashSet,
-    io::{BufRead, BufReader, Read},
-    ops::{Add, Mul},
-    str::FromStr,
-};
+use aoc2024::{Day, run_day};
+use std::{cmp::Ordering, collections::HashSet, ops::Add, str::FromStr};
 use thiserror::Error;
 
 #[cfg(test)]
@@ -16,8 +10,6 @@ const SPACE: XY = XY { x: 101, y: 103 };
 #[derive(Error, Debug)]
 enum Error {
     #[error(transparent)]
-    Io(#[from] std::io::Error),
-    #[error(transparent)]
     Parse(#[from] std::num::ParseIntError),
     #[error("invalid line")]
     InvalidLine,
@@ -27,6 +19,15 @@ enum Error {
 struct XY {
     x: i64,
     y: i64,
+}
+
+impl XY {
+    fn wrap(self) -> Self {
+        Self {
+            x: self.x.rem_euclid(SPACE.x),
+            y: self.y.rem_euclid(SPACE.y),
+        }
+    }
 }
 
 impl FromStr for XY {
@@ -49,19 +50,8 @@ impl Add<Self> for XY {
 
     fn add(self, rhs: Self) -> Self::Output {
         Self {
-            x: (self.x + rhs.x).rem_euclid(SPACE.x),
-            y: (self.y + rhs.y).rem_euclid(SPACE.y),
-        }
-    }
-}
-
-impl Mul<i64> for XY {
-    type Output = Self;
-
-    fn mul(self, rhs: i64) -> Self::Output {
-        Self {
-            x: self.x * rhs,
-            y: self.y * rhs,
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
         }
     }
 }
@@ -93,30 +83,49 @@ impl FromStr for Robot {
     }
 }
 
-struct Solution {
-    robots: Vec<Robot>,
+struct Input(Vec<Robot>);
+
+impl FromStr for Input {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(s.lines().map(str::parse).collect::<Result<_, _>>()?))
+    }
 }
 
-impl Solve for Solution {
+struct Solution;
+
+impl Solution {
+    #[allow(dead_code)]
+    fn render(positions: &HashSet<XY>) {
+        for y in 0..SPACE.y {
+            for x in 0..SPACE.x {
+                let c = if positions.contains(&XY { x, y }) {
+                    '#'
+                } else {
+                    '.'
+                };
+                print!("{c}",);
+            }
+            println!();
+        }
+    }
+}
+
+impl Day for Solution {
+    type Input = Input;
+    type Error = Error;
     type Answer1 = usize;
     type Answer2 = usize;
-    type Error = Error;
 
-    fn new<R>(r: R) -> Result<Self, Error>
-    where
-        R: Read,
-    {
-        Ok(Self {
-            robots: BufReader::new(r)
-                .lines()
-                .map(|line| line?.parse())
-                .collect::<Result<_, _>>()?,
-        })
-    }
-    fn part1(&self) -> Self::Answer1 {
+    fn part1(input: &Self::Input) -> Self::Answer1 {
         let mut quadrants = [[0; 2]; 2];
-        for robot in &self.robots {
-            let p = robot.position + robot.velocity * 100;
+        for robot in &input.0 {
+            let p = XY {
+                x: robot.position.x + robot.velocity.x * 100,
+                y: robot.position.y + robot.velocity.y * 100,
+            }
+            .wrap();
             match (p.x.cmp(&(SPACE.x / 2)), p.y.cmp(&(SPACE.y / 2))) {
                 (Ordering::Less, Ordering::Less) => quadrants[0][0] += 1,
                 (Ordering::Greater, Ordering::Less) => quadrants[0][1] += 1,
@@ -127,42 +136,32 @@ impl Solve for Solution {
         }
         quadrants.iter().flatten().product()
     }
-    fn part2(&self) -> Self::Answer2 {
-        let mut robots = self.robots.clone();
+    fn part2(input: &Self::Input) -> Self::Answer2 {
+        let mut robots = input.0.clone();
         for i in 0.. {
             let positions = robots.iter().map(|r| r.position).collect::<HashSet<_>>();
             if positions.len() == robots.len() {
-                // for y in 0..SPACE.y {
-                //     for x in 0..SPACE.x {
-                //         let c = if positions.contains(&XY { x, y }) {
-                //             '#'
-                //         } else {
-                //             '.'
-                //         };
-                //         print!("{c}",);
-                //     }
-                //     println!();
-                // }
+                // Self::render(&positions); // for visual check
                 return i;
             }
             for robot in &mut robots {
-                robot.position = robot.position + robot.velocity;
+                robot.position = (robot.position + robot.velocity).wrap();
             }
         }
         unreachable!()
     }
 }
 
-fn main() -> Result<(), Error> {
-    run::<Solution>()
+fn main() -> Result<(), aoc2024::Error<Error>> {
+    run_day::<Solution>()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn example_input() -> &'static [u8] {
-        &r"
+    fn example_input() -> Result<Input, Error> {
+        r"
 p=0,4 v=3,-3
 p=6,3 v=-1,-3
 p=10,3 v=-1,2
@@ -176,12 +175,13 @@ p=7,3 v=-1,2
 p=2,4 v=2,-3
 p=9,5 v=-3,-3
 "
-        .as_bytes()[1..]
+        .trim_start()
+        .parse()
     }
 
     #[test]
     fn part1() -> Result<(), Error> {
-        assert_eq!(Solution::new(example_input())?.part1(), 12);
+        assert_eq!(Solution::part1(&example_input()?), 12);
         Ok(())
     }
 }
