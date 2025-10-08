@@ -1,12 +1,10 @@
-use aoc2024::{Solve, run};
-use itertools::Itertools;
-use std::io::{BufRead, BufReader, Read};
+use aoc2024::{Day, run_day};
+use itertools::{Either, Itertools};
+use std::str::FromStr;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 enum Error {
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
     #[error("invalid input")]
     InvalidInput,
 }
@@ -68,31 +66,83 @@ impl TryFrom<char> for Move {
     }
 }
 
-struct Solution {
+struct Input {
     warehouse: Vec<Vec<Cell>>,
     movements: Vec<Move>,
     robot: (usize, usize),
 }
 
+impl FromStr for Input {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let lines = s.lines().map(String::from).collect_vec();
+        let parts = lines
+            .split(String::is_empty)
+            .collect_tuple::<(_, _)>()
+            .ok_or(Error::InvalidInput)?;
+        let mut warehouse = parts
+            .0
+            .iter()
+            .map(|line| {
+                line.chars()
+                    .map(Cell::try_from)
+                    .collect::<Result<Vec<_>, _>>()
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let robot = warehouse
+            .iter()
+            .enumerate()
+            .find_map(|(i, row)| {
+                row.iter().enumerate().find_map(|(j, c)| match c {
+                    Cell::Robot => Some((i, j)),
+                    _ => None,
+                })
+            })
+            .ok_or(Error::InvalidInput)?;
+        warehouse[robot.0][robot.1] = Cell::Empty;
+        Ok(Self {
+            warehouse,
+            robot,
+            movements: parts
+                .1
+                .join("")
+                .chars()
+                .map(Move::try_from)
+                .collect::<Result<_, _>>()?,
+        })
+    }
+}
+
+struct Solution;
+
 impl Solution {
-    fn sum_of_coordinates(&self, double_width: bool) -> usize {
-        let mut warehouse = self
+    fn sum_of_coordinates(input: &Input, double_width: bool) -> usize {
+        let mut warehouse = input
             .warehouse
             .iter()
             .map(|row| {
                 row.iter()
                     .flat_map(|c| match c {
-                        Cell::Box if double_width => vec![Cell::BoxLeft, Cell::BoxRight],
-                        _ if double_width => vec![*c, *c],
-                        _ => vec![*c],
+                        Cell::Box if double_width => {
+                            Either::Left([Cell::BoxLeft, Cell::BoxRight].into_iter())
+                        }
+                        _ if double_width => Either::Left([*c, *c].into_iter()),
+                        _ => Either::Right([*c].into_iter()),
                     })
                     .collect_vec()
             })
             .collect_vec();
-        let mut robot = (self.robot.0, self.robot.1 * (usize::from(double_width) + 1));
-        for movement in self.movements.iter() {
-            if Self::try_move(&[robot], movement, &mut warehouse) {
+        let mut robot = (
+            input.robot.0,
+            input.robot.1 * (usize::from(double_width) + 1),
+        );
+        for movement in &input.movements {
+            let cloned = warehouse.clone();
+            if Self::try_move(robot, movement, &mut warehouse) {
                 robot = movement.next(robot);
+            } else {
+                warehouse = cloned;
             }
         }
         warehouse
@@ -109,106 +159,53 @@ impl Solution {
             })
             .sum()
     }
-    fn try_move(sources: &[(usize, usize)], movement: &Move, warehouse: &mut [Vec<Cell>]) -> bool {
-        let destinations = sources.iter().map(|p| movement.next(*p)).collect_vec();
-        let mut boxes = Vec::new();
-        for dst in &destinations {
-            match warehouse[dst.0][dst.1] {
-                Cell::Box | Cell::BoxLeft | Cell::BoxRight => boxes.push(*dst),
-                Cell::Wall => return false,
-                _ => {}
+    fn try_move(src: (usize, usize), movement: &Move, warehouse: &mut [Vec<Cell>]) -> bool {
+        let dst = movement.next(src);
+        let can_move = match warehouse[dst.0][dst.1] {
+            Cell::Box => Self::try_move(dst, movement, warehouse),
+            Cell::BoxLeft => {
+                Self::try_move((dst.0, dst.1 + 1), movement, warehouse)
+                    && Self::try_move(dst, movement, warehouse)
             }
-        }
-        if boxes.is_empty()
-            || Self::try_move(
-                &destinations
-                    .iter()
-                    .flat_map(|(i, j)| match (warehouse[*i][*j], movement) {
-                        (Cell::BoxLeft, Move::Up | Move::Down) => vec![(*i, *j), (*i, j + 1)],
-                        (Cell::BoxRight, Move::Up | Move::Down) => vec![(*i, j - 1), (*i, *j)],
-                        (Cell::Box | Cell::BoxLeft | Cell::BoxRight, _) => vec![(*i, *j)],
-                        _ => vec![],
-                    })
-                    .unique()
-                    .collect_vec(),
-                movement,
-                warehouse,
-            )
-        {
-            for (src, dst) in sources.iter().zip(&destinations) {
-                warehouse[dst.0][dst.1] = warehouse[src.0][src.1];
-                warehouse[src.0][src.1] = Cell::Empty;
+            Cell::BoxRight => {
+                Self::try_move((dst.0, dst.1 - 1), movement, warehouse)
+                    && Self::try_move(dst, movement, warehouse)
             }
-            return true;
+            Cell::Wall => false,
+            _ => true,
+        };
+        if can_move {
+            warehouse[dst.0][dst.1] = warehouse[src.0][src.1];
+            warehouse[src.0][src.1] = Cell::Empty;
         }
-        false
+        can_move
     }
 }
 
-impl Solve for Solution {
+impl Day for Solution {
+    type Input = Input;
+    type Error = Error;
     type Answer1 = usize;
     type Answer2 = usize;
-    type Error = Error;
 
-    fn new<R>(r: R) -> Result<Self, Error>
-    where
-        R: Read,
-    {
-        BufReader::new(r)
-            .lines()
-            .collect::<Result<Vec<_>, _>>()?
-            .split(String::is_empty)
-            .collect_tuple::<(_, _)>()
-            .ok_or(Error::InvalidInput)
-            .and_then(|(lines0, lines1)| {
-                let mut warehouse = lines0
-                    .iter()
-                    .map(|line| {
-                        line.chars()
-                            .map(Cell::try_from)
-                            .collect::<Result<Vec<_>, _>>()
-                    })
-                    .collect::<Result<Vec<_>, _>>()?;
-                let robot = warehouse
-                    .iter()
-                    .enumerate()
-                    .find_map(|(i, row)| {
-                        row.iter().enumerate().find_map(|(j, c)| match c {
-                            Cell::Robot => Some((i, j)),
-                            _ => None,
-                        })
-                    })
-                    .ok_or(Error::InvalidInput)?;
-                warehouse[robot.0][robot.1] = Cell::Empty;
-                Ok(Self {
-                    warehouse,
-                    robot,
-                    movements: lines1
-                        .join("")
-                        .chars()
-                        .map(Move::try_from)
-                        .collect::<Result<_, _>>()?,
-                })
-            })
+    fn part1(input: &Self::Input) -> Self::Answer1 {
+        Self::sum_of_coordinates(input, false)
     }
-    fn part1(&self) -> Self::Answer1 {
-        self.sum_of_coordinates(false)
-    }
-    fn part2(&self) -> Self::Answer2 {
-        self.sum_of_coordinates(true)
+    fn part2(input: &Self::Input) -> Self::Answer2 {
+        Self::sum_of_coordinates(input, true)
     }
 }
 
-fn main() -> Result<(), Error> {
-    run::<Solution>()
+fn main() -> Result<(), aoc2024::Error<Error>> {
+    run_day::<Solution>()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn example_input_small() -> &'static [u8] {
-        &r"
+    fn example_input_small() -> Result<Input, Error> {
+        r"
 ########
 #..O.O.#
 ##@.O..#
@@ -220,11 +217,12 @@ mod tests {
 
 <^^>>>vv<v>>v<<
 "
-        .as_bytes()[1..]
+        .trim_start()
+        .parse()
     }
 
-    fn example_input() -> &'static [u8] {
-        &r"
+    fn example_input() -> Result<Input, Error> {
+        r"
 ##########
 #..O..O.O#
 #......O.#
@@ -247,19 +245,20 @@ vvv<<^>^v^^><<>>><>^<<><^vv^^<>vvv<>><^^v>^>vv<>v<<<<v<^v>^<^^>>>^<v<v
 ^^>vv<^v^v<vv>^<><v<^v>^^^>>>^^vvv^>vvv<>>>^<^>>>>>^<<^v>^vvv<>^<><<v>
 v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^
 "
-        .as_bytes()[1..]
+        .trim_start()
+        .parse()
     }
 
     #[test]
     fn part1() -> Result<(), Error> {
-        assert_eq!(Solution::new(example_input())?.part1(), 10092);
-        assert_eq!(Solution::new(example_input_small())?.part1(), 2028);
+        assert_eq!(Solution::part1(&example_input()?), 10092);
+        assert_eq!(Solution::part1(&example_input_small()?), 2028);
         Ok(())
     }
 
     #[test]
     fn part2() -> Result<(), Error> {
-        assert_eq!(Solution::new(example_input())?.part2(), 9021);
+        assert_eq!(Solution::part2(&example_input()?), 9021);
         Ok(())
     }
 }
