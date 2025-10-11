@@ -1,15 +1,16 @@
-use aoc2024::{Solve, run};
+use aoc2024::{Day, run_day};
 use std::{
-    cmp::Reverse,
-    collections::{BinaryHeap, HashMap, HashSet},
-    io::{BufRead, BufReader, Read},
+    cmp::{Ordering, Reverse},
+    collections::{BinaryHeap, HashMap, HashSet, VecDeque, hash_map::Entry},
+    str::FromStr,
 };
 use thiserror::Error;
 
+const STEP: u32 = 1;
+const TURN: u32 = 1000;
+
 #[derive(Error, Debug)]
 enum Error {
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
     #[error("invalid input")]
     InvalidInput,
 }
@@ -24,78 +25,17 @@ enum Direction {
     East,
 }
 
-impl Direction {
-    fn next_pos(&self, (i, j): (usize, usize)) -> (usize, usize) {
-        match self {
-            Self::North => (i - 1, j),
-            Self::South => (i + 1, j),
-            Self::West => (i, j - 1),
-            Self::East => (i, j + 1),
-        }
-    }
-    fn next_dirs(&self) -> [Self; 2] {
-        match self {
-            Self::North => [Self::East, Self::West],
-            Self::South => [Self::West, Self::East],
-            Self::West => [Self::North, Self::South],
-            Self::East => [Self::South, Self::North],
-        }
-    }
-}
-
-struct Solution {
+struct Input {
     maze: Vec<Vec<bool>>,
     start: (usize, usize),
     end: (usize, usize),
 }
 
-impl Solution {
-    fn dijkstra(&self) -> HashMap<PosWithDir, Vec<PosWithDir>> {
-        let start = (self.start, Direction::East);
-        let mut prevs = [(start, Vec::new())].into_iter().collect::<HashMap<_, _>>();
-        let mut mins = [(start, 0)].into_iter().collect::<HashMap<_, _>>();
-        let mut bh = BinaryHeap::new();
-        bh.push((Reverse(0), (self.start, Direction::East)));
-        while let Some((Reverse(point), (p, dir))) = bh.pop() {
-            if p == self.end {
-                break;
-            }
-            let (i, j) = dir.next_pos(p);
-            let nexts = dir
-                .next_dirs()
-                .into_iter()
-                .map(|d| ((p, d), point + 1000))
-                .chain(if self.maze[i][j] {
-                    vec![(((i, j), dir), point + 1)]
-                } else {
-                    vec![]
-                });
-            for (next, point) in nexts {
-                if let Some(min) = mins.get_mut(&next) {
-                    if point == *min {
-                        prevs.entry(next).or_default().push((p, dir));
-                    }
-                } else {
-                    mins.insert(next, point);
-                    prevs.insert(next, vec![(p, dir)]);
-                    bh.push((Reverse(point), next));
-                }
-            }
-        }
-        prevs
-    }
-}
+impl FromStr for Input {
+    type Err = Error;
 
-impl Solve for Solution {
-    type Answer1 = u32;
-    type Answer2 = usize;
-    type Error = Error;
-
-    fn new<R>(r: R) -> Result<Self, Error>
-    where
-        R: Read,
-    {
-        let lines = BufReader::new(r).lines().collect::<Result<Vec<_>, _>>()?;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let lines = s.lines().collect::<Vec<_>>();
         let pos = |target| {
             lines
                 .iter()
@@ -113,52 +53,121 @@ impl Solve for Solution {
             end,
         })
     }
-    fn part1(&self) -> Self::Answer1 {
-        let prevs = self.dijkstra();
-        let mut points = 0;
-        let mut curr = prevs.keys().find(|(p, _)| p == &self.end);
-        while let Some(p) = curr {
-            let prev = prevs.get(p).and_then(|v| v.first());
-            if let Some((_, dir)) = &prev {
-                points += if *dir == p.1 { 1 } else { 1000 };
+}
+
+struct Solution;
+
+impl Solution {
+    fn dijkstra_with_paths(input: &Input) -> HashMap<PosWithDir, (u32, Vec<PosWithDir>)> {
+        let start = (input.start, Direction::East);
+        let mut mins = [(start, (0, Vec::new()))]
+            .into_iter()
+            .collect::<HashMap<_, _>>();
+        let mut bh = [(Reverse(0), start)].into_iter().collect::<BinaryHeap<_>>();
+        while let Some((Reverse(score), current)) = bh.pop() {
+            if score != mins[&current].0 {
+                continue;
             }
-            curr = prev;
-        }
-        points
-    }
-    fn part2(&self) -> Self::Answer2 {
-        fn dfs(
-            p: PosWithDir,
-            prevs: &HashMap<PosWithDir, Vec<PosWithDir>>,
-            visited: &mut HashSet<(usize, usize)>,
-        ) {
-            visited.insert(p.0);
-            if let Some(nexts) = prevs.get(&p) {
-                for next in nexts {
-                    dfs(*next, prevs, visited);
+            for (next, next_score) in Self::neighbors(input, current, score) {
+                match mins.entry(next) {
+                    Entry::Occupied(mut e) => match next_score.cmp(&e.get().0) {
+                        Ordering::Less => {
+                            *e.get_mut() = (next_score, vec![current]);
+                            bh.push((Reverse(next_score), next));
+                        }
+                        Ordering::Equal => {
+                            e.get_mut().1.push(current);
+                        }
+                        Ordering::Greater => {}
+                    },
+                    Entry::Vacant(e) => {
+                        e.insert((next_score, vec![current]));
+                        bh.push((Reverse(next_score), next));
+                    }
                 }
             }
         }
+        mins
+    }
+    fn neighbors(
+        input: &Input,
+        ((i, j), dir): PosWithDir,
+        score: u32,
+    ) -> impl Iterator<Item = (PosWithDir, u32)> {
+        (match dir {
+            Direction::North => [
+                (((i - 1, j), Direction::North), score + STEP),
+                (((i, j - 1), Direction::West), score + TURN + STEP),
+                (((i, j + 1), Direction::East), score + TURN + STEP),
+            ],
+            Direction::South => [
+                (((i + 1, j), Direction::South), score + STEP),
+                (((i, j - 1), Direction::West), score + TURN + STEP),
+                (((i, j + 1), Direction::East), score + TURN + STEP),
+            ],
+            Direction::West => [
+                (((i, j - 1), Direction::West), score + STEP),
+                (((i - 1, j), Direction::North), score + TURN + STEP),
+                (((i + 1, j), Direction::South), score + TURN + STEP),
+            ],
+            Direction::East => [
+                (((i, j + 1), Direction::East), score + 1),
+                (((i + 1, j), Direction::South), score + 1001),
+                (((i - 1, j), Direction::North), score + 1001),
+            ],
+        })
+        .into_iter()
+        .filter(|(((i, j), _), _)| input.maze[*i][*j])
+    }
+    fn find_min_score(
+        mins: &HashMap<PosWithDir, (u32, Vec<PosWithDir>)>,
+        end: (usize, usize),
+    ) -> Option<u32> {
+        mins.iter()
+            .filter_map(|(&(p, _), &(score, _))| if p == end { Some(score) } else { None })
+            .min()
+    }
+}
 
-        let prevs = self.dijkstra();
+impl Day for Solution {
+    type Input = Input;
+    type Error = Error;
+    type Answer1 = u32;
+    type Answer2 = usize;
+
+    fn part1(input: &Self::Input) -> Self::Answer1 {
+        Self::find_min_score(&Self::dijkstra_with_paths(input), input.end).unwrap()
+    }
+    fn part2(input: &Self::Input) -> Self::Answer2 {
+        let mins = Self::dijkstra_with_paths(input);
+        let min = Self::find_min_score(&mins, input.end).unwrap();
         let mut visited = HashSet::new();
-        for p in prevs.keys().filter(|(p, _)| p == &self.end) {
-            dfs(*p, &prevs, &mut visited);
+        let mut vd = mins
+            .keys()
+            .filter(|p| p.0 == input.end && mins[p].0 == min)
+            .collect::<VecDeque<_>>();
+        while let Some(p) = vd.pop_front() {
+            visited.insert(p.0);
+            if let Some((_, v)) = mins.get(p) {
+                for prev in v {
+                    vd.push_back(prev);
+                }
+            }
         }
         visited.len()
     }
 }
 
-fn main() -> Result<(), Error> {
-    run::<Solution>()
+fn main() -> Result<(), aoc2024::Error<Error>> {
+    run_day::<Solution>()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn example_input() -> &'static [u8] {
-        &r"
+    fn example_input() -> Result<Input, Error> {
+        r"
 ###############
 #.......#....E#
 #.#.###.#.###.#
@@ -175,11 +184,12 @@ mod tests {
 #S..#.....#...#
 ###############
 "
-        .as_bytes()[1..]
+        .trim_start()
+        .parse()
     }
 
-    fn example_input_second() -> &'static [u8] {
-        &r"
+    fn example_input_second() -> Result<Input, Error> {
+        r"
 #################
 #...#...#...#..E#
 #.#.#.#.#.#.#.#.#
@@ -198,20 +208,21 @@ mod tests {
 #S#.............#
 #################
 "
-        .as_bytes()[1..]
+        .trim_start()
+        .parse()
     }
 
     #[test]
     fn part1() -> Result<(), Error> {
-        assert_eq!(Solution::new(example_input())?.part1(), 7036);
-        assert_eq!(Solution::new(example_input_second())?.part1(), 11048);
+        assert_eq!(Solution::part1(&example_input()?), 7036);
+        assert_eq!(Solution::part1(&example_input_second()?), 11048);
         Ok(())
     }
 
     #[test]
     fn part2() -> Result<(), Error> {
-        assert_eq!(Solution::new(example_input())?.part2(), 45);
-        assert_eq!(Solution::new(example_input_second())?.part2(), 64);
+        assert_eq!(Solution::part2(&example_input()?), 45);
+        assert_eq!(Solution::part2(&example_input_second()?), 64);
         Ok(())
     }
 }
