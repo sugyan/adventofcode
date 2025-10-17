@@ -5,7 +5,7 @@ no warnings 'experimental::class';
 use Base;
 
 class Solution : isa(Base) {
-    use List::Util qw(pairs);
+    use List::Util qw(min pairs);
 
     my $STEP = 1;
     my $TURN = 1000;
@@ -37,31 +37,34 @@ class Solution : isa(Base) {
 
     method part1() {
         my $input = $self->input();
-        return solve($input)->{part1};
+        my $mins  = dijkstra_with_paths($input);
+        return find_min_score( $mins, $input->{end}->@* );
     }
 
     method part2() {
         my $input = $self->input();
-        return solve($input)->{part2};
+        my $mins  = dijkstra_with_paths($input);
+        my $best  = find_min_score( $mins, $input->{end}->@* );
+        my %seen  = ();
+        my @q     = map { $_->key } grep {
+                 $_->key =~ /^$input->{end}[0],$input->{end}[1],/
+              && $_->value->[0] == $best
+        } pairs $mins->%*;
+        while ( my $item = shift @q ) {
+            $seen{ $item =~ s/,(\d+)$//r } = 1;
+            if ( exists $mins->{$item} ) {
+                push @q, $mins->{$item}[1]->@*;
+            }
+        }
+        return scalar keys %seen;
     }
 
-    sub solve($input) {
-        my $start = $input->{start};
-        my $end   = $input->{end};
-        my @q     = ( [ 0, $start, 1, [ join ",", $start->@* ] ] );
-        my $best  = 'Inf';
-        my %mins  = ();
-        my %path  = ();
+    sub dijkstra_with_paths($input) {
+        my @q    = ( [ 0, $input->{start}, 1 ] );
+        my %mins = ();
         while ( my $item = pop @q ) {
-            my ( $cost, $pos, $dir, $path ) = $item->@*;
-            last if $cost > $best;
+            my ( $cost, $pos, $dir ) = $item->@*;
             my ( $i, $j ) = $pos->@*;
-            if ( $i == $end->[0] && $j == $end->[1] ) {
-                $best = $cost;
-                %path = ( %path, map { $_ => 1 } $path->@* );
-                next;
-            }
-
             my @next_dirs = (
                 ( $dir, $cost + $STEP ),
                 ( ( $dir + 1 ) % 4, $cost + $TURN + $STEP ),
@@ -73,30 +76,27 @@ class Solution : isa(Base) {
                 next unless exists $input->{maze}{"$ni,$nj"};
 
                 my $nkey = "$ni,$nj,$ndir";
-                next if exists $mins{$nkey} && $mins{$nkey} < $ncost;
-                $mins{$nkey} = $ncost;
+                if ( exists $mins{$nkey} ) {
+                    my $min = $mins{$nkey};
+                    if ( $min->[0] < $ncost ) {
+                        next;
+                    }
+                    elsif ( $min->[0] == $ncost ) {
+                        push $min->[1]->@*, "$i,$j,$dir";
+                        next;
+                    }
+                }
+                $mins{$nkey} = [ $ncost, ["$i,$j,$dir"] ];
 
-                push_sorted( \@q,
-                    [ $ncost, [ $ni, $nj ], $ndir, [ $path->@*, "$ni,$nj" ] ] );
+                push @q, [ $ncost, [ $ni, $nj ], $ndir ];
+                @q = sort { $b->[0] <=> $a->[0] } @q;
             }
         }
-        return {
-            part1 => $best,
-            part2 => scalar keys %path,
-        };
+        return \%mins;
     }
 
-    sub push_sorted( $q, $item ) {
-        my ( $lo, $hi ) = ( 0, $q->$#* );
-        while ( $lo <= $hi ) {
-            my $mid = ( $lo + $hi ) >> 1;
-            if ( $q->[$mid][0] > $item->[0] ) {
-                $lo = $mid + 1;
-            }
-            else {
-                $hi = $mid - 1;
-            }
-        }
-        splice $q->@*, $lo, 0, $item;
+    sub find_min_score( $mins, $i, $j ) {
+        return min map { $_->value->[0] }
+          grep { $_->key =~ /^$i,$j,/ } pairs $mins->%*;
     }
 }
