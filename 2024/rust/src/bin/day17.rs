@@ -1,15 +1,10 @@
-use aoc2024::{Solve, run};
+use aoc2024::{Day, run_day};
 use itertools::Itertools;
-use std::{
-    io::{BufRead, BufReader, Read},
-    str::FromStr,
-};
+use std::str::FromStr;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 enum Error {
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
     #[error(transparent)]
     Parse(#[from] std::num::ParseIntError),
     #[error("invalid input")]
@@ -97,43 +92,18 @@ impl FromStr for Program {
     }
 }
 
-struct Solution {
+struct Input {
     registers: Registers,
     program: Program,
 }
 
-impl Solution {
-    fn dfs(&self, curr: u64, i: usize) -> Option<u64> {
-        for j in 0..8 {
-            let value = curr + j * (1 << (i * 3));
-            let mut registers = self.registers;
-            registers.a = value;
-            let outputs = registers.execute(&self.program.0);
-            if outputs.len() == self.program.0.len() && outputs[i] == self.program.0[i] {
-                if i == 0 {
-                    return Some(value);
-                }
-                if let Some(ret) = self.dfs(curr + j * (1 << (i * 3)), i - 1) {
-                    return Some(ret);
-                }
-            }
-        }
-        None
-    }
-}
+impl FromStr for Input {
+    type Err = Error;
 
-impl Solve for Solution {
-    type Answer1 = String;
-    type Answer2 = u64;
-    type Error = Error;
-
-    fn new<R>(r: R) -> Result<Self, Error>
-    where
-        R: Read,
-    {
-        BufReader::new(r)
-            .lines()
-            .collect::<Result<Vec<_>, _>>()?
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        s.lines()
+            .map(String::from)
+            .collect_vec()
             .split(String::is_empty)
             .collect_tuple()
             .ok_or(Error::InvalidInput)
@@ -144,43 +114,75 @@ impl Solve for Solution {
                 })
             })
     }
-    fn part1(&self) -> Self::Answer1 {
-        let mut registers = self.registers;
-        registers.execute(&self.program.0).iter().join(",")
-    }
-    fn part2(&self) -> Self::Answer2 {
-        self.dfs(0, self.program.0.len() - 1).unwrap()
+}
+
+struct Solution;
+
+impl Solution {
+    fn dfs(input: &Input, curr: u64, i: usize) -> Option<u64> {
+        for j in 0..8 {
+            let value = curr + j * (1 << (i * 3));
+            let mut registers = input.registers;
+            registers.a = value;
+            let outputs = registers.execute(&input.program.0);
+            if outputs.len() == input.program.0.len() && outputs[i] == input.program.0[i] {
+                if i == 0 {
+                    return Some(value);
+                }
+                if let Some(ret) = Self::dfs(input, curr + j * (1 << (i * 3)), i - 1) {
+                    return Some(ret);
+                }
+            }
+        }
+        None
     }
 }
 
-fn main() -> Result<(), Error> {
-    run::<Solution>()
+impl Day for Solution {
+    type Input = Input;
+    type Error = Error;
+    type Answer1 = String;
+    type Answer2 = u64;
+
+    fn part1(input: &Self::Input) -> Self::Answer1 {
+        let mut registers = input.registers;
+        registers.execute(&input.program.0).iter().join(",")
+    }
+    fn part2(input: &Self::Input) -> Self::Answer2 {
+        Solution::dfs(input, 0, input.program.0.len() - 1).unwrap()
+    }
+}
+
+fn main() -> Result<(), aoc2024::Error<Error>> {
+    run_day::<Solution>()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn example_input_1() -> &'static [u8] {
-        &r"
+    fn example_input_1() -> Result<Input, Error> {
+        r"
 Register A: 729
 Register B: 0
 Register C: 0
 
 Program: 0,1,5,4,3,0
 "
-        .as_bytes()[1..]
+        .trim_start()
+        .parse()
     }
 
-    fn example_input_2() -> &'static [u8] {
-        &r"
+    fn example_input_2() -> Result<Input, Error> {
+        r"
 Register A: 2024
 Register B: 0
 Register C: 0
 
 Program: 0,3,5,4,3,0
 "
-        .as_bytes()[1..]
+        .trim_start()
+        .parse()
     }
 
     #[test]
@@ -232,16 +234,13 @@ Program: 0,3,5,4,3,0
 
     #[test]
     fn part1() -> Result<(), Error> {
-        assert_eq!(
-            Solution::new(example_input_1())?.part1(),
-            "4,6,3,5,6,3,5,2,1,0"
-        );
+        assert_eq!(Solution::part1(&example_input_1()?), "4,6,3,5,6,3,5,2,1,0");
         Ok(())
     }
 
     #[test]
     fn part2() -> Result<(), Error> {
-        assert_eq!(Solution::new(example_input_2())?.part2(), 117440);
+        assert_eq!(Solution::part2(&example_input_2()?), 117440);
         Ok(())
     }
 }
