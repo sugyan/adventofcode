@@ -1,9 +1,6 @@
-use aoc2024::{Solve, run};
+use aoc2024::{Day, run_day};
 use itertools::Itertools;
-use std::{
-    collections::VecDeque,
-    io::{BufRead, BufReader, Read},
-};
+use std::{collections::VecDeque, str::FromStr};
 use thiserror::Error;
 
 #[cfg(not(test))]
@@ -19,15 +16,30 @@ const FIRST_SOME_BYTES: usize = 12;
 #[derive(Error, Debug)]
 enum Error {
     #[error(transparent)]
-    Io(#[from] std::io::Error),
-    #[error(transparent)]
     Parse(#[from] std::num::ParseIntError),
     #[error("invalid line")]
     InvalidLine,
 }
-struct Solution {
-    positions: Vec<(usize, usize)>,
+
+struct Input(Vec<(usize, usize)>);
+
+impl FromStr for Input {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(
+            s.lines()
+                .map(|line| {
+                    line.split_once(',')
+                        .ok_or(Error::InvalidLine)
+                        .and_then(|(x, y)| Ok((x.parse()?, y.parse()?)))
+                })
+                .collect::<Result<Vec<_>, _>>()?,
+        ))
+    }
 }
+
+struct Solution;
 
 impl Solution {
     fn bfs(space: &[Vec<bool>]) -> Option<u32> {
@@ -51,37 +63,22 @@ impl Solution {
     }
 }
 
-impl Solve for Solution {
+impl Day for Solution {
+    type Input = Input;
+    type Error = Error;
     type Answer1 = u32;
     type Answer2 = String;
-    type Error = Error;
 
-    fn new<R>(r: R) -> Result<Self, Error>
-    where
-        R: Read,
-    {
-        Ok(Self {
-            positions: BufReader::new(r)
-                .lines()
-                .map(|line| {
-                    line?
-                        .split_once(',')
-                        .ok_or(Error::InvalidLine)
-                        .and_then(|(x, y)| Ok((x.parse()?, y.parse()?)))
-                })
-                .collect::<Result<Vec<_>, _>>()?,
-        })
-    }
-    fn part1(&self) -> Self::Answer1 {
+    fn part1(input: &Self::Input) -> Self::Answer1 {
         let mut space = vec![vec![true; SIZE]; SIZE];
-        for (x, y) in self.positions.iter().take(FIRST_SOME_BYTES) {
+        for (x, y) in input.0.iter().take(FIRST_SOME_BYTES) {
             space[*y][*x] = false;
         }
         Solution::bfs(&space).unwrap()
     }
-    fn part2(&self) -> Self::Answer2 {
+    fn part2(input: &Self::Input) -> Self::Answer2 {
         let mut space = vec![vec![true; SIZE]; SIZE];
-        for (x, y) in &self.positions {
+        for (x, y) in &input.0 {
             space[*y][*x] = false;
             if Self::bfs(&space).is_none() {
                 return format!("{x},{y}");
@@ -91,16 +88,16 @@ impl Solve for Solution {
     }
 }
 
-fn main() -> Result<(), Error> {
-    run::<Solution>()
+fn main() -> Result<(), aoc2024::Error<Error>> {
+    run_day::<Solution>()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn example_input() -> &'static [u8] {
-        &r"
+    fn example_input() -> Result<Input, Error> {
+        r"
 5,4
 4,2
 4,5
@@ -127,18 +124,19 @@ mod tests {
 1,6
 2,0
 "
-        .as_bytes()[1..]
+        .trim_start()
+        .parse()
     }
 
     #[test]
     fn part1() -> Result<(), Error> {
-        assert_eq!(Solution::new(example_input())?.part1(), 22);
+        assert_eq!(Solution::part1(&example_input()?), 22);
         Ok(())
     }
 
     #[test]
     fn part2() -> Result<(), Error> {
-        assert_eq!(Solution::new(example_input())?.part2(), "6,1");
+        assert_eq!(Solution::part2(&example_input()?), "6,1");
         Ok(())
     }
 }
