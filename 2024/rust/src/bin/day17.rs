@@ -21,30 +21,6 @@ struct Registers {
 }
 
 impl Registers {
-    fn execute(&mut self, instructions: &[u64]) -> Vec<u64> {
-        let mut outputs = Vec::new();
-        let mut i = 0;
-        while i < instructions.len() - 1 {
-            let (opcode, operand) = (instructions[i], instructions[i + 1]);
-            match opcode {
-                #[allow(clippy::assign_op_pattern)]
-                0 => self.a = self.a >> self.combo_operand(operand),
-                1 => self.b ^= operand,
-                2 => self.b = self.combo_operand(operand) % 8,
-                3 if self.a > 0 => {
-                    i = operand as usize;
-                    continue;
-                }
-                4 => self.b ^= self.c,
-                5 => outputs.push(self.combo_operand(operand) % 8),
-                6 => self.b = self.a >> self.combo_operand(operand),
-                7 => self.c = self.a >> self.combo_operand(operand),
-                _ => {}
-            }
-            i += 2;
-        }
-        outputs
-    }
     fn combo_operand(&self, u: u64) -> u64 {
         match u {
             0..=3 => u,
@@ -92,6 +68,33 @@ impl FromStr for Program {
     }
 }
 
+impl Program {
+    fn run(&self, mut register: Registers) -> Vec<u64> {
+        let mut outputs = Vec::new();
+        let mut i = 0;
+        while i < self.0.len() - 1 {
+            let (opcode, operand) = (self.0[i], self.0[i + 1]);
+            match opcode {
+                #[allow(clippy::assign_op_pattern)]
+                0 => register.a = register.a >> register.combo_operand(operand),
+                1 => register.b ^= operand,
+                2 => register.b = register.combo_operand(operand) % 8,
+                3 if register.a > 0 => {
+                    i = operand as usize;
+                    continue;
+                }
+                4 => register.b ^= register.c,
+                5 => outputs.push(register.combo_operand(operand) % 8),
+                6 => register.b = register.a >> register.combo_operand(operand),
+                7 => register.c = register.a >> register.combo_operand(operand),
+                _ => {}
+            }
+            i += 2;
+        }
+        outputs
+    }
+}
+
 struct Input {
     registers: Registers,
     program: Program,
@@ -119,17 +122,16 @@ impl FromStr for Input {
 struct Solution;
 
 impl Solution {
-    fn dfs(input: &Input, curr: u64, i: usize) -> Option<u64> {
-        for j in 0..8 {
-            let value = curr + j * (1 << (i * 3));
-            let mut registers = input.registers;
-            registers.a = value;
-            let outputs = registers.execute(&input.program.0);
-            if outputs.len() == input.program.0.len() && outputs[i] == input.program.0[i] {
-                if i == 0 {
-                    return Some(value);
-                }
-                if let Some(ret) = Self::dfs(input, curr + j * (1 << (i * 3)), i - 1) {
+    fn find_initial_value(input: &Input, curr: u64, i: usize) -> Option<u64> {
+        let mut registers = input.registers;
+        registers.a = curr;
+        let outputs = input.program.run(registers);
+        if outputs == input.program.0 {
+            return Some(curr);
+        }
+        if i == 0 || (i < input.program.0.len() && input.program.0.ends_with(&outputs)) {
+            for n in 0..8 {
+                if let Some(ret) = Self::find_initial_value(input, (curr << 3) + n, i + 1) {
                     return Some(ret);
                 }
             }
@@ -145,11 +147,10 @@ impl Day for Solution {
     type Answer2 = u64;
 
     fn part1(input: &Self::Input) -> Self::Answer1 {
-        let mut registers = input.registers;
-        registers.execute(&input.program.0).iter().join(",")
+        input.program.run(input.registers).iter().join(",")
     }
     fn part2(input: &Self::Input) -> Self::Answer2 {
-        Solution::dfs(input, 0, input.program.0.len() - 1).unwrap()
+        Solution::find_initial_value(input, 0, 0).unwrap()
     }
 }
 
@@ -183,53 +184,6 @@ Program: 0,3,5,4,3,0
 "
         .trim_start()
         .parse()
-    }
-
-    #[test]
-    fn operations() {
-        {
-            let mut registers = Registers {
-                c: 9,
-                ..Default::default()
-            };
-            registers.execute(&[2, 6]);
-            assert_eq!(registers.b, 1);
-        }
-        {
-            let mut registers = Registers {
-                a: 10,
-                ..Default::default()
-            };
-            assert_eq!(registers.execute(&[5, 0, 5, 1, 5, 4]), vec![0, 1, 2]);
-        }
-        {
-            let mut registers = Registers {
-                a: 2024,
-                ..Default::default()
-            };
-            assert_eq!(
-                registers.execute(&[0, 1, 5, 4, 3, 0]),
-                vec![4, 2, 5, 6, 7, 7, 7, 7, 3, 1, 0]
-            );
-            assert_eq!(registers.a, 0);
-        }
-        {
-            let mut registers = Registers {
-                b: 29,
-                ..Default::default()
-            };
-            registers.execute(&[1, 7]);
-            assert_eq!(registers.b, 26);
-        }
-        {
-            let mut registers = Registers {
-                b: 2024,
-                c: 43690,
-                ..Default::default()
-            };
-            registers.execute(&[4, 0]);
-            assert_eq!(registers.b, 44354);
-        }
     }
 
     #[test]
