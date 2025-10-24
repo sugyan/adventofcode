@@ -1,49 +1,24 @@
-use aoc2024::{Solve, run};
-use std::{
-    collections::HashSet,
-    io::{BufRead, BufReader, Read},
-};
+use aoc2024::{Day, run_day};
+use std::{collections::HashSet, str::FromStr};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 enum Error {
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
     #[error("invalid input")]
     InvalidInput,
 }
 
-struct Solution {
+struct Input {
     patterns: HashSet<String>,
     max_pattern_len: usize,
     designs: Vec<String>,
 }
 
-impl Solution {
-    fn count_paths(&self, target: &str) -> usize {
-        let mut counts = vec![0; target.len() + 1];
-        counts[0] = 1;
-        for i in 0..target.len() {
-            for j in i..=i + self.max_pattern_len {
-                if j <= target.len() && self.patterns.contains(&target[i..j]) {
-                    counts[j] += counts[i];
-                }
-            }
-        }
-        counts[target.len()]
-    }
-}
+impl FromStr for Input {
+    type Err = Error;
 
-impl Solve for Solution {
-    type Answer1 = usize;
-    type Answer2 = usize;
-    type Error = Error;
-
-    fn new<R>(r: R) -> Result<Self, Error>
-    where
-        R: Read,
-    {
-        let lines = BufReader::new(r).lines().collect::<Result<Vec<_>, _>>()?;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let lines = s.lines().map(String::from).collect::<Vec<_>>();
         let patterns = lines
             .first()
             .ok_or(Error::InvalidInput)?
@@ -57,30 +32,57 @@ impl Solve for Solution {
             designs: lines.get(2..).ok_or(Error::InvalidInput)?.to_vec(),
         })
     }
-    fn part1(&self) -> Self::Answer1 {
-        self.designs
+}
+
+struct Solution;
+
+impl Solution {
+    fn count_paths(input: &Input, target: &str) -> usize {
+        let mut counts = vec![0; target.len() + 1];
+        counts[0] = 1;
+        for i in 0..target.len() {
+            for j in i..=i + input.max_pattern_len {
+                if j <= target.len() && input.patterns.contains(&target[i..j]) {
+                    counts[j] += counts[i];
+                }
+            }
+        }
+        counts[target.len()]
+    }
+}
+
+impl Day for Solution {
+    type Input = Input;
+    type Error = Error;
+    type Answer1 = usize;
+    type Answer2 = usize;
+
+    fn part1(input: &Self::Input) -> Self::Answer1 {
+        input
+            .designs
             .iter()
-            .filter(|design| self.count_paths(design) > 0)
+            .filter(|design| Solution::count_paths(input, design) > 0)
             .count()
     }
-    fn part2(&self) -> Self::Answer2 {
-        self.designs
+    fn part2(input: &Self::Input) -> Self::Answer2 {
+        input
+            .designs
             .iter()
-            .map(|design| self.count_paths(design))
+            .map(|design| Solution::count_paths(input, design))
             .sum()
     }
 }
 
-fn main() -> Result<(), Error> {
-    run::<Solution>()
+fn main() -> Result<(), aoc2024::Error<Error>> {
+    run_day::<Solution>()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn example_input() -> &'static [u8] {
-        &r"
+    fn example_input() -> Result<Input, Error> {
+        r"
 r, wr, b, g, bwu, rb, gb, br
 
 brwrr
@@ -92,18 +94,19 @@ bwurrg
 brgr
 bbrgwb
 "
-        .as_bytes()[1..]
+        .trim_start()
+        .parse()
     }
 
     #[test]
     fn part1() -> Result<(), Error> {
-        assert_eq!(Solution::new(example_input())?.part1(), 6);
+        assert_eq!(Solution::part1(&example_input()?), 6);
         Ok(())
     }
 
     #[test]
     fn part2() -> Result<(), Error> {
-        assert_eq!(Solution::new(example_input())?.part2(), 16);
+        assert_eq!(Solution::part2(&example_input()?), 16);
         Ok(())
     }
 }
