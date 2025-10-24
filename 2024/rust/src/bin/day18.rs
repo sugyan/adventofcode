@@ -1,6 +1,9 @@
 use aoc2024::{Day, run_day};
 use itertools::Itertools;
-use std::{collections::VecDeque, str::FromStr};
+use std::{
+    collections::{BinaryHeap, VecDeque},
+    str::FromStr,
+};
 use thiserror::Error;
 
 #[cfg(not(test))]
@@ -21,47 +24,32 @@ enum Error {
     InvalidLine,
 }
 
-struct Input(Vec<(usize, usize)>);
+struct Input {
+    bytes: Vec<(usize, usize)>,
+    space: Vec<Vec<usize>>,
+}
 
 impl FromStr for Input {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(
-            s.lines()
-                .map(|line| {
-                    line.split_once(',')
-                        .ok_or(Error::InvalidLine)
-                        .and_then(|(x, y)| Ok((x.parse()?, y.parse()?)))
-                })
-                .collect::<Result<Vec<_>, _>>()?,
-        ))
+        let bytes = s
+            .lines()
+            .map(|line| {
+                line.split_once(',')
+                    .ok_or(Error::InvalidLine)
+                    .and_then(|(x, y)| Ok((x.parse()?, y.parse()?)))
+            })
+            .collect::<Result<Vec<(usize, usize)>, _>>()?;
+        let mut space = vec![vec![usize::MAX; SIZE]; SIZE];
+        for (i, (x, y)) in bytes.iter().enumerate() {
+            space[*y][*x] = i;
+        }
+        Ok(Self { bytes, space })
     }
 }
 
 struct Solution;
-
-impl Solution {
-    fn bfs(space: &[Vec<bool>]) -> Option<u32> {
-        let mut mins = vec![vec![None; SIZE]; SIZE];
-        let mut vd = [(0, 0)].into_iter().collect::<VecDeque<(usize, usize)>>();
-        mins[0][0] = Some(0);
-        while let Some((i, j)) = vd.pop_front() {
-            for (di, dj) in [0, 1, 0, !0, 0].iter().tuple_windows() {
-                let (ni, nj) = (i.wrapping_add(*di), j.wrapping_add(*dj));
-                if (0..SIZE).contains(&ni)
-                    && (0..SIZE).contains(&nj)
-                    && space[ni][nj]
-                    && mins[ni][nj].is_none()
-                {
-                    mins[ni][nj] = mins[i][j].map(|x| x + 1);
-                    vd.push_back((ni, nj));
-                }
-            }
-        }
-        mins[SIZE - 1][SIZE - 1]
-    }
-}
 
 impl Day for Solution {
     type Input = Input;
@@ -70,21 +58,41 @@ impl Day for Solution {
     type Answer2 = String;
 
     fn part1(input: &Self::Input) -> Self::Answer1 {
-        let mut space = vec![vec![true; SIZE]; SIZE];
-        for (x, y) in input.0.iter().take(FIRST_SOME_BYTES) {
-            space[*y][*x] = false;
-        }
-        Solution::bfs(&space).unwrap()
-    }
-    fn part2(input: &Self::Input) -> Self::Answer2 {
-        let mut space = vec![vec![true; SIZE]; SIZE];
-        for (x, y) in &input.0 {
-            space[*y][*x] = false;
-            if Self::bfs(&space).is_none() {
-                return format!("{x},{y}");
+        let mut dist = vec![vec![None; SIZE]; SIZE];
+        let mut vd = VecDeque::from_iter([(0_usize, 0_usize)]);
+        dist[0][0] = Some(0);
+        while let Some((i, j)) = vd.pop_front() {
+            for (di, dj) in [0, 1, 0, !0, 0].iter().tuple_windows() {
+                let (ni, nj) = (i.wrapping_add(*di), j.wrapping_add(*dj));
+                if ni < SIZE
+                    && nj < SIZE
+                    && input.space[ni][nj] >= FIRST_SOME_BYTES
+                    && dist[ni][nj].is_none()
+                {
+                    dist[ni][nj] = dist[i][j].map(|x| x + 1);
+                    vd.push_back((ni, nj));
+                }
             }
         }
-        unreachable!()
+        dist[SIZE - 1][SIZE - 1].unwrap()
+    }
+    fn part2(input: &Self::Input) -> Self::Answer2 {
+        let mut best = vec![vec![0; SIZE]; SIZE];
+        let mut bh = BinaryHeap::from_iter([(usize::MAX, (0_usize, 0_usize))]);
+        while let Some((t, (i, j))) = bh.pop() {
+            for (di, dj) in [0, 1, 0, !0, 0].iter().tuple_windows() {
+                let (ni, nj) = (i.wrapping_add(*di), j.wrapping_add(*dj));
+                if ni < SIZE && nj < SIZE {
+                    let nt = t.min(input.space[ni][nj]);
+                    if nt > best[ni][nj] {
+                        best[ni][nj] = nt;
+                        bh.push((nt, (ni, nj)));
+                    }
+                }
+            }
+        }
+        let (x, y) = input.bytes[best[SIZE - 1][SIZE - 1]];
+        format!("{x},{y}")
     }
 }
 
