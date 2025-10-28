@@ -1,4 +1,5 @@
 use aoc2024::{Day, run_day};
+use itertools::Itertools;
 use std::{collections::HashSet, str::FromStr};
 use thiserror::Error;
 
@@ -10,26 +11,27 @@ enum Error {
 
 struct Input {
     patterns: HashSet<String>,
-    max_pattern_len: usize,
     designs: Vec<String>,
+    lengths: Vec<usize>,
 }
 
 impl FromStr for Input {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let lines = s.lines().map(String::from).collect::<Vec<_>>();
+        let lines = s.lines().map(String::from).collect_vec();
         let patterns = lines
             .first()
             .ok_or(Error::InvalidInput)?
             .split(", ")
             .map(String::from)
             .collect::<HashSet<_>>();
-        let max_pattern_len = patterns.iter().map(String::len).max().unwrap_or(0);
+        let designs = lines.get(2..).ok_or(Error::InvalidInput)?.to_vec();
+        let lengths = patterns.iter().map(String::len).unique().collect_vec();
         Ok(Self {
             patterns,
-            max_pattern_len,
-            designs: lines.get(2..).ok_or(Error::InvalidInput)?.to_vec(),
+            designs,
+            lengths,
         })
     }
 }
@@ -41,7 +43,8 @@ impl Solution {
         let mut counts = vec![0; target.len() + 1];
         counts[0] = 1;
         for i in 0..target.len() {
-            for j in i..=i + input.max_pattern_len {
+            for len in &input.lengths {
+                let j = i + len;
                 if j <= target.len() && input.patterns.contains(&target[i..j]) {
                     counts[j] += counts[i];
                 }
