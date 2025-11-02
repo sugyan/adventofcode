@@ -1,6 +1,7 @@
 use aoc2024::{Day, run_day};
+use itertools::Itertools;
 use std::{
-    collections::{HashMap, HashSet, VecDeque},
+    collections::{HashMap, VecDeque},
     str::FromStr,
 };
 use thiserror::Error;
@@ -12,8 +13,8 @@ enum Error {
 }
 
 struct Input {
-    racetrack: HashSet<(isize, isize)>,
-    start: (isize, isize),
+    racetrack: Vec<Vec<bool>>,
+    start: (usize, usize),
 }
 
 impl FromStr for Input {
@@ -21,15 +22,15 @@ impl FromStr for Input {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let lines = s.lines().collect::<Vec<_>>();
-        let mut racetrack = HashSet::new();
+        let mut racetrack = vec![vec![false; lines[0].len()]; lines.len()];
         let mut start = None;
-        for (i, row) in (0..).zip(&lines) {
-            for (j, u) in (0..).zip(row.bytes()) {
-                if u == b'S' {
-                    start = Some((i, j));
+        for (i, row) in lines.iter().enumerate() {
+            for (j, c) in row.chars().enumerate() {
+                if c != '#' {
+                    racetrack[i][j] = true;
                 }
-                if u != b'#' {
-                    racetrack.insert((i, j));
+                if c == 'S' {
+                    start = Some((i, j));
                 }
             }
         }
@@ -44,36 +45,47 @@ struct Solution;
 
 impl Solution {
     fn cheat_counts(input: &Input, seconds: isize, threshold: isize) -> usize {
-        let mins = Self::bfs(input);
-        let mut sum = 0;
-        for (&(i, j), min_src) in &mins {
-            sum += (-seconds..=seconds)
-                .flat_map(|di| {
-                    let r = seconds - di.abs();
-                    (-r..=r).map(move |dj| (di, dj))
-                })
-                .filter(|(di, dj)| {
-                    mins.get(&(i + di, j + dj))
-                        .map(|min_dst| min_src + di.abs() + dj.abs() + threshold <= *min_dst)
-                        .unwrap_or_default()
-                })
-                .count();
-        }
-        sum
+        let dist = Self::bfs(input);
+        let dist_map = (0..)
+            .zip(dist.iter())
+            .flat_map(|(i, row)| {
+                (0..)
+                    .zip(row.iter())
+                    .filter_map(move |(j, &o)| o.map(|d| ((i, j), d)))
+            })
+            .collect::<HashMap<(isize, isize), _>>();
+        let offsets = (-seconds..=seconds)
+            .flat_map(|di| {
+                let r = seconds - di.abs();
+                (-r..=r).map(move |dj| ((di, dj), di.abs() + dj.abs()))
+            })
+            .collect_vec();
+        dist_map
+            .iter()
+            .map(|((i, j), src)| {
+                offsets
+                    .iter()
+                    .filter(|((di, dj), d)| {
+                        dist_map
+                            .get(&(i + di, j + dj))
+                            .is_some_and(|&dst| dst - d - src >= threshold)
+                    })
+                    .count()
+            })
+            .sum()
     }
-    fn bfs(input: &Input) -> HashMap<(isize, isize), isize> {
-        let mut mins = [(input.start, 0)].into_iter().collect::<HashMap<_, _>>();
+    fn bfs(input: &Input) -> Vec<Vec<Option<isize>>> {
+        let mut dist = vec![vec![None; input.racetrack[0].len()]; input.racetrack.len()];
         let mut vd = [(input.start, 0)].into_iter().collect::<VecDeque<_>>();
-        while let Some((p, d)) = vd.pop_front() {
-            mins.insert(p, d);
-            for (di, dj) in [(!0, 0), (1, 0), (0, !0), (0, 1)] {
-                let (i, j) = (p.0.wrapping_add(di), p.1.wrapping_add(dj));
-                if input.racetrack.contains(&(i, j)) && !mins.contains_key(&(i, j)) {
-                    vd.push_back(((i, j), d + 1));
+        while let Some(((i, j), d)) = vd.pop_front() {
+            dist[i][j] = Some(d);
+            for (ni, nj) in [(i - 1, j), (i + 1, j), (i, j - 1), (i, j + 1)] {
+                if input.racetrack[ni][nj] && dist[ni][nj].is_none() {
+                    vd.push_back(((ni, nj), d + 1));
                 }
             }
         }
-        mins
+        dist
     }
 }
 
