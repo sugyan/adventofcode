@@ -16,6 +16,7 @@ function parseInput(input: string): Robot[] {
   return input
     .trim()
     .split("\n")
+    .filter((line) => line.trim().length > 0)
     .map((line) => {
       const match = line.match(/p=(-?\d+),(-?\d+) v=(-?\d+),(-?\d+)/);
       if (!match) throw new Error(`Invalid line: ${line}`);
@@ -29,8 +30,8 @@ function parseInput(input: string): Robot[] {
 }
 
 function calculatePosition(robot: Robot, t: number): [number, number] {
-  const x = ((robot.px + robot.vx * t) % WIDTH + WIDTH) % WIDTH;
-  const y = ((robot.py + robot.vy * t) % HEIGHT + HEIGHT) % HEIGHT;
+  const x = (((robot.px + robot.vx * t) % WIDTH) + WIDTH) % WIDTH;
+  const y = (((robot.py + robot.vy * t) % HEIGHT) + HEIGHT) % HEIGHT;
   return [x, y];
 }
 
@@ -173,7 +174,28 @@ function Day14() {
 
       <div style={{ marginBottom: "10px" }}>
         <label>
-          Time: {time} / {MAX_TIME}
+          Time:{" "}
+          <input
+            type="number"
+            min={0}
+            max={MAX_TIME}
+            value={time}
+            onChange={(e) => {
+              const val = parseInt(e.target.value);
+              if (!isNaN(val) && val >= 0 && val <= MAX_TIME) {
+                setTime(val);
+              }
+            }}
+            style={{
+              width: "80px",
+              fontFamily: "monospace",
+              backgroundColor: "#1e1e2e",
+              color: "#cccccc",
+              border: "1px solid #555",
+              padding: "4px",
+            }}
+          />{" "}
+          / {MAX_TIME}
           <input
             type="range"
             min={0}
@@ -217,7 +239,7 @@ function Day14() {
           <input
             type="range"
             min={1}
-            max={60}
+            max={30}
             value={speed}
             onChange={(e) => setSpeed(parseInt(e.target.value))}
             style={{ marginLeft: "10px", width: "150px" }}
@@ -225,12 +247,11 @@ function Day14() {
         </label>
       </div>
 
-      <div style={{ fontSize: "0.9em", color: "#888" }}>
-        <p>Grid: {WIDTH} × {HEIGHT}</p>
-        <p>Robots: {frames[0]?.size || 0} positions (time={time})</p>
+      <div style={{ fontSize: "0.9em", color: "#ddd" }}>
         <p>
-          Note: Positions are precomputed for all {MAX_TIME + 1} frames for
-          smooth playback
+          Unique positions: {frames[time]?.size || 0} / Overlapping:{" "}
+          {Array.from(frames[time]?.values() || []).filter((count) => count > 1)
+            .length || 0}
         </p>
       </div>
     </div>
