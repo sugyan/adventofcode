@@ -41,6 +41,7 @@ function Day14() {
   const [time, setTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(10); // frames per second
+  const [pngSize, setPngSize] = useState<number | null>(null);
 
   // Load input file on mount
   useEffect(() => {
@@ -85,21 +86,6 @@ function Day14() {
     ctx.fillStyle = "#0f0f23";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw grid
-    ctx.strokeStyle = "#1e1e2e";
-    for (let x = 0; x <= WIDTH; x++) {
-      ctx.beginPath();
-      ctx.moveTo(x * CELL_SIZE, 0);
-      ctx.lineTo(x * CELL_SIZE, HEIGHT * CELL_SIZE);
-      ctx.stroke();
-    }
-    for (let y = 0; y <= HEIGHT; y++) {
-      ctx.beginPath();
-      ctx.moveTo(0, y * CELL_SIZE);
-      ctx.lineTo(WIDTH * CELL_SIZE, y * CELL_SIZE);
-      ctx.stroke();
-    }
-
     // Draw robots
     const positions = frames[time];
     positions.forEach((count, key) => {
@@ -108,26 +94,15 @@ function Day14() {
       // Color intensity based on count
       const intensity = Math.min(255, 100 + count * 50);
       ctx.fillStyle = `rgb(${intensity}, ${intensity / 2}, 0)`;
-      ctx.fillRect(
-        x * CELL_SIZE + 1,
-        y * CELL_SIZE + 1,
-        CELL_SIZE - 2,
-        CELL_SIZE - 2
-      );
-
-      // Draw count if > 1
-      if (count > 1) {
-        ctx.fillStyle = "white";
-        ctx.font = `${CELL_SIZE - 2}px monospace`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(
-          count.toString(),
-          x * CELL_SIZE + CELL_SIZE / 2,
-          y * CELL_SIZE + CELL_SIZE / 2
-        );
-      }
+      ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
     });
+
+    // Measure PNG size
+    canvas.toBlob((blob) => {
+      if (blob) {
+        setPngSize(blob.size);
+      }
+    }, "image/png");
   }, [time, frames]);
 
   // Animation loop
@@ -252,6 +227,11 @@ function Day14() {
           Unique positions: {frames[time]?.size || 0} / Overlapping:{" "}
           {Array.from(frames[time]?.values() || []).filter((count) => count > 1)
             .length || 0}
+          {pngSize !== null && (
+            <span style={{ marginLeft: "20px" }}>
+              PNG size: {(pngSize / 1024).toFixed(2)} KB
+            </span>
+          )}
         </p>
       </div>
     </div>
