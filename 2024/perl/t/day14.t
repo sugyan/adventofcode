@@ -1,7 +1,6 @@
 #!/usr/bin/env perl
-use strict;
-use warnings;
-use Test::More tests => 1;
+use v5.38;
+use Test2::V0;
 
 BEGIN { $ENV{EXAMPLE_MODE} = 1; }
 use FindBin qw($Bin);
@@ -10,6 +9,8 @@ use Day14;
 
 my $solution = Solution->new( fh => *DATA );
 is $solution->part1(), 12, "Part1";
+
+done_testing();
 
 __DATA__
 p=0,4 v=3,-3

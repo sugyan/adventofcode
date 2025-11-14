@@ -1,7 +1,6 @@
 #!/usr/bin/env perl
-use strict;
-use warnings;
-use Test::More tests => 1;
+use v5.38;
+use Test2::V0;
 
 use FindBin qw($Bin);
 use lib "$Bin/../lib";
@@ -9,6 +8,8 @@ use Day13;
 
 my $solution = Solution->new( fh => *DATA );
 is $solution->part1(), 480, "Part1";
+
+done_testing();
 
 __DATA__
 Button A: X+94, Y+34

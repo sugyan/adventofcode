@@ -1,7 +1,6 @@
 #!/usr/bin/env perl
-use strict;
-use warnings;
-use Test::More tests => 4;
+use v5.38;
+use Test2::V0;
 
 use FindBin qw($Bin);
 use lib "$Bin/../lib";
@@ -66,3 +65,5 @@ END
     my $solution = Solution->new( fh => $fh );
     is $solution->part2(), 64, "Part2 example2";
 }
+
+done_testing();

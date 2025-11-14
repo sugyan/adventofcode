@@ -1,7 +1,6 @@
 #!/usr/bin/env perl
-use strict;
-use warnings;
-use Test::More tests => 13;
+use v5.38;
+use Test2::V0;
 
 use FindBin qw($Bin);
 use lib "$Bin/../lib";
@@ -23,6 +22,8 @@ is $solution->cheat_counts( 2, 8 ),  14;
 is $solution->cheat_counts( 2, 6 ),  16;
 is $solution->cheat_counts( 2, 4 ),  30;
 is $solution->cheat_counts( 2, 2 ),  44;
+
+done_testing();
 
 __DATA__
 ###############
