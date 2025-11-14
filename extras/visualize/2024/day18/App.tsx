@@ -31,6 +31,73 @@ function parseInput(input: string): Position[] {
     });
 }
 
+function findPath(
+  walls: Set<string>,
+  gridSize: number
+): Position[] | null {
+  const start: Position = { x: 0, y: 0 };
+  const end: Position = { x: gridSize - 1, y: gridSize - 1 };
+
+  if (walls.has(`${start.x},${start.y}`) || walls.has(`${end.x},${end.y}`)) {
+    return null;
+  }
+
+  const queue: Position[] = [start];
+  const visited = new Set<string>([`${start.x},${start.y}`]);
+  const parent = new Map<string, Position | null>();
+  parent.set(`${start.x},${start.y}`, null);
+
+  const directions = [
+    { x: 0, y: 1 },
+    { x: 1, y: 0 },
+    { x: 0, y: -1 },
+    { x: -1, y: 0 },
+  ];
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+
+    if (current.x === end.x && current.y === end.y) {
+      // Reconstruct path
+      const path: Position[] = [];
+      let pos: Position | null = current;
+      while (pos !== null) {
+        path.unshift(pos);
+        const key = `${pos.x},${pos.y}`;
+        pos = parent.get(key) || null;
+      }
+      return path;
+    }
+
+    for (const dir of directions) {
+      const next: Position = {
+        x: current.x + dir.x,
+        y: current.y + dir.y,
+      };
+
+      if (
+        next.x < 0 ||
+        next.x >= gridSize ||
+        next.y < 0 ||
+        next.y >= gridSize
+      ) {
+        continue;
+      }
+
+      const key = `${next.x},${next.y}`;
+      if (visited.has(key) || walls.has(key)) {
+        continue;
+      }
+
+      visited.add(key);
+      parent.set(key, current);
+      queue.push(next);
+    }
+  }
+
+  return null;
+}
+
 function Day18() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [input, setInput] = useState("");
@@ -57,6 +124,22 @@ function Day18() {
   }, [input]);
 
   const maxTime = positions.length;
+
+  // Calculate current path using BFS
+  const currentPath = useMemo(() => {
+    if (positions.length === 0) return null;
+
+    // Build walls set from positions up to current time
+    const walls = new Set<string>();
+    for (let t = 0; t < time && t < positions.length; t++) {
+      const { x, y } = positions[t];
+      if (x >= 0 && x < GRID_SIZE && y >= 0 && y < GRID_SIZE) {
+        walls.add(`${x},${y}`);
+      }
+    }
+
+    return findPath(walls, GRID_SIZE);
+  }, [time, positions]);
 
   // Draw current frame
   useEffect(() => {
@@ -90,7 +173,15 @@ function Day18() {
       ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
       ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
     }
-  }, [time, positions]);
+
+    // Draw path in bright cyan if it exists
+    if (currentPath) {
+      ctx.fillStyle = "#00ccff";
+      for (const { x, y } of currentPath) {
+        ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+      }
+    }
+  }, [time, positions, currentPath]);
 
   // Animation loop
   useEffect(() => {
@@ -218,6 +309,21 @@ function Day18() {
       <div style={{ fontSize: "0.9em", color: "#ddd" }}>
         <p>
           Walls placed: {time} / {maxTime}
+          {time > 0 && time <= positions.length && (
+            <span style={{ marginLeft: "10px", color: "#ffaa00" }}>
+              Last wall at: ({positions[time - 1].x},{positions[time - 1].y})
+            </span>
+          )}
+        </p>
+        <p>
+          Path:{" "}
+          {currentPath ? (
+            <span style={{ color: "#00ffff" }}>
+              Found (length: {currentPath.length - 1} steps)
+            </span>
+          ) : (
+            <span style={{ color: "#ff5555" }}>No path available</span>
+          )}
         </p>
       </div>
     </div>
