@@ -23,6 +23,9 @@ concurrency:
 jobs:
   # Single deploy job since we're just deploying
   deploy-visualization:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -39,7 +42,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Set VITE_BASENAME environment variable
-        run: echo "VITE_BASENAME=/${GITHUB_REPOSITORY##*/}/extras/visualize" >> $GITHUB_ENV
+        run: echo "VITE_BASENAME=/${GITHUB_REPOSITORY##*/}" >> $GITHUB_ENV
       - name: Build
         run: npm run build
       - name: Setup Pages
