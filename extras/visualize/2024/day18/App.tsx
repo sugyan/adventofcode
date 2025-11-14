@@ -31,10 +31,7 @@ function parseInput(input: string): Position[] {
     });
 }
 
-function findPath(
-  walls: Set<string>,
-  gridSize: number
-): Position[] | null {
+function findPath(walls: Set<string>, gridSize: number): Position[] | null {
   const start: Position = { x: 0, y: 0 };
   const end: Position = { x: gridSize - 1, y: gridSize - 1 };
 
@@ -63,7 +60,7 @@ function findPath(
       let pos: Position | null = current;
       while (pos !== null) {
         path.unshift(pos);
-        const key = `${pos.x},${pos.y}`;
+        const key: string = `${pos.x},${pos.y}`;
         pos = parent.get(key) || null;
       }
       return path;
@@ -107,7 +104,7 @@ function Day18() {
 
   // Load input file on mount
   useEffect(() => {
-    fetch("/data/2024/input18.txt")
+    fetch(`${import.meta.env.VITE_BASENAME || ""}/data/2024/input18.txt`)
       .then((res) => res.text())
       .then((text) => setInput(text))
       .catch((err) => console.error("Failed to load input file:", err));

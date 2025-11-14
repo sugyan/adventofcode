@@ -45,7 +45,7 @@ function Day14() {
 
   // Load input file on mount
   useEffect(() => {
-    fetch("/data/2024/input14.txt")
+    fetch(`${import.meta.env.VITE_BASENAME || ""}/data/2024/input14.txt`)
       .then((res) => res.text())
       .then((text) => setInput(text))
       .catch((err) => console.error("Failed to load input file:", err));
