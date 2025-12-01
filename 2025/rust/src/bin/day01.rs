@@ -20,7 +20,6 @@ impl Rotation {
             Rotation::L(n) => current - n,
             Rotation::R(n) => current + n,
         }
-        .rem_euclid(100)
     }
 }
 
@@ -66,12 +65,28 @@ impl Day for Solution {
                 *state = rot.next_point(*state);
                 Some(*state)
             })
-            .filter(|p| *p == 0)
+            .filter(|p| *p % 100 == 0)
             .count()
     }
 
-    fn part2(_: &Self::Input) -> Self::Answer2 {
-        todo!()
+    fn part2(input: &Self::Input) -> Self::Answer2 {
+        input
+            .0
+            .iter()
+            .fold((50, 0), |(current, count), rot| {
+                let next = rot.next_point(current);
+                let c = current.div_euclid(100).abs_diff(next.div_euclid(100));
+                (
+                    next,
+                    count
+                        + match rot {
+                            Rotation::L(_) if current % 100 == 0 => c - 1,
+                            Rotation::L(_) if next % 100 == 0 => c + 1,
+                            _ => c,
+                        },
+                )
+            })
+            .1
     }
 }
 
@@ -103,6 +118,12 @@ L82
     #[test]
     fn part1() -> Result<(), Error> {
         assert_eq!(Solution::part1(&example_input()?), 3);
+        Ok(())
+    }
+
+    #[test]
+    fn part2() -> Result<(), Error> {
+        assert_eq!(Solution::part2(&example_input()?), 6);
         Ok(())
     }
 }
