@@ -41,12 +41,12 @@ where
     }
 }
 
-pub fn run_with<D, R>(mut r: R) -> Result<(), Error<D::Error>>
+pub fn run_with<D, R>(r: R) -> Result<(), Error<D::Error>>
 where
     D: DayParsed,
     R: BufRead,
 {
-    let data = D::parse(&mut r)?;
+    let data = D::parse(r)?;
     println!("Part 1: {}", D::part1(&data));
     println!("Part 2: {}", D::part2(&data));
     Ok(())
