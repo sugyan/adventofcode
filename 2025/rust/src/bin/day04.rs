@@ -22,14 +22,9 @@ impl FromStr for Input {
 
 struct Solution;
 
-impl Day for Solution {
-    type Input = Input;
-    type Error = Error;
-    type Answer1 = u32;
-    type Answer2 = u32;
-
-    fn part1(input: &Self::Input) -> Self::Answer1 {
-        let (rows, cols) = (input.0.len(), input.0[0].len());
+impl Solution {
+    fn removable_rolls(grid: &[Vec<bool>]) -> Vec<(usize, usize)> {
+        let (rows, cols) = (grid.len(), grid[0].len());
         let d = [
             (1, 1),
             (1, 0),
@@ -40,33 +35,57 @@ impl Day for Solution {
             (!0, 1),
             (0, 1),
         ];
-        let mut count = 0;
+        let mut removable = vec![];
         for i in 0..rows {
             for j in 0..cols {
-                if !input.0[i][j] {
+                if !grid[i][j] {
                     continue;
                 }
-                let mut c = 0;
-                for (di, dj) in &d {
-                    let ni = i.wrapping_add(*di);
-                    let nj = j.wrapping_add(*dj);
-                    if ni >= rows || nj >= cols {
-                        continue;
-                    }
-                    if input.0[ni][nj] {
-                        c += 1;
-                    }
-                }
-                if c < 4 {
-                    count += 1;
+                if d.iter()
+                    .filter_map(|(di, dj)| {
+                        let ni = i.wrapping_add(*di);
+                        let nj = j.wrapping_add(*dj);
+                        if ni < rows && nj < cols {
+                            Some((ni, nj))
+                        } else {
+                            None
+                        }
+                    })
+                    .filter(|&(ni, nj)| grid[ni][nj])
+                    .count()
+                    < 4
+                {
+                    removable.push((i, j));
                 }
             }
         }
-        count
+        removable
+    }
+}
+
+impl Day for Solution {
+    type Input = Input;
+    type Error = Error;
+    type Answer1 = usize;
+    type Answer2 = usize;
+
+    fn part1(input: &Self::Input) -> Self::Answer1 {
+        Self::removable_rolls(&input.0).len()
     }
 
-    fn part2(_: &Self::Input) -> Self::Answer2 {
-        todo!()
+    fn part2(input: &Self::Input) -> Self::Answer2 {
+        let mut grid = input.0.clone();
+        let mut total = 0;
+        loop {
+            let removable = Self::removable_rolls(&grid);
+            if removable.is_empty() {
+                return total;
+            }
+            total += removable.len();
+            for (i, j) in removable {
+                grid[i][j] = false;
+            }
+        }
     }
 }
 
@@ -98,6 +117,12 @@ mod tests {
     #[test]
     fn part1() -> Result<(), Error> {
         assert_eq!(Solution::part1(&example_input()?), 13);
+        Ok(())
+    }
+
+    #[test]
+    fn part2() -> Result<(), Error> {
+        assert_eq!(Solution::part2(&example_input()?), 43);
         Ok(())
     }
 }
