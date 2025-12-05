@@ -51,7 +51,7 @@ impl Day for Solution {
     type Input = Input;
     type Error = Error;
     type Answer1 = usize;
-    type Answer2 = u32;
+    type Answer2 = u64;
 
     fn part1(input: &Self::Input) -> Self::Answer1 {
         input
@@ -61,8 +61,25 @@ impl Day for Solution {
             .count()
     }
 
-    fn part2(_: &Self::Input) -> Self::Answer2 {
-        todo!()
+    fn part2(input: &Self::Input) -> Self::Answer2 {
+        let mut fresh_ranges = Vec::<(u64, u64)>::new();
+        for range in input
+            .ranges
+            .iter()
+            .sorted_by(|a, b| a.start().cmp(b.start()))
+        {
+            if let Some(last) = fresh_ranges.last_mut()
+                && range.start() <= &last.1
+            {
+                last.1 = last.1.max(*range.end());
+            } else {
+                fresh_ranges.push((*range.start(), *range.end()));
+            }
+        }
+        fresh_ranges
+            .iter()
+            .map(|(start, end)| end - start + 1)
+            .sum()
     }
 }
 
@@ -95,6 +112,12 @@ mod tests {
     #[test]
     fn part1() -> Result<(), Error> {
         assert_eq!(Solution::part1(&example_input()?), 3);
+        Ok(())
+    }
+
+    #[test]
+    fn part2() -> Result<(), Error> {
+        assert_eq!(Solution::part2(&example_input()?), 14);
         Ok(())
     }
 }
