@@ -33,31 +33,40 @@ impl FromStr for Input {
 
 struct Solution;
 
+impl Solution {
+    fn count_splittings_and_beams(grid: &[Vec<bool>], start: usize) -> (u32, Vec<u64>) {
+        let mut beams = vec![0; grid[0].len()];
+        beams[start] = 1;
+        let mut splittings = 0;
+        for row in grid {
+            for (i, col) in row.iter().enumerate() {
+                if *col && beams[i] > 0 {
+                    splittings += 1;
+                    beams[i - 1] += beams[i];
+                    beams[i + 1] += beams[i];
+                    beams[i] = 0;
+                }
+            }
+        }
+        (splittings, beams)
+    }
+}
+
 impl Day for Solution {
     type Input = Input;
     type Error = Error;
     type Answer1 = u32;
-    type Answer2 = u32;
+    type Answer2 = u64;
 
     fn part1(input: &Self::Input) -> Self::Answer1 {
-        let mut beams = vec![false; input.grid[0].len()];
-        beams[input.start] = true;
-        let mut count = 0;
-        for row in &input.grid {
-            for (i, col) in row.iter().enumerate() {
-                if *col && beams[i] {
-                    count += 1;
-                    beams[i - 1] = true;
-                    beams[i] = false;
-                    beams[i + 1] = true;
-                }
-            }
-        }
-        count
+        Self::count_splittings_and_beams(&input.grid, input.start).0
     }
 
-    fn part2(_: &Self::Input) -> Self::Answer2 {
-        todo!()
+    fn part2(input: &Self::Input) -> Self::Answer2 {
+        Self::count_splittings_and_beams(&input.grid, input.start)
+            .1
+            .iter()
+            .sum()
     }
 }
 
@@ -95,6 +104,12 @@ mod tests {
     #[test]
     fn part1() -> Result<(), Error> {
         assert_eq!(Solution::part1(&example_input()?), 21);
+        Ok(())
+    }
+
+    #[test]
+    fn part2() -> Result<(), Error> {
+        assert_eq!(Solution::part2(&example_input()?), 40);
         Ok(())
     }
 }
