@@ -1,12 +1,10 @@
 use aoc2025::{Day, run};
-use itertools::{Itertools, izip};
+use itertools::Itertools;
 use std::str::FromStr;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 enum Error {
-    #[error(transparent)]
-    Parse(#[from] std::num::ParseIntError),
     #[error("invalid operator")]
     InvalidOperator,
 }
@@ -17,8 +15,17 @@ enum Operator {
     Multiply,
 }
 
+impl Operator {
+    fn perform(&self, numbers: impl Iterator<Item = u64>) -> u64 {
+        match self {
+            Operator::Add => numbers.sum(),
+            Operator::Multiply => numbers.product(),
+        }
+    }
+}
+
 struct Input {
-    numbers: Vec<Vec<u64>>,
+    numbers: Vec<Vec<char>>,
     operators: Vec<Operator>,
 }
 
@@ -30,8 +37,8 @@ impl FromStr for Input {
         Ok(Self {
             numbers: lines[0..lines.len() - 1]
                 .iter()
-                .map(|line| line.split_ascii_whitespace().map(str::parse).try_collect())
-                .try_collect()?,
+                .map(|line| line.chars().collect_vec())
+                .collect(),
             operators: lines[lines.len() - 1]
                 .split_ascii_whitespace()
                 .map(|s| match s {
@@ -46,31 +53,56 @@ impl FromStr for Input {
 
 struct Solution;
 
+impl Solution {
+    fn transpose<T>(matrix: &[Vec<T>]) -> Vec<Vec<T>>
+    where
+        T: Copy,
+    {
+        let (rows, cols) = (matrix.len(), matrix[0].len());
+        (0..cols)
+            .map(|c| (0..rows).map(|r| matrix[r][c]).collect())
+            .collect()
+    }
+}
+
 impl Day for Solution {
     type Input = Input;
     type Error = Error;
     type Answer1 = u64;
-    type Answer2 = u32;
+    type Answer2 = u64;
 
     fn part1(input: &Self::Input) -> Self::Answer1 {
-        input
+        let m = input
             .numbers
             .iter()
-            .skip(1)
-            .fold(input.numbers[0].clone(), |acc, v| {
-                izip!(acc, v, &input.operators)
-                    .map(|(a, b, op)| match op {
-                        Operator::Add => a + b,
-                        Operator::Multiply => a * b,
-                    })
-                    .collect()
+            .map(|row| {
+                row.iter()
+                    .collect::<String>()
+                    .split_ascii_whitespace()
+                    .map(|s| s.parse::<u64>().unwrap())
+                    .collect_vec()
             })
-            .iter()
+            .collect_vec();
+        Self::transpose(&m)
+            .into_iter()
+            .enumerate()
+            .map(|(i, row)| input.operators[i].perform(row.into_iter()))
             .sum()
     }
 
-    fn part2(_: &Self::Input) -> Self::Answer2 {
-        todo!()
+    fn part2(input: &Self::Input) -> Self::Answer2 {
+        Self::transpose(&input.numbers)
+            .iter()
+            .map(|row| row.iter().collect::<String>().trim().to_string())
+            .collect_vec()
+            .split(String::is_empty)
+            .collect_vec()
+            .iter()
+            .enumerate()
+            .map(|(i, group)| {
+                input.operators[i].perform(group.iter().map(|s| s.parse::<u64>().unwrap()))
+            })
+            .sum()
     }
 }
 
@@ -96,6 +128,12 @@ mod tests {
     #[test]
     fn part1() -> Result<(), Error> {
         assert_eq!(Solution::part1(&example_input()?), 4_277_556);
+        Ok(())
+    }
+
+    #[test]
+    fn part2() -> Result<(), Error> {
+        assert_eq!(Solution::part2(&example_input()?), 3_263_827);
         Ok(())
     }
 }
