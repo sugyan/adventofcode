@@ -18,8 +18,8 @@ enum Operator {
 impl Operator {
     fn perform(&self, numbers: impl Iterator<Item = u64>) -> u64 {
         match self {
-            Operator::Add => numbers.sum(),
-            Operator::Multiply => numbers.product(),
+            Self::Add => numbers.sum(),
+            Self::Multiply => numbers.product(),
         }
     }
 }
@@ -85,8 +85,8 @@ impl Day for Solution {
             .collect_vec();
         Self::transpose(&m)
             .into_iter()
-            .enumerate()
-            .map(|(i, row)| input.operators[i].perform(row.into_iter()))
+            .zip(&input.operators)
+            .map(|(row, operator)| operator.perform(row.into_iter()))
             .sum()
     }
 
@@ -98,9 +98,9 @@ impl Day for Solution {
             .split(String::is_empty)
             .collect_vec()
             .iter()
-            .enumerate()
-            .map(|(i, group)| {
-                input.operators[i].perform(group.iter().map(|s| s.parse::<u64>().unwrap()))
+            .zip(&input.operators)
+            .map(|(group, operator)| {
+                operator.perform(group.iter().map(|s| s.parse::<u64>().unwrap()))
             })
             .sum()
     }
