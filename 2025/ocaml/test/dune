@@ -1,2 +1,2 @@
-(test
- (name test_aoc2025))
+(cram
+ (deps %{bin:day01}))

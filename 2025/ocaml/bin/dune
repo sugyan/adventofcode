@@ -1,4 +1,4 @@
-(executable
- (public_name aoc2025)
- (name main)
- (libraries aoc2025))
+(executables
+ (names day01)
+ (public_names day01)
+ (libraries aoc2025 base stdio))
