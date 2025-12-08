@@ -37,14 +37,9 @@ impl FromStr for Input {
 
 struct Solution;
 
-impl Day for Solution {
-    type Input = Input;
-    type Error = Error;
-    type Answer1 = u32;
-    type Answer2 = u32;
-
-    fn part1(input: &Self::Input) -> Self::Answer1 {
-        let pairs = input
+impl Solution {
+    fn closest_pairs(input: &Input) -> Vec<(usize, usize)> {
+        input
             .0
             .iter()
             .enumerate()
@@ -59,39 +54,62 @@ impl Day for Solution {
                 )
             })
             .sorted()
-            .collect_vec();
+            .map(|(_, pair)| pair)
+            .collect()
+    }
+    fn circuit_size(graph: &[Vec<usize>], start: usize, seen: &mut [bool]) -> usize {
+        let mut size = 0;
+        let mut stack = vec![start];
+        while let Some(j) = stack.pop() {
+            if seen[j] {
+                continue;
+            }
+            seen[j] = true;
+            size += 1;
+            for &k in &graph[j] {
+                if !seen[k] {
+                    stack.push(k);
+                }
+            }
+        }
+        size
+    }
+}
+
+impl Day for Solution {
+    type Input = Input;
+    type Error = Error;
+    type Answer1 = usize;
+    type Answer2 = u64;
+
+    fn part1(input: &Self::Input) -> Self::Answer1 {
+        let pairs = Self::closest_pairs(input);
         let mut graph = vec![Vec::new(); input.0.len()];
-        for &(_, (i, j)) in pairs.iter().take(CONNECTIONS) {
+        for &(i, j) in pairs.iter().take(CONNECTIONS) {
             graph[i].push(j);
             graph[j].push(i);
         }
         let mut seen = vec![false; input.0.len()];
         let mut sizes = Vec::new();
         for i in 0..input.0.len() {
-            if seen[i] {
-                continue;
+            if !seen[i] {
+                sizes.push(Self::circuit_size(&graph, i, &mut seen));
             }
-            let mut size = 0;
-            let mut stack = vec![i];
-            while let Some(j) = stack.pop() {
-                if seen[j] {
-                    continue;
-                }
-                seen[j] = true;
-                size += 1;
-                for &k in &graph[j] {
-                    if !seen[k] {
-                        stack.push(k);
-                    }
-                }
-            }
-            sizes.push(size);
         }
         sizes.iter().sorted().rev().take(3).product()
     }
 
-    fn part2(_: &Self::Input) -> Self::Answer2 {
-        todo!()
+    fn part2(input: &Self::Input) -> Self::Answer2 {
+        let pairs = Self::closest_pairs(input);
+        let mut graph = vec![Vec::new(); input.0.len()];
+        for &(i, j) in &pairs {
+            graph[i].push(j);
+            graph[j].push(i);
+            if Solution::circuit_size(&graph, 0, &mut vec![false; input.0.len()]) == input.0.len() {
+                return input.0[i].0 * input.0[j].0;
+            }
+        }
+        unreachable!()
     }
 }
 
@@ -133,6 +151,12 @@ mod tests {
     #[test]
     fn part1() -> Result<(), Error> {
         assert_eq!(Solution::part1(&example_input()?), 40);
+        Ok(())
+    }
+
+    #[test]
+    fn part2() -> Result<(), Error> {
+        assert_eq!(Solution::part2(&example_input()?), 25272);
         Ok(())
     }
 }
