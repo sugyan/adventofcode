@@ -1,4 +1,3 @@
 (executables
- (names day01)
- (public_names day01)
- (libraries aoc2025 base stdio))
+ (public_names day01 day02)
+ (libraries aoc2025 base stdio str))

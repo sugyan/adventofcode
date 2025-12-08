@@ -20,7 +20,7 @@ module Solution : Aoc.Day = struct
   let count_zeros lst =
     let f acc (rot, n) =
       let next =
-        (match rot with Left -> acc + n | Right -> acc - n)
+        (match rot with Left -> acc - n | Right -> acc + n)
         |> Fn.flip ( % ) 100
       in
       (next, next)
