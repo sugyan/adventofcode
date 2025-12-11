@@ -43,27 +43,22 @@ impl FromStr for Input {
 
 struct Solution;
 
-impl Day for Solution {
-    type Input = Input;
-    type Error = Error;
-    type Answer1 = u32;
-    type Answer2 = u32;
-
-    fn part1(input: &Self::Input) -> Self::Answer1 {
-        let hm = input
-            .0
+impl Solution {
+    fn create_map(devices: &[Device]) -> HashMap<String, Vec<String>> {
+        devices
             .iter()
-            .map(|d| (&d.name, &d.outputs))
+            .map(|d| (d.name.clone(), d.outputs.clone()))
+            .collect()
+    }
+    fn topological_sort(outputs: &HashMap<String, Vec<String>>) -> Vec<String> {
+        let mut inputs = outputs
+            .keys()
+            .map(|key| (key.clone(), HashSet::new()))
             .collect::<HashMap<_, _>>();
-        let mut inputs = input
-            .0
-            .iter()
-            .map(|d| (&d.name, HashSet::new()))
-            .collect::<HashMap<_, _>>();
-        for device in &input.0 {
-            for output in &device.outputs {
-                if let Some(s) = inputs.get_mut(&output) {
-                    s.insert(&device.name);
+        for (device, outputs) in outputs {
+            for output in outputs {
+                if let Some(s) = inputs.get_mut(output) {
+                    s.insert(device);
                 }
             }
         }
@@ -71,28 +66,60 @@ impl Day for Solution {
         while !inputs.is_empty() {
             let ready = inputs
                 .iter()
-                .find_map(|(k, v)| if v.is_empty() { Some(*k) } else { None })
+                .find_map(|(k, v)| if v.is_empty() { Some(k.clone()) } else { None })
                 .unwrap();
-            sorted.push(ready);
-            inputs.remove(ready);
-            for out in hm[ready] {
+            sorted.push(ready.clone());
+            inputs.remove(&ready);
+            for out in &outputs[&ready] {
                 if let Some(s) = inputs.get_mut(out) {
-                    s.remove(ready);
+                    s.remove(&ready);
                 }
             }
         }
-        let mut counts = [("you", 1)].into_iter().collect::<HashMap<_, _>>();
+        sorted
+    }
+    fn count_paths(
+        (src, dst): (&str, &str),
+        outputs: &HashMap<String, Vec<String>>,
+        sorted: &[String],
+    ) -> u64 {
+        let mut counts = [(src, 1)].into_iter().collect::<HashMap<_, _>>();
         for device in sorted {
             let count = counts.get(device.as_str()).cloned().unwrap_or(0);
-            for out in hm[device] {
+            for out in &outputs[device] {
                 *counts.entry(out).or_insert(0) += count;
             }
         }
-        counts["out"]
+        counts[dst]
+    }
+}
+
+impl Day for Solution {
+    type Input = Input;
+    type Error = Error;
+    type Answer1 = u64;
+    type Answer2 = u64;
+
+    fn part1(input: &Self::Input) -> Self::Answer1 {
+        let outputs = Self::create_map(&input.0);
+        let sorted = Self::topological_sort(&outputs);
+        Self::count_paths(("you", "out"), &outputs, &sorted)
     }
 
-    fn part2(_: &Self::Input) -> Self::Answer2 {
-        todo!()
+    fn part2(input: &Self::Input) -> Self::Answer2 {
+        let outputs = Self::create_map(&input.0);
+        let sorted = Self::topological_sort(&outputs);
+
+        [
+            Self::count_paths(("svr", "fft"), &outputs, &sorted)
+                * Self::count_paths(("fft", "dac"), &outputs, &sorted)
+                * Self::count_paths(("dac", "out"), &outputs, &sorted),
+            Self::count_paths(("svr", "dac"), &outputs, &sorted)
+                * Self::count_paths(("dac", "fft"), &outputs, &sorted)
+                * Self::count_paths(("fft", "out"), &outputs, &sorted),
+        ]
+        .into_iter()
+        .sum()
     }
 }
 
@@ -104,8 +131,9 @@ fn main() -> Result<(), aoc2025::Error<Error>> {
 mod tests {
     use super::*;
 
-    fn example_input() -> Result<Input, Error> {
-        r"
+    #[test]
+    fn part1() -> Result<(), Error> {
+        let input = r"
 aaa: you hhh
 you: bbb ccc
 bbb: ddd eee
@@ -118,12 +146,31 @@ hhh: ccc fff iii
 iii: out
 "
         .trim_start()
-        .parse()
+        .parse()?;
+        assert_eq!(Solution::part1(&input), 5);
+        Ok(())
     }
 
     #[test]
-    fn part1() -> Result<(), Error> {
-        assert_eq!(Solution::part1(&example_input()?), 5);
+    fn part2() -> Result<(), Error> {
+        let input = r"
+svr: aaa bbb
+aaa: fft
+fft: ccc
+bbb: tty
+tty: ccc
+ccc: ddd eee
+ddd: hub
+hub: fff
+eee: dac
+dac: fff
+fff: ggg hhh
+ggg: out
+hhh: out
+"
+        .trim_start()
+        .parse()?;
+        assert_eq!(Solution::part2(&input), 2);
         Ok(())
     }
 }
