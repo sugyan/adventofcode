@@ -109,7 +109,6 @@ impl Day for Solution {
     fn part2(input: &Self::Input) -> Self::Answer2 {
         let outputs = Self::create_map(&input.0);
         let sorted = Self::topological_sort(&outputs);
-
         [
             Self::count_paths(("svr", "fft"), &outputs, &sorted)
                 * Self::count_paths(("fft", "dac"), &outputs, &sorted)
