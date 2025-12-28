@@ -14,15 +14,6 @@ enum Rotation {
     R(i32),
 }
 
-impl Rotation {
-    fn next_point(&self, current: i32) -> i32 {
-        match self {
-            Rotation::L(n) => current - n,
-            Rotation::R(n) => current + n,
-        }
-    }
-}
-
 impl FromStr for Rotation {
     type Err = Error;
 
@@ -51,42 +42,35 @@ impl FromStr for Input {
 
 struct Solution;
 
+impl Solution {
+    fn rotations(input: &Input) -> impl Iterator<Item = (i32, i32)> {
+        input.0.iter().scan(50, |state, rot| match rot {
+            Rotation::L(n) => {
+                // Turning left decreases the position
+                let p = (100 - *state) % 100;
+                *state = (*state - n).rem_euclid(100);
+                Some((*state, (p + n) / 100))
+            }
+            Rotation::R(n) => {
+                let p = *state;
+                *state = (*state + n).rem_euclid(100);
+                Some((*state, (p + n) / 100))
+            }
+        })
+    }
+}
+
 impl Day for Solution {
     type Input = Input;
     type Error = Error;
     type Answer1 = usize;
-    type Answer2 = u32;
+    type Answer2 = i32;
 
     fn part1(input: &Self::Input) -> Self::Answer1 {
-        input
-            .0
-            .iter()
-            .scan(50, |state, rot| {
-                *state = rot.next_point(*state);
-                Some(*state)
-            })
-            .filter(|p| *p % 100 == 0)
-            .count()
+        Solution::rotations(input).filter(|(p, _)| *p == 0).count()
     }
-
     fn part2(input: &Self::Input) -> Self::Answer2 {
-        input
-            .0
-            .iter()
-            .fold((50, 0), |(current, count), rot| {
-                let next = rot.next_point(current);
-                let c = current.div_euclid(100).abs_diff(next.div_euclid(100));
-                (
-                    next,
-                    count
-                        + match rot {
-                            Rotation::L(_) if current % 100 == 0 => c - 1,
-                            Rotation::L(_) if next % 100 == 0 => c + 1,
-                            _ => c,
-                        },
-                )
-            })
-            .1
+        Solution::rotations(input).map(|(_, c)| c).sum()
     }
 }
 
