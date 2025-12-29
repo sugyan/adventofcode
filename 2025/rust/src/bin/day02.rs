@@ -1,6 +1,6 @@
 use aoc2025::{Day, run};
 use itertools::Itertools;
-use std::str::FromStr;
+use std::{collections::HashSet, str::FromStr};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -32,7 +32,9 @@ impl FromStr for Input {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self(
-            s.replace("\n", "")
+            // s.replace("\n", "")
+            s.lines()
+                .collect::<String>()
                 .split(',')
                 .map(str::parse)
                 .collect::<Result<_, _>>()?,
@@ -43,27 +45,39 @@ impl FromStr for Input {
 struct Solution;
 
 impl Solution {
-    fn is_digits_repeated_twice(d: &u64) -> bool {
-        let n = 10_u64.pow(d.ilog10().div_ceil(2));
-        d / n == d % n
-    }
-    fn is_digits_repeated_at_least_twice(d: &u64) -> bool {
-        'outer: for i in 1..=d.ilog10().div_ceil(2) {
-            let n = 10_u64.pow(i);
-            let s = d % n;
-            if s == 0 || s.ilog10() + 1 != i {
-                continue;
-            }
-            let mut m = *d;
-            while m > 0 {
-                if m % n != s {
-                    continue 'outer;
+    const TWICE: [(u32, u64); 5] = [
+        (1, 11),     // 1-digit x 2: 11, 22, ...
+        (2, 101),    // 2-digit x 2: 1010, 1111, ...
+        (3, 1001),   // 3-digit x 2: 100100, 101101, ...
+        (4, 10001),  // 4-digit x 2: 10001000, 10011001, ...
+        (5, 100001), // 5-digit x 2: 100000100000, 100001100001, ...
+    ];
+    const MORE: [(u32, u64); 6] = [
+        (1, 111),       // 1-digit x 3: 111, 222, ...
+        (1, 11111),     // 1-digit x 5: 11111, 22222, ...
+        (2, 10101),     // 2-digit x 3: 101010, 111111, ...
+        (1, 1111111),   // 1-digit x 7: 1111111, 2222222, ...
+        (3, 1001001),   // 3-digit x 3: 100100100, 101101101, ...
+        (2, 101010101), // 2-digit x 5: 1010101010, 1111111111, ...
+    ];
+    fn sum_of_invalid_ids(input: &Input, more: bool) -> u64 {
+        let mut hs = HashSet::new();
+        for (d, step) in Self::TWICE
+            .iter()
+            .chain(if more { Self::MORE.iter() } else { [].iter() })
+        {
+            let p = 10_u64.pow(*d);
+            for &Range(first, last) in &input.0 {
+                let lower = first.next_multiple_of(*step).max(step * (p / 10));
+                let upper = last.min(step * (p - 1));
+                if lower <= upper {
+                    for i in 0..=(upper - lower) / step {
+                        hs.insert(lower + i * step);
+                    }
                 }
-                m /= n;
             }
-            return true;
         }
-        false
+        hs.iter().sum()
     }
 }
 
@@ -74,21 +88,10 @@ impl Day for Solution {
     type Answer2 = u64;
 
     fn part1(input: &Self::Input) -> Self::Answer1 {
-        input
-            .0
-            .iter()
-            .flat_map(|r| r.0..=r.1)
-            .filter(Self::is_digits_repeated_twice)
-            .sum()
+        Self::sum_of_invalid_ids(input, false)
     }
-
     fn part2(input: &Self::Input) -> Self::Answer2 {
-        input
-            .0
-            .iter()
-            .flat_map(|r| r.0..=r.1)
-            .filter(Self::is_digits_repeated_at_least_twice)
-            .sum()
+        Self::sum_of_invalid_ids(input, true)
     }
 }
 
