@@ -1,6 +1,6 @@
 use aoc2025::{Day, run};
 use itertools::Itertools;
-use std::str::FromStr;
+use std::{collections::HashSet, str::FromStr};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -23,39 +23,40 @@ impl FromStr for Input {
 struct Solution;
 
 impl Solution {
-    fn removable_rolls(grid: &[Vec<bool>]) -> Vec<(usize, usize)> {
+    const DIRS: [(usize, usize); 8] = [
+        (!0, !0),
+        (!0, 0),
+        (!0, 1),
+        (0, !0),
+        (0, 1),
+        (1, !0),
+        (1, 0),
+        (1, 1),
+    ];
+
+    fn removable_rolls(grid: &[Vec<bool>]) -> HashSet<(usize, usize)> {
         let (rows, cols) = (grid.len(), grid[0].len());
-        let d = [
-            (1, 1),
-            (1, 0),
-            (1, !0),
-            (0, !0),
-            (!0, !0),
-            (!0, 0),
-            (!0, 1),
-            (0, 1),
-        ];
-        let mut removable = vec![];
+        let mut removable = HashSet::new();
         for i in 0..rows {
             for j in 0..cols {
                 if !grid[i][j] {
                     continue;
                 }
-                if d.iter()
+                if Self::DIRS
+                    .iter()
                     .filter_map(|(di, dj)| {
                         let ni = i.wrapping_add(*di);
                         let nj = j.wrapping_add(*dj);
                         if ni < rows && nj < cols {
-                            Some((ni, nj))
+                            Some((ni, nj)).filter(|&(i, j)| grid[i][j])
                         } else {
                             None
                         }
                     })
-                    .filter(|&(ni, nj)| grid[ni][nj])
                     .count()
                     < 4
                 {
-                    removable.push((i, j));
+                    removable.insert((i, j));
                 }
             }
         }
@@ -72,7 +73,6 @@ impl Day for Solution {
     fn part1(input: &Self::Input) -> Self::Answer1 {
         Self::removable_rolls(&input.0).len()
     }
-
     fn part2(input: &Self::Input) -> Self::Answer2 {
         let mut grid = input.0.clone();
         let mut total = 0;
