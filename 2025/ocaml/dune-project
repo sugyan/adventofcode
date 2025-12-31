@@ -19,7 +19,7 @@
  (name aoc2025)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml base stdio)
+ (depends ocaml core stdio)
  (tags
   ("add topics" "to describe" your project)))
 

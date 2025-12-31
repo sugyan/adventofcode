@@ -1,2 +1,2 @@
 (cram
- (deps %{bin:day01} %{bin:day02} %{bin:day03}))
+ (deps %{bin:day01} %{bin:day02} %{bin:day03} %{bin:day04}))
