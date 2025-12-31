@@ -12,16 +12,15 @@ module Solution : Aoc.Day = struct
     In_channel.input_lines channel |> List.map ~f:parse_line
 
   let max_n_digit_number batteries digits =
-    let rec aux n arr =
-      if n = batteries then arr.(0)
+    let rec aux n lst =
+      if n = batteries then List.last_exn lst
       else
-        let dp = Array.copy arr in
-        for i = Array.length dp - 2 downto 0 do
-          dp.(i) <- (digits.(i) * Int.pow 10 n) + arr.(i + 1) |> max dp.(i + 1)
-        done;
-        aux (n + 1) (Array.subo dp ~len:(Array.length dp - 1))
+        let f i acc x =
+          (x * 10) + digits.(n + i) |> max acc |> fun m -> (m, m)
+        in
+        List.drop_last_exn lst |> List.folding_mapi ~init:0 ~f |> aux (n + 1)
     in
-    Array.(create ~len:(length digits + 1)) 0 |> aux 0
+    List.init (Array.length digits + 1) ~f:(Fn.const 0) |> aux 0
 
   let part1 input =
     List.sum (module Int) input ~f:(max_n_digit_number 2) |> Answer.of_int
