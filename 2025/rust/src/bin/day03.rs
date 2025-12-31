@@ -33,12 +33,11 @@ impl Solution {
     fn max_n_digit_number(digits: &[u64], n: usize) -> u64 {
         let mut dp = vec![vec![0_u64; digits.len() + 1]; n + 1];
         for i in 1..=n {
-            let n = 10_u64.pow(i as u32 - 1);
-            for j in (0..=digits.len() - i).rev() {
-                dp[i][j] = dp[i][j + 1].max(digits[j] * n + dp[i - 1][j + 1]);
+            for j in i - 1..digits.len() {
+                dp[i][j + 1] = dp[i][j].max(dp[i - 1][j] * 10 + digits[j]);
             }
         }
-        dp[n][0]
+        dp[n][digits.len()]
     }
 }
 
@@ -55,7 +54,6 @@ impl Day for Solution {
             .map(|v| Solution::max_n_digit_number(v, 2))
             .sum()
     }
-
     fn part2(input: &Self::Input) -> Self::Answer2 {
         input
             .0
