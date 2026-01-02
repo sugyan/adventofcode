@@ -89,7 +89,6 @@ impl Day for Solution {
             .map(|(row, operator)| operator.perform(row.into_iter()))
             .sum()
     }
-
     fn part2(input: &Self::Input) -> Self::Answer2 {
         Self::transpose(&input.numbers)
             .iter()
@@ -98,10 +97,9 @@ impl Day for Solution {
             .split(String::is_empty)
             .collect_vec()
             .iter()
+            .map(|group| group.iter().map(|s| s.parse::<u64>().unwrap()))
             .zip(&input.operators)
-            .map(|(group, operator)| {
-                operator.perform(group.iter().map(|s| s.parse::<u64>().unwrap()))
-            })
+            .map(|(group, operator)| operator.perform(group))
             .sum()
     }
 }

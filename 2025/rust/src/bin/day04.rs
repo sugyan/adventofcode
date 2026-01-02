@@ -1,6 +1,6 @@
 use aoc2025::{Day, run};
 use itertools::Itertools;
-use std::{collections::HashSet, str::FromStr};
+use std::{collections::VecDeque, str::FromStr};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -34,33 +34,26 @@ impl Solution {
         (1, 1),
     ];
 
-    fn removable_rolls(grid: &[Vec<bool>]) -> HashSet<(usize, usize)> {
+    fn adjacent_counts(grid: &[Vec<bool>]) -> Vec<Vec<Option<usize>>> {
         let (rows, cols) = (grid.len(), grid[0].len());
-        let mut removable = HashSet::new();
+        let mut counts = vec![vec![None; cols]; rows];
         for i in 0..rows {
             for j in 0..cols {
-                if !grid[i][j] {
-                    continue;
-                }
-                if Self::DIRS
-                    .iter()
-                    .filter_map(|(di, dj)| {
-                        let ni = i.wrapping_add(*di);
-                        let nj = j.wrapping_add(*dj);
-                        if ni < rows && nj < cols {
-                            Some((ni, nj)).filter(|&(i, j)| grid[i][j])
-                        } else {
-                            None
-                        }
-                    })
-                    .count()
-                    < 4
-                {
-                    removable.insert((i, j));
+                if grid[i][j] {
+                    counts[i][j] = Some(
+                        Self::DIRS
+                            .iter()
+                            .filter(|(di, dj)| {
+                                let ni = i.wrapping_add(*di);
+                                let nj = j.wrapping_add(*dj);
+                                ni < rows && nj < cols && grid[ni][nj]
+                            })
+                            .count(),
+                    );
                 }
             }
         }
-        removable
+        counts
     }
 }
 
@@ -71,21 +64,42 @@ impl Day for Solution {
     type Answer2 = usize;
 
     fn part1(input: &Self::Input) -> Self::Answer1 {
-        Self::removable_rolls(&input.0).len()
+        Self::adjacent_counts(&input.0)
+            .iter()
+            .flatten()
+            .filter(|o| o.is_some_and(|c| c < 4))
+            .count()
     }
     fn part2(input: &Self::Input) -> Self::Answer2 {
-        let mut grid = input.0.clone();
-        let mut total = 0;
-        loop {
-            let removable = Self::removable_rolls(&grid);
-            if removable.is_empty() {
-                return total;
-            }
-            total += removable.len();
-            for (i, j) in removable {
-                grid[i][j] = false;
+        let mut counts = Self::adjacent_counts(&input.0);
+        let (rows, cols) = (counts.len(), counts[0].len());
+        let mut vd = counts
+            .iter()
+            .enumerate()
+            .flat_map(|(i, row)| {
+                row.iter()
+                    .enumerate()
+                    .filter_map(move |(j, &o)| o.filter(|&c| c < 4).map(|_| (i, j)))
+            })
+            .collect::<VecDeque<_>>();
+        let mut count = 0;
+        while let Some((i, j)) = vd.pop_front() {
+            count += 1;
+            for (di, dj) in Self::DIRS.iter() {
+                let ni = i.wrapping_add(*di);
+                let nj = j.wrapping_add(*dj);
+                if ni < rows
+                    && nj < cols
+                    && let Some(c) = counts[ni][nj].as_mut()
+                {
+                    if *c == 4 {
+                        vd.push_back((ni, nj));
+                    }
+                    *c -= 1;
+                }
             }
         }
+        count
     }
 }
 

@@ -60,7 +60,6 @@ impl Day for Solution {
             .filter(|id| input.ranges.iter().any(|range| range.contains(id)))
             .count()
     }
-
     fn part2(input: &Self::Input) -> Self::Answer2 {
         let mut fresh_ranges = Vec::<(u64, u64)>::new();
         for range in input
